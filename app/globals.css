@@ -63,6 +63,39 @@ body {
   outline-color: var(--color-paper);
 }
 
+/* Legal page prose rhythm */
+.legal-prose h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-display-3);
+  line-height: var(--text-display-3--line-height);
+  letter-spacing: var(--text-display-3--letter-spacing);
+  margin-top: 3rem;
+}
+
+.legal-prose h2:first-child {
+  margin-top: 0;
+}
+
+.legal-prose p,
+.legal-prose ul {
+  margin-top: 1rem;
+  max-width: 68ch;
+}
+
+.legal-prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+.legal-prose li {
+  margin-top: 0.5rem;
+}
+
+.legal-prose a {
+  color: var(--color-oxblood);
+  font-weight: 500;
+}
+
 /* Link underline draws left to right over 250ms */
 .link-draw {
   background-image: linear-gradient(currentColor, currentColor);
@@ -130,10 +163,24 @@ body {
   animation: step-in 400ms var(--ease-standard) both;
 }
 
+@keyframes header-drop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.header-drop {
+  animation: header-drop 250ms var(--ease-standard) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise-in,
   .rise-in-solid,
-  .step-in {
+  .step-in,
+  .header-drop {
     animation: none;
   }
 

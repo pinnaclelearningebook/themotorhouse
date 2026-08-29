@@ -2,12 +2,27 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 import { SITE, CONTACT, COMPANY, isAwaiting } from "@/config/site";
+import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 
 /**
- * Milestone 1 footer. Legal pages (privacy, terms, cookies) join the
- * nav in Milestone 2. Companies Act details render as AwaitingInfo
- * chips until the real values land in config/site.ts.
+ * The footer carries the full sitemap (CLAUDE.md 7a) — model pages join
+ * at Milestone 3. The recently-purchased link appears only once real
+ * cars exist, matching the page itself. Companies Act details render as
+ * AwaitingInfo chips until the real values land in config/site.ts.
  */
+const siteLinks = [
+  { href: "/", label: "Home" },
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/valuation", label: "Get my offer" },
+];
+
+const legalLinks = [
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/cookies", label: "Cookies" },
+];
 export function Footer() {
   return (
     <footer className="on-ink border-t border-line-dark bg-ink py-16 text-paper">
@@ -22,16 +37,20 @@ export function Footer() {
           </div>
           <nav aria-label="Footer">
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/" className="link-draw">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/valuation" className="link-draw">
-                  Get my offer
-                </Link>
-              </li>
+              {siteLinks.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="link-draw">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              {RECENTLY_PURCHASED.length > 0 && (
+                <li>
+                  <Link href="/recently-purchased" className="link-draw">
+                    Recently purchased
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
           <div className="text-sm text-paper/60">
@@ -49,7 +68,16 @@ export function Footer() {
             )}
           </div>
         </div>
-        <div className="mt-12 border-t border-line-dark pt-6 text-caption text-paper/50">
+        <div className="mt-12 flex flex-col gap-4 border-t border-line-dark pt-6 text-caption text-paper/50">
+          <ul className="flex gap-6">
+            {legalLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="link-draw">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
           {isAwaiting(COMPANY.registeredName) ? (
             <div className="flex flex-wrap gap-2">
               <AwaitingInfo label="Registered company name" />

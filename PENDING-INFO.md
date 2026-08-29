@@ -20,8 +20,8 @@ These must exist before the site can be publicly live.
 - [ ] **Trading address** — where cars are handled, if different from registered office
 - [ ] **ICO data protection registration number** — likely required as a data controller
 - [ ] **Operator alert destination** — email address, and later a WhatsApp or Telegram webhook
-- [ ] **Resend API key + verified sending domain** — for the seller auto-reply
-- [ ] **Airtable base ID + API key** — for submission storage
+- [ ] **Solicitor review of the privacy policy and terms of service** — both are drafted on /privacy and /terms; they need professional review before public launch
+- [ ] **Data retention period** — how long enquiry data is kept before deletion; the privacy policy has an AwaitingInfo slot for it
 
 ---
 

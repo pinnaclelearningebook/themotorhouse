@@ -1,10 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Section } from "@/components/ui/Section";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 
 /**
  * Honest social proof: real cars only, wired to the array in
- * config/recently-purchased.ts. Renders nothing while it is empty.
+ * config/recently-purchased.ts. Shows the latest three and links through
+ * to /recently-purchased. Renders nothing while the array is empty.
  */
 export function RecentlyPurchased() {
   if (RECENTLY_PURCHASED.length === 0) {
@@ -17,7 +19,7 @@ export function RecentlyPurchased() {
         Recently purchased
       </h2>
       <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {RECENTLY_PURCHASED.map((car) => (
+        {RECENTLY_PURCHASED.slice(0, 3).map((car) => (
           <li
             key={`${car.model}-${car.year}-${car.mileage}`}
             className="rounded border border-line"
@@ -38,6 +40,14 @@ export function RecentlyPurchased() {
           </li>
         ))}
       </ul>
+      <p className="mt-10">
+        <Link
+          href="/recently-purchased"
+          className="link-draw font-medium text-oxblood"
+        >
+          See more of what we&apos;ve bought
+        </Link>
+      </p>
     </Section>
   );
 }

@@ -210,6 +210,7 @@ An orchestrated sequence, not scattered fades. Headline lines rise and fade in w
 /export                        Why our offers on certain models are stronger
 /about
 /faq
+/recently-purchased            Real cars only; 404s while the array is empty
 /valuation                     The full form flow (also embedded on every page)
 /valuation/thank-you
 /blog
@@ -221,6 +222,33 @@ An orchestrated sequence, not scattered fades. Headline lines rise and fade in w
 ```
 
 Model pages are generated from a typed config array in `config/models.ts`, but **each entry carries its own hand-written copy**. Do not template-spin the same paragraph seven ways with the model name swapped — that is thin content, it reads as spam to sellers, and Google treats it as doorway pages.
+
+
+## 7a. Header and navigation
+
+A persistent header exists on every page.
+
+Layout: wordmark left · nav links centre-right · `Get my offer` button
+far right. Ink text on paper ground, thin, quiet, 1px bottom hairline
+in --line. No shadow, no blur, no background transparency effects.
+
+Links (desktop): How it works · About · FAQ. Model pages and /export
+join this list at Milestone 3 — at that point How it works, About and
+FAQ move to the footer and the header carries the commercial routes
+instead, since navigation should serve the seller's decision, not our
+sitemap.
+
+Mobile (below 768px): wordmark and `Get my offer` only. No hamburger,
+no drawer. The nav links live in the footer. On a conversion-focused
+page the header's job on a phone is to keep the form one tap away,
+not to offer a menu.
+
+Behaviour: static at the top of the page, then sticky once the user
+scrolls past the hero, so the CTA is always reachable. Slide in over
+250ms, standard easing. Respects prefers-reduced-motion.
+
+The footer carries the full sitemap: all content pages, all model
+pages, legal links, and company details.
 
 ---
 

@@ -1,7 +1,16 @@
 import Link from "next/link";
 
-const buttonClasses =
-  "inline-block rounded bg-oxblood px-8 py-4 text-center font-medium text-paper transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-oxblood-lt disabled:cursor-not-allowed disabled:opacity-60";
+const base =
+  "inline-block rounded bg-oxblood text-center font-medium text-paper transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-oxblood-lt disabled:cursor-not-allowed disabled:opacity-60";
+
+const sizes = {
+  default: "px-8 py-4",
+  compact: "px-5 py-2.5 text-sm",
+} as const;
+
+type ButtonSize = keyof typeof sizes;
+
+const buttonClasses = `${base} ${sizes.default}`;
 
 export function Button({
   children,
@@ -29,13 +38,15 @@ export function ButtonLink({
   children,
   href,
   className = "",
+  size = "default",
 }: {
   children: React.ReactNode;
   href: string;
   className?: string;
+  size?: ButtonSize;
 }) {
   return (
-    <Link href={href} className={`${buttonClasses} ${className}`}>
+    <Link href={href} className={`${base} ${sizes[size]} ${className}`}>
       {children}
     </Link>
   );
