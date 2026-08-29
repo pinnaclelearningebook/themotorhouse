@@ -38,10 +38,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB">
-      <body
-        className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
-      >
+    <html
+      lang="en-GB"
+      className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
+    >
+      <body>
         {children}
         <Footer />
       </body>

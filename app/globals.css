@@ -108,12 +108,31 @@ body {
   animation: rise-in 700ms var(--ease-standard) both;
 }
 
+/*
+ * For the LCP element only: rise without the fade. Animating an LCP
+ * candidate from opacity 0 defers LCP to animation end and blows the
+ * 2.0s budget; movement alone doesn't.
+ */
+@keyframes rise-in-solid {
+  from {
+    transform: translateY(24px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.rise-in-solid {
+  animation: rise-in-solid 700ms var(--ease-standard) both;
+}
+
 .step-in {
   animation: step-in 400ms var(--ease-standard) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise-in,
+  .rise-in-solid,
   .step-in {
     animation: none;
   }

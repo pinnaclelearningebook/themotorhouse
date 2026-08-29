@@ -10,12 +10,12 @@ import { PROMISES } from "@/config/site";
  */
 export function Hero() {
   return (
-    <section aria-labelledby="hero-heading" className="on-ink bg-ink pt-24 pb-20 text-paper md:pt-36 md:pb-28">
+    <section aria-labelledby="hero-heading" className="on-ink bg-ink pt-14 pb-16 text-paper md:pt-36 md:pb-28">
       <Container>
         <div className="max-w-4xl">
           <h1
             id="hero-heading"
-            className="rise-in font-display text-display-2 md:text-display-1"
+            className="rise-in-solid font-display text-display-3 sm:text-display-2 md:text-display-1"
           >
             Sell your car for a firm offer that doesn&apos;t change.
           </h1>

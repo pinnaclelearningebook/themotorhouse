@@ -37,7 +37,7 @@ export function WhatWeBuy() {
             <span className="font-display text-2xl">
               And everything else
             </span>
-            <span className="mt-3 block text-sm text-structure">
+            <span className="mt-3 block text-sm text-ink/70">
               We buy any car, not just these. Start with your registration.
             </span>
           </Link>

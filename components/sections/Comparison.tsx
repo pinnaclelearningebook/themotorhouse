@@ -42,7 +42,7 @@ export function Comparison() {
       <h2 id="comparison-heading" className="font-display text-display-3">
         Your three ways to sell
       </h2>
-      <p className="mt-4 max-w-prose text-structure">
+      <p className="mt-4 max-w-prose text-ink/70">
         Each has its place. Here is the honest version of all three.
       </p>
       <div className="mt-12 grid gap-6 lg:grid-cols-3">
