@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  /*
+   * Colour tokens — CLAUDE.md section 5. The complete palette.
+   * The default Tailwind palette is removed so no component can
+   * reach for a colour outside the system.
+   */
+  --color-*: initial;
+  --color-ink: #12140f;
+  --color-ink-soft: #1f231c;
+  --color-paper: #f5f4f0;
+  --color-paper-warm: #edebe4;
+  --color-oxblood: #5c1a1f;
+  --color-oxblood-lt: #7a2b31;
+  --color-plate: #f5d000;
+  --color-structure: #6b6f6b;
+  --color-line: #dedbd4;
+  --color-line-dark: #2c302a;
+  /* The GB flash on the number plate. Used there and nowhere else. */
+  --color-plate-flash: #003399;
+
+  /* Type roles */
+  --font-display: var(--font-newsreader), Georgia, serif;
+  --font-sans: var(--font-inter-tight), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Display scale: 72 / 56 / 36, tight leading, slight negative tracking */
+  --text-display-1: 4.5rem;
+  --text-display-1--line-height: 1.05;
+  --text-display-1--letter-spacing: -0.02em;
+  --text-display-2: 3.5rem;
+  --text-display-2--line-height: 1.05;
+  --text-display-2--letter-spacing: -0.02em;
+  --text-display-3: 2.25rem;
+  --text-display-3--line-height: 1.1;
+  --text-display-3--letter-spacing: -0.02em;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.5;
+
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-oxblood);
+  color: var(--color-paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-oxblood);
+  outline-offset: 2px;
+}
+
+.on-ink :focus-visible {
+  outline-color: var(--color-paper);
+}
+
+/* Link underline draws left to right over 250ms */
+.link-draw {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size 250ms var(--ease-standard);
+}
+
+.link-draw:hover,
+.link-draw:focus-visible {
+  background-size: 100% 1px;
+}
+
+/*
+ * Entrance animation. M1 keeps this to a restrained CSS rise on the hero
+ * and form steps; the full orchestrated pass arrives in Milestone 5.
+ * Transform and opacity only.
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 700ms var(--ease-standard) both;
+}
+
+.step-in {
+  animation: step-in 400ms var(--ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .step-in {
+    animation: none;
+  }
+
+  .link-draw {
+    transition: none;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

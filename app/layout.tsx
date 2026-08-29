@@ -1,0 +1,50 @@
+import type { Metadata } from "next";
+import { Newsreader, Inter_Tight, Geist_Mono } from "next/font/google";
+import { Footer } from "@/components/sections/Footer";
+import { SITE } from "@/config/site";
+import "./globals.css";
+
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: `${SITE.name} — a firm offer for your car`,
+    template: `%s — ${SITE.name}`,
+  },
+  description:
+    "We buy premium cars across the UK. A firm offer within two hours, free collection anywhere in mainland UK, payment before the transporter leaves.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en-GB">
+      <body
+        className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
+      >
+        {children}
+        <Footer />
+      </body>
+    </html>
+  );
+}
