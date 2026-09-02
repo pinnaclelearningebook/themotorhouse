@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "About us",
   description:
     "A specialist car buying service, not a lead-gen funnel. Why we exist, how we work, and why our offers on young premium SUVs are stronger.",
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {
@@ -46,10 +47,10 @@ export default function AboutPage() {
           <p className="mt-6 text-paper/80">
             We buy anything, but we actively look for young premium SUVs —
             Range Rover, Evoque, Velar, Discovery Sport, Defender, Lexus,
-            Mercedes GLE. We supply buyers in Cyprus and across the EU who
-            want exactly these cars, and those markets pay more than a UK
-            retail buyer will. That demand flows straight into what we can
-            offer you.
+            Mercedes GLE. We supply buyers in Cyprus, where traffic drives
+            on the left and right-hand-drive cars are the local standard,
+            and where a good one is worth more than a UK retail buyer will
+            pay. That demand flows straight into what we can offer you.
           </p>
         </div>
       </Section>

@@ -88,7 +88,7 @@ This section drives copy and layout more than the design system does. Read it be
 
 7. **Anticipated regret reversal.** Name the alternatives honestly and let the comparison do the work: private sale (weeks, strangers, fraud risk), part-exchange (convenient, materially less money), big buying service (the number changes). Do not disparage competitors by name — describe the experience and let recognition do it.
 
-8. **Authority through specificity.** Generic competence claims are worthless. Model-specific knowledge is not. "We know the D300 timing chain question and it doesn't scare us" is worth more than any trust badge. Every model page must contain at least one detail only someone who actually trades that model would know.
+8. **Authority through specificity.** Generic competence claims are worthless. Model-specific knowledge is not. "The timing chain question is the 2.0 four-cylinder, not the D300 straight-six — if someone told you otherwise they've confused the two" is worth more than any trust badge. Correcting a misconception the seller has been given elsewhere is the strongest form of this. Every model page must contain at least one detail only someone who actually trades that model would know, and every external claim must be sourced in SOURCES.md.
 
 **Copy rules that follow from the above:**
 - No exclamation marks anywhere on the site.

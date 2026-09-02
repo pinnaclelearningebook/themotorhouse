@@ -93,7 +93,7 @@ export const FAQ: FaqEntry[] = [
   {
     question: "What happens to my car after you buy it?",
     answer:
-      "Young premium SUVs often go to our buyers in Cyprus and the EU, where right-hand-drive cars like yours are in demand. Everything else is sold on through the motor trade. Nothing sits on our books for long, which is part of why we can pay properly.",
+      "Young premium SUVs often go to our buyers in Cyprus, where traffic drives on the left and right-hand-drive cars like yours are the local standard. Everything else is sold on through the motor trade. Nothing sits on our books for long, which is part of why we can pay properly.",
   },
   {
     question: "What if I change my mind?",
