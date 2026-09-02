@@ -1,21 +1,15 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Section";
+import { PostCard } from "@/components/blog/PostCard";
+import { getAllPosts } from "@/lib/blog";
 
 /**
- * Latest three posts. The blog arrives in Milestone 4 — until the MDX
- * infrastructure exists this array stays empty and the section renders
- * nothing, same rule as RecentlyPurchased.
+ * The three latest posts. Renders nothing while no posts exist, same
+ * honesty rule as the recently-purchased section.
  */
-interface PostPreview {
-  slug: string;
-  title: string;
-  description: string;
-}
-
-const latestPosts: PostPreview[] = [];
-
 export function FromTheBlog() {
-  if (latestPosts.length === 0) {
+  const posts = getAllPosts().slice(0, 3);
+  if (posts.length === 0) {
     return null;
   }
 
@@ -24,19 +18,21 @@ export function FromTheBlog() {
       <h2 id="blog-heading" className="font-display text-display-3">
         From the blog
       </h2>
+      <p className="mt-4 max-w-prose text-structure">
+        Written to be useful whether or not you sell us anything.
+      </p>
       <ul className="mt-12 grid gap-6 lg:grid-cols-3">
-        {latestPosts.map((post) => (
+        {posts.map((post) => (
           <li key={post.slug}>
-            <Link
-              href={`/blog/${post.slug}`}
-              className="block h-full rounded border border-line p-6 transition-colors duration-200 hover:border-oxblood"
-            >
-              <h3 className="font-display text-2xl">{post.title}</h3>
-              <p className="mt-3 text-sm text-structure">{post.description}</p>
-            </Link>
+            <PostCard post={post} />
           </li>
         ))}
       </ul>
+      <p className="mt-10">
+        <Link href="/blog" className="link-draw font-medium text-oxblood">
+          All articles
+        </Link>
+      </p>
     </Section>
   );
 }

@@ -100,6 +100,23 @@ Every external factual claim made on the site, where it appears, and where it ca
 
 > Scope limit, decided 2026-09-02: we claim **Cyprus only**. Earlier drafts of CLAUDE.md said "Cyprus and the EU" — mainland Europe is left-hand drive, so the RHD argument does not hold there and the claim was not substantiable. Do not widen this to other markets without both a business reason and a source.
 
+## Range Rover generations
+
+**Pages:** `/blog/how-much-is-my-range-rover-worth`
+
+| Claim | Source |
+|---|---|
+| Range Rover L405 ran 2012–2021; L460 from 2022 | [Wikipedia, Range Rover (L405)](https://en.wikipedia.org/wiki/Range_Rover_(L405)) · [Range Rover (L460)](https://en.wikipedia.org/wiki/Range_Rover_(L460)) |
+| Range Rover Sport L494 from 2013; L461 from 2022 | [Wikipedia, Range Rover Sport](https://en.wikipedia.org/wiki/Range_Rover_Sport) |
+
+> Deliberate gap: the post makes no claim about what any Range Rover is worth. An `<AwaitingInfo>` slot is in place for indicative value bands by generation and age, which needs a valuation data feed (CAP HPI or Glass's — see PENDING-INFO.md). Do not fill it with estimates.
+
+## Blog post 1 — reused claims
+
+**Page:** `/blog/how-much-is-my-range-rover-worth`
+
+The theft, insurance and JLR security figures in section 6 of this post are the same claims already logged under **Range Rover theft and insurance** above, and carry the same sources. The Cyprus claims in section 2 are logged under **Cyprus export market**.
+
 ---
 
 ## Claims deliberately NOT made
@@ -114,3 +131,4 @@ Kept here so nobody re-adds them believing they were an oversight.
 - No Velar model-year cutoff for the infotainment change.
 - No Defender residual value percentage — the page says it holds value unusually well, qualitatively, and stops there.
 - No claim about any export market other than Cyprus.
+- No value figure, price band or depreciation rate in any blog post.

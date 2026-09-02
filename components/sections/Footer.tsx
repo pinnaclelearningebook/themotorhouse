@@ -18,6 +18,7 @@ const siteLinks = [
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/export", label: "Why we pay more" },
+  { href: "/blog", label: "Advice" },
   { href: "/valuation", label: "Get my offer" },
 ];
 

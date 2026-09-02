@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { MODELS } from "@/config/models";
+import { getAllPosts, getUsedCategories } from "@/lib/blog";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 import { absoluteUrl } from "@/config/site";
 
@@ -19,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/how-it-works", priority: 0.7 },
     { path: "/faq", priority: 0.7 },
     { path: "/about", priority: 0.6 },
+    { path: "/blog", priority: 0.7 },
     { path: "/privacy", priority: 0.3 },
     { path: "/terms", priority: 0.3 },
     { path: "/cookies", priority: 0.3 },
@@ -29,12 +31,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
+  const posts = getAllPosts().map((post) => ({
+    path: `/blog/${post.slug}`,
+    priority: 0.7,
+  }));
+
+  const categories = getUsedCategories().map((category) => ({
+    path: `/blog/category/${category}`,
+    priority: 0.4,
+  }));
+
   const conditional =
     RECENTLY_PURCHASED.length > 0
       ? [{ path: "/recently-purchased", priority: 0.5 }]
       : [];
 
-  return [...core, ...models, ...conditional].map((entry) => ({
+  return [...core, ...models, ...posts, ...categories, ...conditional].map((entry) => ({
     url: absoluteUrl(entry.path),
     lastModified,
     priority: entry.priority,
