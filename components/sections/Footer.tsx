@@ -3,18 +3,21 @@ import { Container } from "@/components/ui/Container";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 import { SITE, CONTACT, COMPANY, isAwaiting } from "@/config/site";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
+import { MODELS } from "@/config/models";
 
 /**
- * The footer carries the full sitemap (CLAUDE.md 7a) — model pages join
- * at Milestone 3. The recently-purchased link appears only once real
- * cars exist, matching the page itself. Companies Act details render as
- * AwaitingInfo chips until the real values land in config/site.ts.
+ * The footer carries the full sitemap (CLAUDE.md 7a): content pages,
+ * every model page, legal links and company details. How it works,
+ * About and FAQ live here rather than the header from Milestone 3, since
+ * the header carries the commercial routes. The recently-purchased link
+ * appears only once real cars exist, matching the page itself.
  */
 const siteLinks = [
   { href: "/", label: "Home" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
+  { href: "/export", label: "Why we pay more" },
   { href: "/valuation", label: "Get my offer" },
 ];
 
@@ -51,6 +54,20 @@ export function Footer() {
                   </Link>
                 </li>
               )}
+            </ul>
+          </nav>
+          <nav aria-label="Cars we buy">
+            <p className="mb-2 text-caption tracking-wide text-paper/50 uppercase">
+              Cars we buy
+            </p>
+            <ul className="space-y-2 text-sm">
+              {MODELS.map((model) => (
+                <li key={model.slug}>
+                  <Link href={`/${model.slug}`} className="link-draw">
+                    {model.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
           <div className="text-sm text-paper/60">

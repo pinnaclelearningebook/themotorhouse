@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Get my offer",
   description:
     "Tell us about your car. A firm offer within two hours — the number we give is the number we pay.",
+  alternates: { canonical: "/valuation" },
 };
 
 export default async function ValuationPage({

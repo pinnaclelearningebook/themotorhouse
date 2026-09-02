@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Terms of service",
   description:
     "The terms on which we make offers, collect cars and pay sellers — including the seven-day offer validity and the no-deductions commitment.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

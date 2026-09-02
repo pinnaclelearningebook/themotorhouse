@@ -54,6 +54,7 @@ The site can launch without these, but it will feel thin until they land.
 
 ## Nice to have / later
 
+- [ ] **Dedicated Range Rover Sport page** — currently covered on `/sell-my-range-rover`, but it has real search volume of its own and warrants `/sell-my-range-rover-sport` with its own copy
 - [ ] **Seller photo upload flow** — the form currently asks sellers to reply to the confirmation email with photos. A proper upload (Vercel Blob client upload + token) replaces that later.
 - [ ] **Plate typeface decision** — the registration input uses letter-spaced condensed bold as the sanctioned fallback. Decide whether to license a Charles Wright lookalike face.
 - [ ] **DVLA Vehicle Enquiry Service API key** — free, register at the DVLA developer portal. Enables reg → make/model/year/fuel on the form.

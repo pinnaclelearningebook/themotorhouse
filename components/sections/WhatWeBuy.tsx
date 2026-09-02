@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Section";
-import { TARGET_MODELS } from "@/config/site";
+import { MODELS } from "@/config/models";
 
-/**
- * Model cards. These point at /valuation until the model landing pages
- * exist in Milestone 3, when each card links to its own page.
- */
 export function WhatWeBuy() {
   return (
     <Section ground="paper" labelledBy="buy-heading">
@@ -13,16 +9,16 @@ export function WhatWeBuy() {
         What we buy
       </h2>
       <p className="mt-4 max-w-prose text-structure">
-        These are the cars our export buyers ask for by name.
+        These are the cars our Cyprus buyers ask for by name.
       </p>
       <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {TARGET_MODELS.map((model) => (
-          <li key={model}>
+        {MODELS.map((model) => (
+          <li key={model.slug}>
             <Link
-              href="/valuation"
-              className="group block h-full rounded border border-line p-6 transition-colors duration-200 hover:border-oxblood"
+              href={`/${model.slug}`}
+              className="block h-full rounded border border-line p-6 transition-colors duration-200 hover:border-oxblood"
             >
-              <span className="font-display text-2xl">{model}</span>
+              <span className="font-display text-2xl">{model.name}</span>
               <span className="mt-3 block text-sm font-medium text-oxblood">
                 Get my offer
               </span>
@@ -34,9 +30,7 @@ export function WhatWeBuy() {
             href="/valuation"
             className="block h-full rounded border border-line bg-paper-warm p-6 transition-colors duration-200 hover:border-oxblood"
           >
-            <span className="font-display text-2xl">
-              And everything else
-            </span>
+            <span className="font-display text-2xl">And everything else</span>
             <span className="mt-3 block text-sm text-ink/70">
               We buy any car, not just these. Start with your registration.
             </span>

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Cookie policy",
   description:
     "What this site stores in your browser — which is very little — and the choice you have over it.",
+  alternates: { canonical: "/cookies" },
 };
 
 export default function CookiesPage() {

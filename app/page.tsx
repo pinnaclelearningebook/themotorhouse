@@ -8,10 +8,12 @@ import { Comparison } from "@/components/sections/Comparison";
 import { RecentlyPurchased } from "@/components/sections/RecentlyPurchased";
 import { FromTheBlog } from "@/components/sections/FromTheBlog";
 import { FinalCta } from "@/components/sections/FinalCta";
+import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 
 export default function HomePage() {
   return (
     <main>
+      <AutoDealerJsonLd />
       <Hero />
       <AssuranceStrip />
       <OfferPromise />

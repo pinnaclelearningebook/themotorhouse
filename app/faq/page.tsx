@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Frequently asked questions",
   description:
     "Outstanding finance, collection, payment timing, damage, write-offs, documents — straight answers on how selling your car to us works.",
+  alternates: { canonical: "/faq" },
 };
 
 export default function FaqPage() {

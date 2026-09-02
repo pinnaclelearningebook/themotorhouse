@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Recently purchased",
   description:
     "Real cars we bought recently — model, year and mileage, photographed as they were collected.",
+  alternates: { canonical: "/recently-purchased" },
 };
 
 /**

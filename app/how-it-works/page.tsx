@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "How it works",
   description:
     "Tell us about the car, get a firm offer within two hours, free collection anywhere in mainland UK, payment before the transporter leaves.",
+  alternates: { canonical: "/how-it-works" },
 };
 
 const steps = [
