@@ -12,7 +12,7 @@ export function renderCopy(text: string) {
   return text.split(/(\[\[[^\]]+\]\])/g).map((part, index) => {
     const match = part.match(/^\[\[([^\]]+)\]\]$/);
     return match ? (
-      <span key={index} className="font-mono">
+      <span key={index} className="data-inline">
         {match[1]}
       </span>
     ) : (

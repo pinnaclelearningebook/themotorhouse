@@ -63,6 +63,16 @@ body {
   outline-color: var(--color-paper);
 }
 
+/*
+ * Vehicle data inside running prose. Mono numerals carry full-width
+ * separators, so "£20,000" reads as "£20 , 000" at body size. Slight
+ * negative tracking closes the gaps without changing the face.
+ */
+.data-inline {
+  font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+}
+
 /* Legal page prose rhythm */
 .legal-prose h2 {
   font-family: var(--font-display);
