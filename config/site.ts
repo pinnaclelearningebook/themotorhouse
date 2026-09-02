@@ -16,6 +16,27 @@ export const SITE = {
   domain: `${AWAITING}: domain name`,
 } as const;
 
+/**
+ * Absolute base URL, needed for canonicals, the sitemap and OG images.
+ * Set NEXT_PUBLIC_SITE_URL once the real domain exists (PENDING-INFO.md).
+ * Until then Vercel's own production URL keeps preview and production
+ * deployments emitting correct absolute URLs rather than broken ones.
+ */
+export function siteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercel) return `https://${vercel}`;
+  return "http://localhost:3000";
+}
+
+export function absoluteUrl(path: string): string {
+  return `${siteUrl()}${path === "/" ? "" : path}`;
+}
+
+/** The only export market we currently supply. Never widen this without evidence. */
+export const EXPORT_MARKET = "Cyprus" as const;
+
 export const CONTACT = {
   phone: `${AWAITING}: business phone number`,
   email: `${AWAITING}: business email address`,

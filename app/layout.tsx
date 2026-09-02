@@ -4,7 +4,7 @@ import { Header } from "@/components/ui/Header";
 import { Footer } from "@/components/sections/Footer";
 import { CookieConsent } from "@/components/consent/CookieConsent";
 import { AnalyticsGate } from "@/components/consent/AnalyticsGate";
-import { SITE } from "@/config/site";
+import { SITE, siteUrl } from "@/config/site";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -27,12 +27,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: `${SITE.name} — a firm offer for your car`,
     template: `%s — ${SITE.name}`,
   },
   description:
     "We buy premium cars across the UK. A firm offer within two hours, free collection anywhere in mainland UK, payment before the transporter leaves.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    siteName: SITE.name,
+    locale: "en_GB",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
