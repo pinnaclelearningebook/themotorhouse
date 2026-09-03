@@ -151,6 +151,49 @@ The theft, insurance and JLR security figures in section 6 of this post are the 
 
 No external factual claims. The comparison describes the mechanics and trade-offs of each route qualitatively, names no competitor, and quotes no price, percentage or market figure. The statements about our own service (seven-day offer validity, no deductions on collection) are commitments recorded in the terms, not external facts.
 
+## Vehicle salvage categories
+
+**Page:** `/blog/what-is-a-category-n-write-off`
+
+| Claim | Source |
+|---|---|
+| The categories are set by the ABI Code of Practice for the Categorisation of Motorised Vehicle Salvage (current version May 2025) | [ABI Code of Practice PDF](https://www.abi.org.uk/globalassets/files/publications/public/motor/2025/codepracticecategorisationmotorisedvehiclesalvagemay2025.pdf) |
+| Category A: scrap only, entire vehicle crushed. Category B: body shell crushed, parts may be reclaimed | [ABI Code of Practice PDF](https://www.abi.org.uk/globalassets/files/publications/public/motor/2025/codepracticecategorisationmotorisedvehiclesalvagemay2025.pdf) |
+| Category S: structurally damaged but repairable. Category N: non-structurally damaged, repairable, potentially roadworthy | [ABI Code of Practice PDF](https://www.abi.org.uk/globalassets/files/publications/public/motor/2025/codepracticecategorisationmotorisedvehiclesalvagemay2025.pdf) |
+| Category S: the V5C is destroyed and a replacement must be applied for from DVLA | [VRA](https://www.vrauk.org/content.aspx?id=34) |
+| Category N: the replacement V5C issued by DVLA is NOT annotated | [VRA](https://www.vrauk.org/content.aspx?id=34) |
+| The registered keeper must notify DVLA when a vehicle passes to an insurer following settlement | [ABI Code of Practice PDF](https://www.abi.org.uk/globalassets/files/publications/public/motor/2025/codepracticecategorisationmotorisedvehiclesalvagemay2025.pdf) |
+| S and N replaced C and D in October 2017; C and D were cost-based, S and N are based on the extent and location of damage | [Auto Express](https://www.autoexpress.co.uk/car-news/consumer-news/90106/old-cat-c-and-cat-d-insurance-write-off-categories-explained) |
+| Category N can include electrical faults, deployed airbags, mechanical damage, water damage and theft recovery — not only cosmetic damage | [Black Circles](https://www.blackcircles.com/news/car-write-off-categories-2026-guide) |
+
+> Sourcing standard applied here: this post makes procedural claims about a regulated categorisation system, so the categories themselves and the DVLA notification duty are sourced to the ABI Code of Practice and the VRA rather than to car-buying or salvage-trade blogs.
+
+> Deliberate gap: no figure is given for what a Category S or N marker does to value. An `<AwaitingInfo>` slot marks where comparative data would go. The impact varies by category, model, age and repair quality, and we have no dataset to support a percentage. Do not add one.
+
+## Range Rover Sport L494
+
+**Page:** `/blog/range-rover-sport-buyers-guide`
+
+| Claim | Source |
+|---|---|
+| L494 ran 2013–2022; L461 from 2022 | [Wikipedia, Range Rover Sport](https://en.wikipedia.org/wiki/Range_Rover_Sport) |
+| A model year update commencing late 2017 (the 2018 model year) brought revised engines, Touch Pro Duo infotainment and revised suspension calibration; parts are not universally interchangeable across that boundary | [Rover Parts engine guide](https://www.roverparts.eu/blogs/news-land-rover-parts/split-personality-singular-appeal) |
+| Diesel range included the 3.0 V6 as TDV6 258hp and SDV6 288/306hp, plus a 340hp SDV6 hybrid; a supercharged 3.0 V6 petrol at 340hp was also offered | [PistonHeads L494 buying guide](https://www.pistonheads.com/news/ph-buying-guides/range-rover-sport-l494--ph-used-buying-guide/45057) |
+| A 2019 engine update replaced the supercharged V6 petrol with the P400 straight-six at 400hp and introduced D250, D300 and D350 diesels | [PistonHeads L494 buying guide](https://www.pistonheads.com/news/ph-buying-guides/range-rover-sport-l494--ph-used-buying-guide/45057) |
+| A P400e 2.0-litre plug-in hybrid was offered | [PistonHeads L494 buying guide](https://www.pistonheads.com/news/ph-buying-guides/range-rover-sport-l494--ph-used-buying-guide/45057) |
+
+> The D300 correction in this post reuses the **D300 straight-six is not the affected engine** entry above and carries the same sources.
+
+> Deliberate gap: the post states no Pivi Pro changeover date for the L494. The 2018 model year update bringing Touch Pro Duo is sourced; the later switch to Pivi Pro on this model is not, so it is not claimed. Note that Touch Pro Duo was an upgrade on the Sport but the criticised launch system on the Velar — do not conflate the two model histories.
+
+## Evoque, Velar and Discovery Sport comparison
+
+**Page:** `/blog/evoque-velar-or-discovery-sport-which-holds-value-best`
+
+No new external claims. Every factual statement reuses an entry already logged above: the Ingenium timing chain and oil dilution mechanism, the Evoque generation split, the Velar infotainment split, and the Discovery Sport third-row rarity.
+
+> Deliberate gap, and the point of the post: the three models are **not ranked** by residual value. An `<AwaitingInfo>` slot marks where comparative data would go. Published residuals vary by dataset, trim, period and hold length, so any single ranking would be an artefact of the source chosen. Do not add a ranking without a named dataset and period.
+
 ---
 
 ## Claims deliberately NOT made
@@ -168,3 +211,6 @@ Kept here so nobody re-adds them believing they were an oversight.
 - No value figure, price band or depreciation rate in any blog post.
 - No claim that Range Rover values have recovered since the 2023-24 episode.
 - No fixed validity period for a finance settlement figure.
+- No value impact figure for Category S or N markers.
+- No residual-value ranking of the Evoque, Velar and Discovery Sport.
+- No Pivi Pro changeover date for the Range Rover Sport L494.
