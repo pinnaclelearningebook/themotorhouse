@@ -117,6 +117,40 @@ Every external factual claim made on the site, where it appears, and where it ca
 
 The theft, insurance and JLR security figures in section 6 of this post are the same claims already logged under **Range Rover theft and insurance** above, and carry the same sources. The Cyprus claims in section 2 are logged under **Cyprus export market**.
 
+## Range Rover value fall, 2023-24 episode
+
+**Page:** `/blog/why-range-rover-values-have-fallen`
+
+| Claim | Source |
+|---|---|
+| Average cost of insuring a Range Rover more than doubled in the year to October 2023, to around £3,270 (Confused.com) | [Claims Journal](https://www.claimsjournal.com/news/international/2023/12/14/320942.htm) |
+| Average used Range Rover price down 9.3% to around £35,224 over the preceding months, steeper than the wider used market (Auto Trader, reported December 2023) | [Yahoo Finance](https://finance.yahoo.com/news/range-rovers-plummeting-value-because-120726116.html) |
+| The Evoque was the sharpest faller by percentage over that period | [Yahoo Finance](https://finance.yahoo.com/news/range-rovers-plummeting-value-because-120726116.html) · [Car Dealer Magazine](https://cardealermagazine.co.uk/panic-over-insurance-causes-prices-of-used-jaguar-land-rover-models-to-tumble/294501) |
+
+> Dating requirement: every figure in this section describes a specific period in **2023**, and the post says so in the copy each time. These are historical figures about a past episode, not a description of current values. Do not restate them in the present tense, and do not let them migrate into other pages without their date.
+
+> Deliberate gap: we have no data showing whether values recovered, so the post explicitly declines to claim recovery. The theft, JLR investment and security-update figures reuse the **Range Rover theft and insurance** entry above.
+
+## UK car finance settlement
+
+**Page:** `/blog/selling-a-car-with-outstanding-finance`
+
+| Claim | Source |
+|---|---|
+| A statutory right to settle a regulated credit agreement early exists under the Consumer Credit Act 1974 | [legislation.gov.uk, CCA 1974 Part VII](https://www.legislation.gov.uk/ukpga/1974/39/part/VII/crossheading/early-payment-by-debtor) |
+| How to request an early settlement figure from a lender | [Citizens Advice](https://www.citizensadvice.org.uk/debt-and-money/borrowing-money/paying-off-a-credit-agreement-early/) |
+| Early settlement charges capped at 1% of the amount repaid early, 0.5% where under 12 months remain, and no charge where the early repayment is under £8,000 | [MoneyHelper](https://www.moneyhelper.org.uk/en/everyday-money/cut-your-car-finance-hire-purchase-and-other-finance-costs) |
+| Voluntary termination: the right to end the agreement and return the car once half the total amount payable has been paid; nothing is refunded if more than half has been paid; it appears on the credit file | [Citizens Advice](https://www.citizensadvice.org.uk/debt-and-money/borrowing-money/paying-off-a-credit-agreement-early/) · [MoneyHelper](https://www.moneyhelper.org.uk/en/everyday-money/cut-your-car-finance-hire-purchase-and-other-finance-costs) |
+| On HP and PCP the finance company owns the vehicle until settlement, so it cannot be sold or transferred while the agreement is live | [MoneyHelper](https://www.moneyhelper.org.uk/en/everyday-money/cut-your-car-finance-hire-purchase-and-other-finance-costs) |
+
+> Sourcing standard applied here: this post makes procedural claims about a regulated process, so it is sourced to Citizens Advice, MoneyHelper and legislation.gov.uk rather than to dealer or car-buying blogs. Several dealer sites state a settlement figure is "valid for 10 days" as though it were a rule; we could not substantiate that as a universal position, so the post says figures are calculated to a stated expiry date and tells the reader to check it. Do not replace that with a fixed number.
+
+## Three ways to sell
+
+**Page:** `/blog/private-sale-vs-part-exchange-vs-car-buying-service`
+
+No external factual claims. The comparison describes the mechanics and trade-offs of each route qualitatively, names no competitor, and quotes no price, percentage or market figure. The statements about our own service (seven-day offer validity, no deductions on collection) are commitments recorded in the terms, not external facts.
+
 ---
 
 ## Claims deliberately NOT made
@@ -132,3 +166,5 @@ Kept here so nobody re-adds them believing they were an oversight.
 - No Defender residual value percentage — the page says it holds value unusually well, qualitatively, and stops there.
 - No claim about any export market other than Cyprus.
 - No value figure, price band or depreciation rate in any blog post.
+- No claim that Range Rover values have recovered since the 2023-24 episode.
+- No fixed validity period for a finance settlement figure.

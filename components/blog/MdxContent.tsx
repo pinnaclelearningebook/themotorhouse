@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import remarkGfm from "remark-gfm";
 import type { MDXComponents } from "mdx/types";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 
@@ -13,6 +14,40 @@ import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
  * - <AwaitingInfo> for a figure we do not have, visible in development
  *   and absent in production.
  */
+
+/**
+ * GFM tables only mark the header ROW as <th>. In a comparison table the
+ * first COLUMN is also a header, and without it screen readers cannot say
+ * which row a cell belongs to (axe: td-has-header). This promotes the
+ * first cell of every body row to <th scope="row">.
+ */
+interface HastNode {
+  type?: string;
+  tagName?: string;
+  properties?: Record<string, unknown>;
+  children?: HastNode[];
+}
+
+function rehypeRowHeaders() {
+  return (tree: HastNode) => {
+    const walk = (node: HastNode) => {
+      if (node.tagName === "tbody") {
+        for (const row of node.children ?? []) {
+          const first = (row.children ?? []).find(
+            (cell) => cell.type === "element",
+          );
+          if (first?.tagName === "td") {
+            first.tagName = "th";
+            first.properties = { ...first.properties, scope: "row" };
+          }
+        }
+      }
+      for (const child of node.children ?? []) walk(child);
+    };
+    walk(tree);
+  };
+}
+
 function Data({ children }: { children: React.ReactNode }) {
   return <span className="data-inline">{children}</span>;
 }
@@ -43,6 +78,31 @@ const components: MDXComponents = {
   ),
   strong: (props) => <strong {...props} className="font-medium" />,
   hr: () => <hr className="mt-12 border-line" />,
+  table: (props) => (
+    <div className="mt-8 overflow-x-auto">
+      <table {...props} className="w-full border-collapse text-sm" />
+    </div>
+  ),
+  th: ({ scope, ...props }) =>
+    scope === "row" ? (
+      <th
+        {...props}
+        scope="row"
+        className="border-b border-line px-3 py-3 text-left align-top font-normal"
+      />
+    ) : (
+      <th
+        {...props}
+        scope="col"
+        className="border-b border-ink px-3 py-3 text-left align-top font-medium"
+      />
+    ),
+  td: (props) => (
+    <td
+      {...props}
+      className="border-b border-line px-3 py-3 text-left align-top"
+    />
+  ),
   a: ({ href = "", children, ...rest }) => {
     const internal = href.startsWith("/");
     const className = "link-draw font-medium text-oxblood";
@@ -67,5 +127,16 @@ const components: MDXComponents = {
 };
 
 export function MdxContent({ source }: { source: string }) {
-  return <MDXRemote source={source} components={components} />;
+  return (
+    <MDXRemote
+      source={source}
+      components={components}
+      options={{
+        mdxOptions: {
+          remarkPlugins: [remarkGfm],
+          rehypePlugins: [rehypeRowHeaders],
+        },
+      }}
+    />
+  );
 }
