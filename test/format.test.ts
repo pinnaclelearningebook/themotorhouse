@@ -19,3 +19,26 @@ describe("vehicle text casing", () => {
     expect(titleCaseVehicle("Land Rover")).toBe("Land Rover");
   });
 });
+
+describe("titleCaseVehicle on derivatives", () => {
+  // Added after a logged comparable rendered "110 D300 X-DYNAMIC HSE" as
+  // "110 D300 X-Dynamic Hse". Trim acronyms live in derivative strings,
+  // which only reached the UI with the comparables logger.
+  it("keeps trim acronyms upper case", () => {
+    expect(titleCaseVehicle("110 D300 X-DYNAMIC HSE")).toBe(
+      "110 D300 X-Dynamic HSE",
+    );
+    expect(titleCaseVehicle("RANGE ROVER SPORT SVR")).toBe(
+      "Range Rover Sport SVR",
+    );
+    expect(titleCaseVehicle("DISCOVERY SPORT SE TD4")).toBe(
+      "Discovery Sport SE TD4",
+    );
+  });
+
+  it("still lower-cases ordinary words in a derivative", () => {
+    expect(titleCaseVehicle("AUTOBIOGRAPHY DYNAMIC")).toBe(
+      "Autobiography Dynamic",
+    );
+  });
+});

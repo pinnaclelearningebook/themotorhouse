@@ -14,6 +14,7 @@ describe("migrations", () => {
       "admin_users",
       "api_rate_limits",
       "audit_log",
+      "car_costs",
       "comparables",
       "conversations",
       "enrichments",

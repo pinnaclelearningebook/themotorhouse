@@ -130,11 +130,22 @@ describe("no offer path", () => {
   });
 
   it("writes to the offers table only from /admin", () => {
-    const offenders = FILES.filter(
-      ({ file, code }) =>
-        /from\(["']offers["']\)/.test(code) &&
-        !allowed(file, [/^app\/admin\//, /^app\/api\/admin\//]),
-    ).map(({ file }) => file);
+    // Writes, specifically. Reading an accepted offer is how the pipeline
+    // knows what a car cost, and banning the read would push that query
+    // into a page component for no safety gain. Creating or changing an
+    // offer outside /admin is the thing that must never happen.
+    const write = /\.\s*(insert|update|upsert|delete)\s*\(/;
+    const offenders = FILES.filter(({ file, code }) => {
+      if (allowed(file, [/^app\/admin\//, /^app\/api\/admin\//])) return false;
+      for (const match of code.matchAll(/from\(["']offers["']\)/g)) {
+        const after = code.slice(
+          match.index + match[0].length,
+          match.index + match[0].length + 200,
+        );
+        if (write.test(after)) return true;
+      }
+      return false;
+    }).map(({ file }) => file);
     expect(offenders).toEqual([]);
   });
 

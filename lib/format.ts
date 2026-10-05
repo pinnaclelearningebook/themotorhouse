@@ -6,6 +6,12 @@
  */
 const KEEP_UPPER = new Set([
   "BMW", "SUV", "AMG", "TDI", "GTI", "4X4", "GT",
+  // Trim and spec acronyms. These turn up in derivative strings far more
+  // than in make or model, so they only started mattering once
+  // comparables began recording derivatives ("110 D300 X-DYNAMIC HSE").
+  // Alphanumeric codes like D300 and P400 already survive capitalise().
+  "HSE", "SE", "SVR", "HST", "RS", "ST", "VXR", "XS", "XSE",
+  "TDV6", "SDV6", "SD4", "TD4", "TD5", "HDI", "CDI", "GTD",
   // Mercedes
   "GLE", "GLC", "GLA", "GLB", "GLS", "CLA", "CLS", "SLK",
   // Lexus

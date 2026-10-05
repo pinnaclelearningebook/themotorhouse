@@ -20,6 +20,9 @@ import { SITE } from "@/config/site";
  */
 const NAV = [
   { href: "/admin", label: "Inbox" },
+  { href: "/admin/pipeline", label: "Pipeline" },
+  { href: "/admin/follow-ups", label: "Follow-ups" },
+  { href: "/admin/comparables", label: "Comparables" },
   { href: "/admin/settings", label: "Settings" },
 ] as const;
 

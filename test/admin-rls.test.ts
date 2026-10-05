@@ -152,3 +152,53 @@ describe("admin access to leads", () => {
     await db.close();
   });
 });
+
+describe("admin access to car_costs", () => {
+  // Added with the actuals migration. A cost line names what we paid for
+  // a specific seller's car, so it is no less sensitive than the lead.
+  async function costsVisibleTo(
+    db: PGlite,
+  ): Promise<{ count: number | null; error: string | null }> {
+    await db.exec("set role authenticated");
+    try {
+      const { rows } = await db.query<{ count: number }>(
+        "select count(*)::int as count from car_costs",
+      );
+      return { count: rows[0].count, error: null };
+    } catch (error) {
+      return {
+        count: null,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      await db.exec("reset role");
+    }
+  }
+
+  it("lets an admin read cost lines", async () => {
+    const db = await dbActingAs("alex@example.com");
+    await db.exec(
+      "insert into admin_users (email) values ('alex@example.com');",
+    );
+    await db.exec(`
+      insert into car_costs (lead_id, kind, amount)
+      select id, 'recon', 450 from leads limit 1;
+    `);
+    const result = await costsVisibleTo(db);
+    expect(result.error).toBeNull();
+    expect(result.count).toBe(1);
+  });
+
+  it("shows cost lines to nobody off the list", async () => {
+    const db = await dbActingAs("stranger@example.com");
+    await db.exec(
+      "insert into admin_users (email) values ('alex@example.com');",
+    );
+    await db.exec(`
+      insert into car_costs (lead_id, kind, amount)
+      select id, 'recon', 450 from leads limit 1;
+    `);
+    const result = await costsVisibleTo(db);
+    expect(result.count).toBe(0);
+  });
+});

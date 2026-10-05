@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { DecisionPanel, type DecisionEnrichment } from "@/components/admin/DecisionPanel";
+import { MoneyPanel } from "@/components/admin/MoneyPanel";
+import { OfferPanel, type OfferRow } from "@/components/admin/OfferPanel";
+import { carPnl } from "@/lib/admin/pnl";
+import { todayIso, offerValidUntilIso } from "@/lib/admin/dates";
 import { provenanceUnavailableReason } from "@/lib/adapters/provenance";
 import { valuationUnavailableReason } from "@/lib/adapters/valuation";
 import { titleCaseVehicle } from "@/lib/format";
@@ -37,6 +41,9 @@ export default async function LeadPage({
 }) {
   const { id } = await params;
 
+  const today = todayIso();
+  const defaultValidUntil = offerValidUntilIso();
+
   const { data: lead } = await db()
     .from("leads")
     .select("*")
@@ -61,6 +68,29 @@ export default async function LeadPage({
     .select("blob_url, shot_type")
     .eq("lead_id", id);
 
+  // Actual money: the accepted offer is the purchase price, cost lines
+  // and sold_price are the rest. See lib/admin/pnl.ts.
+  const { data: offerRows } = await db()
+    .from("offers")
+    .select("id, amount, status, channel, made_by, made_at, valid_until, notes")
+    .eq("lead_id", id)
+    .order("made_at", { ascending: false });
+  const offers = (offerRows ?? []) as unknown as OfferRow[];
+  const acceptedOffer =
+    offers.find((offer) => offer.status === "accepted")?.amount ?? null;
+
+  const { data: costRows } = await db()
+    .from("car_costs")
+    .select("kind, amount")
+    .eq("lead_id", id)
+    .order("logged_at", { ascending: true });
+
+  const pnl = carPnl({
+    acceptedOffer,
+    soldPrice: (lead.sold_price as number) ?? null,
+    costLines: (costRows ?? []) as { kind: string; amount: number }[],
+  });
+
   const { data: enrichments } = await db()
     .from("enrichments")
     .select("*")
@@ -68,6 +98,8 @@ export default async function LeadPage({
     .order("version", { ascending: false })
     .limit(1);
   const enrichment = (enrichments?.[0] ?? null) as DecisionEnrichment | null;
+  // Only used to pre-select the channel dropdown; never an amount.
+  const enrichmentChannel = enrichment?.recommended_channel ?? null;
 
   const car = [
     vehicle?.make ? titleCaseVehicle(vehicle.make) : null,
@@ -243,6 +275,21 @@ export default async function LeadPage({
 
         <aside className="flex flex-col gap-6">
           <DecisionPanel enrichment={enrichment} />
+
+          <OfferPanel
+            leadId={id}
+            offers={offers}
+            recommendedChannel={enrichmentChannel}
+            defaultValidUntil={defaultValidUntil}
+          />
+
+          <MoneyPanel
+            leadId={id}
+            pnl={pnl}
+            soldOn={(lead.sold_on as string) ?? null}
+            nextContactDate={(lead.next_contact_date as string) ?? null}
+            today={today}
+          />
 
           <section className="rounded border border-line p-6">
             <h2 className="font-display text-2xl">Paid checks</h2>
