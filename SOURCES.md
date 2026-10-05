@@ -194,6 +194,28 @@ No new external claims. Every factual statement reuses an entry already logged a
 
 > Deliberate gap, and the point of the post: the three models are **not ranked** by residual value. An `<AwaitingInfo>` slot marks where comparative data would go. Published residuals vary by dataset, trim, period and hold length, so any single ranking would be an artefact of the source chosen. Do not add a ranking without a named dataset and period.
 
+## Telling DVLA you have sold a vehicle
+
+**Page:** `/blog/what-documents-you-need-to-sell-your-car`
+
+| Claim | Source |
+|---|---|
+| The keeper change can be reported online, with immediate confirmation | [GOV.UK, Tell DVLA you've sold a vehicle](https://www.gov.uk/sold-bought-vehicle) |
+| Once DVLA is told, vehicle tax is cancelled and a refund issued for full remaining months | [GOV.UK](https://www.gov.uk/sold-bought-vehicle) |
+
+> Deliberate gap, and an important one: the post prints **no V5C section number**. Sources disagree — some state section 4 for a motor trader, others section 9, and section 6 versus the V5C/2 slip for a private buyer — and GOV.UK does not publish the numbering on the page above. The numbering also differs across V5C versions. The post therefore tells readers to follow the printed labels on their own logbook. Do not add a section number without confirming it against the current V5C itself.
+
+## Posts with no new external claims
+
+These posts make no factual claims beyond entries already logged above.
+
+| Page | Notes |
+|---|---|
+| `/blog/why-uk-cars-are-exported` | Cyprus claims reuse **Cyprus export market**. The Range Rover value episode reuses **Range Rover value fall, 2023-24 episode**, with its dating requirement. |
+| `/blog/how-car-buying-services-calculate-an-offer` | Describes category mechanics and our own process. No external figures, no competitor named. |
+| `/blog/getting-your-car-ready-to-sell` | Advice only. No figures, no claim about what any preparation returns in money. |
+| `/blog/selling-a-defender` | The D300 correction reuses **D300 straight-six is not the affected engine**. Defender value strength is stated qualitatively, with no percentage, matching the model page. |
+
 ---
 
 ## Claims deliberately NOT made
@@ -214,3 +236,6 @@ Kept here so nobody re-adds them believing they were an oversight.
 - No value impact figure for Category S or N markers.
 - No residual-value ranking of the Evoque, Velar and Discovery Sport.
 - No Pivi Pro changeover date for the Range Rover Sport L494.
+- No V5C section number anywhere on the site.
+- No Defender residual-value percentage in the blog, matching the model page.
+- No figure for what any pre-sale preparation returns.
