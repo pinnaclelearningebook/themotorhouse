@@ -6,16 +6,27 @@ import type { StepOneData } from "@/lib/validation";
  * Transactional email via Resend. The instant seller auto-reply is a P0
  * feature — it does more for conversion than the visual design.
  *
- * Without RESEND_API_KEY, EMAIL_FROM and OPERATOR_ALERT_EMAIL, both
+ * Without RESEND_API_KEY, EMAIL_FROM and OPERATOR_EMAILS, both
  * emails are skipped with a loud server log, and /valuation shows a
  * dev banner while the keys are missing.
  */
+
+/**
+ * Operator alert recipients. OPERATOR_EMAILS is comma-separated so both
+ * operators are alerted from day one (ARCHITECTURE.md section 8).
+ */
+export function operatorEmails(): string[] {
+  return (process.env.OPERATOR_EMAILS ?? "")
+    .split(",")
+    .map((address) => address.trim())
+    .filter(Boolean);
+}
 
 export function isEmailConfigured(): boolean {
   return Boolean(
     process.env.RESEND_API_KEY &&
       process.env.EMAIL_FROM &&
-      process.env.OPERATOR_ALERT_EMAIL,
+      operatorEmails().length > 0,
   );
 }
 
@@ -25,7 +36,7 @@ function logUnsent(which: string, payload: unknown) {
       "",
       "==============================================================",
       `  EMAIL NOT SENT — RESEND CONFIG MISSING (${which})`,
-      "  Set RESEND_API_KEY, EMAIL_FROM and OPERATOR_ALERT_EMAIL.",
+      "  Set RESEND_API_KEY, EMAIL_FROM and OPERATOR_EMAILS.",
       "  See PENDING-INFO.md. The seller heard nothing.",
       "==============================================================",
       JSON.stringify(payload, null, 2),
@@ -46,7 +57,7 @@ export async function sendOperatorAlert(
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
     from: process.env.EMAIL_FROM as string,
-    to: process.env.OPERATOR_ALERT_EMAIL as string,
+    to: operatorEmails(),
     subject: `New enquiry: ${submission.reg} — ${submission.mileage.toLocaleString("en-GB")} miles`,
     text: [
       `New offer request via ${SITE.name}.`,

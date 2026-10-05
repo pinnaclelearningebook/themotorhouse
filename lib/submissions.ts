@@ -1,26 +1,39 @@
-import Airtable from "airtable";
+import { db, isDatabaseConfigured } from "@/lib/db";
 import type { StepOneData, StepTwoData } from "@/lib/validation";
 
 /**
- * The submissions store. Airtable to start, behind this interface so it
- * can be swapped for Postgres later without touching the form.
+ * The submissions store. Postgres via Supabase from Phase B; the Airtable
+ * implementation it replaced is kept unused in lib/adapters/airtable.ts.
  *
- * Without AIRTABLE_API_KEY and AIRTABLE_BASE_ID, falls back to a logging
- * store: the seller still gets a success, but NOTHING IS PERSISTED.
- * The fallback logs are deliberately loud and /valuation shows a dev
- * banner while the keys are missing.
+ * The interface is unchanged from Phase A so the existing form paths keep
+ * working while the form itself is restructured in a later session.
+ *
+ * Without Supabase credentials this falls back to a logging store: the
+ * seller still gets a success, but NOTHING IS PERSISTED. The logs are
+ * deliberately loud and /valuation shows a dev banner while keys are
+ * missing.
  */
 
-const TABLE_NAME = process.env.AIRTABLE_TABLE_NAME ?? "Submissions";
-
 export function isStoreConfigured(): boolean {
-  return Boolean(process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID);
+  return isDatabaseConfigured();
 }
 
-function airtableBase() {
-  return new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-    process.env.AIRTABLE_BASE_ID as string,
-  );
+/**
+ * The form and the database disagree about how to spell these, and the
+ * mismatch is silent if unmapped — Postgres would simply reject the
+ * insert at runtime. Exported so it can be tested directly.
+ */
+const TIMELINE_TO_DB = {
+  asap: "asap",
+  "this-month": "this_month",
+  "next-few-months": "few_months",
+  "just-researching": "researching",
+} as const;
+
+export function timelineToDb(
+  timeline: StepTwoData["sellTimeline"],
+): (typeof TIMELINE_TO_DB)[keyof typeof TIMELINE_TO_DB] {
+  return TIMELINE_TO_DB[timeline];
 }
 
 function logUnpersisted(action: string, payload: unknown) {
@@ -28,9 +41,9 @@ function logUnpersisted(action: string, payload: unknown) {
     [
       "",
       "==============================================================",
-      "  SUBMISSION NOT PERSISTED — AIRTABLE KEYS MISSING",
+      "  SUBMISSION NOT PERSISTED — SUPABASE NOT CONFIGURED",
       `  ${action} was accepted from a seller and stored NOWHERE.`,
-      "  Set AIRTABLE_API_KEY and AIRTABLE_BASE_ID. See PENDING-INFO.md.",
+      "  Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. See PENDING-INFO.md.",
       "==============================================================",
       JSON.stringify(payload, null, 2),
       "==============================================================",
@@ -41,26 +54,32 @@ function logUnpersisted(action: string, payload: unknown) {
 
 export async function createSubmission(
   data: StepOneData,
+  vehicleId?: string | null,
 ): Promise<{ id: string }> {
-  const createdAt = new Date().toISOString();
-
   if (!isStoreConfigured()) {
     const id = `unpersisted-${crypto.randomUUID()}`;
-    logUnpersisted("Step 1", { id, createdAt, ...data });
+    logUnpersisted("Step 1", { id, vehicleId, ...data });
     return { id };
   }
 
-  const record = await airtableBase()(TABLE_NAME).create({
-    createdAt,
-    reg: data.reg,
-    mileage: data.mileage,
-    postcode: data.postcode,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    marketingConsent: data.marketingConsent,
-  });
-  return { id: record.getId() };
+  const { data: row, error } = await db()
+    .from("leads")
+    .insert({
+      reg: data.reg,
+      vehicle_id: vehicleId ?? null,
+      mileage_reported: data.mileage,
+      postcode: data.postcode,
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      marketing_consent: data.marketingConsent,
+      consent_at: data.marketingConsent ? new Date().toISOString() : null,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`createSubmission failed: ${error.message}`);
+  return { id: row.id as string };
 }
 
 export async function updateSubmission(
@@ -72,11 +91,20 @@ export async function updateSubmission(
     return;
   }
 
-  await airtableBase()(TABLE_NAME).update(id, {
-    financeOutstanding: data.financeOutstanding,
-    serviceHistory: data.serviceHistory,
-    keepers: data.keepers ?? undefined,
-    conditionNotes: data.conditionNotes ?? undefined,
-    sellTimeline: data.sellTimeline,
-  });
+  const { error } = await db()
+    .from("leads")
+    .update({
+      finance_outstanding: data.financeOutstanding,
+      service_history: data.serviceHistory,
+      keepers: data.keepers,
+      // The current step 2 asks a single free-text question about damage
+      // and warning lights. The schema splits that across condition,
+      // warning_lights and known_faults; it lands here until the form is
+      // restructured into four steps.
+      known_faults: data.conditionNotes,
+      timeline: timelineToDb(data.sellTimeline),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(`updateSubmission failed: ${error.message}`);
 }
