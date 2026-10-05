@@ -35,8 +35,8 @@ export function Footer() {
           <div>
             <p className="font-display text-2xl">{SITE.name}</p>
             <p className="mt-2 max-w-xs text-sm text-paper/60">
-              We buy premium cars across the UK for a firm offer that
-              doesn&apos;t change.
+              We buy any car, anywhere in mainland UK, for a firm offer
+              that doesn&apos;t change.
             </p>
           </div>
           <nav aria-label="Footer">
