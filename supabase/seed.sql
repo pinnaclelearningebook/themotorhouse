@@ -21,5 +21,8 @@
 
 insert into settings (key, value, updated_by) values
   ('margin_floor_export',   '3500'::jsonb, 'seed'),
-  ('margin_floor_domestic', '500'::jsonb,  'seed')
+  ('margin_floor_domestic', '500'::jsonb,  'seed'),
+  -- Not Alex's to decide: two hours is the promise the site already
+  -- makes on every page, so the inbox marks a breach against it.
+  ('sla_hours',             '2'::jsonb,    'seed')
 on conflict (key) do nothing;

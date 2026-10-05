@@ -11,6 +11,7 @@ describe("migrations", () => {
     const tables = rows.map((r) => r.table_name);
 
     expect(tables).toEqual([
+      "admin_users",
       "api_rate_limits",
       "audit_log",
       "comparables",
@@ -39,18 +40,27 @@ describe("migrations", () => {
     await db.close();
   });
 
-  it("ship no permissive policies, so RLS denies by default", async () => {
+  it("gate every policy on admin membership, never on 'true'", async () => {
     const db = await freshDb();
-    const { rows } = await db.query<{ count: number }>(
-      `select count(*)::int as count from pg_policies where schemaname = 'public'`,
+    const { rows } = await db.query<{ tablename: string; qual: string | null }>(
+      `select tablename, qual from pg_policies where schemaname = 'public'`,
     );
-    // Deny-all is intentional for Phase B. See the comment block in
-    // 20261005120100_rls.sql before adding any policy here.
-    expect(rows[0].count).toBe(0);
+    // Phase B shipped deny-all with no policies; Phase C added the admin
+    // policies. What must never appear is a policy that lets any
+    // authenticated session through, because Supabase will hand a session
+    // to any email that asks. See 20261005120100_rls.sql.
+    expect(rows.length).toBeGreaterThan(0);
+    const permissive = rows.filter(
+      (row) => (row.qual ?? "").trim().replace(/\s/g, "") === "true",
+    );
+    expect(permissive).toEqual([]);
+    for (const row of rows) {
+      expect(row.qual ?? "", row.tablename).toMatch(/is_admin\(\)/);
+    }
     await db.close();
   });
 
-  it("deny a non-bypassing role from reading leads", async () => {
+  it("deny anon entirely, and deny an authenticated non-admin", async () => {
     const db = await freshDb();
     await db.exec(`
       insert into vehicles (reg, make) values ('AB12CDE', 'LAND ROVER');
@@ -64,34 +74,44 @@ describe("migrations", () => {
     );
     expect(asService.rows[0].count).toBe(1);
 
-    // As authenticated the read is refused outright. RLS with no policy
-    // would already return zero rows; the revoke in the RLS migration
-    // goes further and removes the SELECT grant, so this errors instead.
-    // That is the stronger of the two behaviours and the one we want.
-    await db.exec("set role authenticated");
-    let denied: string | null = null;
+    // anon has no grant at all and is refused outright.
+    await db.exec("set role anon");
+    let anonDenied: string | null = null;
     try {
       await db.query("select count(*) from leads");
     } catch (error) {
-      denied = error instanceof Error ? error.message : String(error);
+      anonDenied = error instanceof Error ? error.message : String(error);
     }
-    expect(denied).toMatch(/permission denied/i);
+    expect(anonDenied).toMatch(/permission denied/i);
+    await db.exec("reset role");
+
+    // authenticated now has a grant, so it does not error — but with an
+    // empty admin_users the policy shows it nothing. The fuller matrix
+    // lives in test/admin-rls.test.ts.
+    await db.exec("set role authenticated");
+    const asAuthed = await db.query<{ count: number }>(
+      "select count(*)::int as count from leads",
+    );
+    expect(asAuthed.rows[0].count).toBe(0);
 
     await db.exec("reset role");
     await db.close();
   });
 
-  it("seed only the two documented margin floors", async () => {
+  it("seed only settings that are actually decided", async () => {
     const db = await freshDb();
     await seed(db);
     const { rows } = await db.query<{ key: string; value: number }>(
       "select key, value::text::int as value from settings order by key",
     );
     // Landed-cost constants are deliberately absent — PENDING-INFO.md,
-    // Phase C. Phase C must fail loudly rather than compute from guesses.
+    // Phase C. The engine must fail loudly rather than compute from
+    // guesses. sla_hours is here because two hours is not a decision
+    // anyone still owes: it is the promise the site already makes.
     expect(rows).toEqual([
       { key: "margin_floor_domestic", value: 500 },
       { key: "margin_floor_export", value: 3500 },
+      { key: "sla_hours", value: 2 },
     ]);
     await db.close();
   });

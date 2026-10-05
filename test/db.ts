@@ -27,6 +27,16 @@ export async function freshDb(): Promise<PGlite> {
     create role service_role nologin bypassrls;
   `);
 
+  // Supabase's auth schema, which the admin policies call through
+  // is_admin(). Defaults to no email; a test overrides auth.jwt() to
+  // act as a particular user.
+  await db.exec(`
+    create schema auth;
+    create or replace function auth.jwt()
+    returns jsonb language sql stable as $$ select '{}'::jsonb $$;
+    grant usage on schema auth to anon, authenticated, service_role;
+  `);
+
   for (const file of readdirSync(MIGRATIONS).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(join(MIGRATIONS, file), "utf8"));
   }
