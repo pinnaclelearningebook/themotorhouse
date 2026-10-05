@@ -46,6 +46,29 @@ function logUnsent(which: string, payload: unknown) {
   );
 }
 
+
+/**
+ * The Resend SDK resolves with { data, error } rather than throwing when
+ * the API rejects a send, so awaiting it without inspecting the result
+ * swallows every failure silently — a bad key or an unverified domain
+ * would look identical to a delivered email. Throw instead, so the
+ * caller's Promise.allSettled handler logs it.
+ */
+async function send(
+  resend: Resend,
+  payload: Parameters<Resend["emails"]["send"]>[0],
+  label: string,
+): Promise<string> {
+  const { data, error } = await resend.emails.send(payload);
+  if (error) {
+    throw new Error(`${label} rejected by Resend: ${error.message}`);
+  }
+  if (!data?.id) {
+    throw new Error(`${label} returned no id from Resend`);
+  }
+  return data.id;
+}
+
 export async function sendOperatorAlert(
   submission: StepOneData & { id: string },
 ): Promise<void> {
@@ -55,7 +78,7 @@ export async function sendOperatorAlert(
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
+  await send(resend, {
     from: process.env.EMAIL_FROM as string,
     to: operatorEmails(),
     subject: `New enquiry: ${submission.reg} — ${submission.mileage.toLocaleString("en-GB")} miles`,
@@ -72,7 +95,7 @@ export async function sendOperatorAlert(
       `Record: ${submission.id}`,
       `The seller has been told to expect contact within ${PROMISES.offerWithinHours} hours.`,
     ].join("\n"),
-  });
+  }, "operator alert");
 }
 
 export async function sendSellerConfirmation(
@@ -84,7 +107,7 @@ export async function sendSellerConfirmation(
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
+  await send(resend, {
     from: process.env.EMAIL_FROM as string,
     to: submission.email,
     subject: `Offer request received — ${submission.reg}`,
@@ -97,5 +120,5 @@ export async function sendSellerConfirmation(
       "",
       SITE.name,
     ].join("\n"),
-  });
+  }, "seller confirmation");
 }
