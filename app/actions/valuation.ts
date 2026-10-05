@@ -15,6 +15,7 @@ import {
   startLead,
 } from "@/lib/submissions";
 import { sendOperatorAlert, sendSellerConfirmation } from "@/lib/email";
+import { runEnrichment } from "@/lib/decision/enrich";
 
 /**
  * The four-step form persists incrementally.
@@ -142,6 +143,16 @@ export async function completeLeadAction(
     if (result.status === "rejected") {
       console.error("valuation email failed", result.reason);
     }
+  }
+
+  // Enrich inline so the scored alert arrives with the submission rather
+  // than on the next cron tick. Cron is the catch-up, not the mechanism
+  // (ARCHITECTURE.md section 9). A failure here leaves pending_enrichment
+  // true, so the sweep picks it up — the seller is unaffected either way.
+  try {
+    await runEnrichment(id);
+  } catch (error) {
+    console.error("inline enrichment failed; cron will retry", error);
   }
 
   return { status: "ok" };

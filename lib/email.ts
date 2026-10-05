@@ -169,3 +169,63 @@ export async function sendSellerConfirmation(
     ].join("\n"),
   }, "seller confirmation");
 }
+
+
+export interface EnrichmentAlert {
+  leadId: string;
+  reg: string;
+  phone: string | null;
+  name: string | null;
+  score: number;
+  confidence: string;
+  recommendedChannel: string | null;
+  reasoning: string[];
+  flags: string[];
+  link: string;
+}
+
+/**
+ * The scored alert, sent to operators once enrichment completes.
+ *
+ * Internal only. None of this — score, channel, eligibility — is ever
+ * shown to a seller or included in a seller email (CLAUDE.md section 11).
+ */
+export async function sendEnrichmentAlert(
+  alert: EnrichmentAlert,
+): Promise<void> {
+  if (!isEmailConfigured()) {
+    logUnsent("enrichment alert", alert);
+    return;
+  }
+
+  const lines = [
+    `${alert.reg}${alert.name ? ` — ${alert.name}` : ""}`,
+    alert.phone ? `Phone: ${alert.phone}` : null,
+    "",
+    `Priority score: ${alert.score} of 100 (triage order, not money)`,
+    `Confidence: ${alert.confidence}`,
+    `Recommended channel: ${alert.recommendedChannel ?? "none — see below"}`,
+    "",
+    "Why:",
+    ...alert.reasoning.map((line) => `  - ${line}`),
+    alert.flags.length ? "" : null,
+    alert.flags.length ? "Needs attention:" : null,
+    ...alert.flags.map((line) => `  - ${line}`),
+    "",
+    `Open the lead: ${alert.link}`,
+    "",
+    "No offer has been made or suggested. A person decides the number.",
+  ].filter((line): line is string => line !== null);
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  await send(
+    resend,
+    {
+      from: process.env.EMAIL_FROM as string,
+      to: operatorEmails(),
+      subject: `Scored: ${alert.reg} — ${alert.score}/100`,
+      text: lines.join("\n"),
+    },
+    "enrichment alert",
+  );
+}
