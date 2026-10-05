@@ -204,6 +204,8 @@ Transparent rules. Every input shown in the dashboard with its source. A person 
 
 **Output:** `recommended_channel` (export / domestic / pass) · `confidence` · `max_bid` · `projected_margin` · `reasoning[]` as plain bullets · `flags[]`. Then *Make offer* (a person types the number) or *Pass*.
 
+**All of this is internal.** The seller never sees `export_eligible`, a channel, a score, or a margin, and is never told which route their car took. The site is a car buying service; the channel is how we make it work, not something the seller is asked to care about.
+
 Every constant — shipping, insurance, clearance, registration, Cyprus VAT handling, margin floors, CRA contingency, target models, days-to-sell table — lives in the settings table, editable from `/admin/settings` without a deploy.
 
 ## 12. The dashboard (Phase C)

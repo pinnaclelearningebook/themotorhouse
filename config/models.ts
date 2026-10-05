@@ -35,7 +35,11 @@ export interface ModelEntry {
     body: string[];
     sources: ModelSource[];
   };
-  /** Model-specific framing of the export story. Cyprus only — never "the EU". */
+  /**
+   * Model-specific framing of the export story. Never names the
+   * destination — that belongs on /export only. Frame it as export
+   * demand, and never as a condition of selling to us.
+   */
   exportNote: string[];
   lookFor: string[];
   faqs: ModelFaq[];
@@ -52,7 +56,7 @@ export const MODELS: ModelEntry[] = [
     metaDescription:
       "We buy Range Rover and Range Rover Sport across the UK. A firm offer within two hours, free collection, payment before the transporter leaves.",
     opener: [
-      "The full-size Range Rover is the car our Cyprus buyers ask for by name, and it is the one where the gap between a general buyer's offer and ours tends to be widest. This page covers the Range Rover Sport as well — the two trade closely enough that the same reasoning applies to both.",
+      "The full-size Range Rover is the car the exporters we work with ask for by name, and it is the one where the gap between a general buyer's offer and ours tends to be widest. This page covers the Range Rover Sport as well — the two trade closely enough that the same reasoning applies to both.",
       "What actually moves the number: which generation you have, the engine, and the specification. An Autobiography with the right options is a different car commercially from a base HSE of the same age and mileage. Beyond that, and unusually for any car, a Range Rover's value in the UK has been shaped by something that has nothing to do with the car itself.",
     ],
     specialist: {
@@ -60,7 +64,7 @@ export const MODELS: ModelEntry[] = [
       body: [
         "Between roughly [[2018]] and [[2022]], Range Rover values in the UK were hit by a problem that was never about the cars being bad. Keyless relay theft made them a target, and insurers responded by pricing the risk brutally — some owners were quoted as much as [[£20,000]], and others could not get cover at any price. DVLA figures put more than [[5,500]] Range Rovers stolen across the UK in [[2023]].",
         "Jaguar Land Rover put around [[£15m]] into retrofitting security to older cars, updating more than [[65,000]] vehicles, and says thefts of [[2018]]–[[2022]] Range Rover and Range Rover Sport models fell by over [[40%]] as a result. It also launched its own insurance product for owners who had been priced out.",
-        "Here is why that matters to you. The theft and insurance problem is a UK problem. It does not travel with the car. A Cyprus buyer is not pricing in a London insurance quote, which means the discount the UK market applies to your car is a discount we do not have to apply. It is also why the first thing we ask about a car from those years is whether the security update has been done — a question a general buyer will not think to ask.",
+        "Here is why that matters to you. The theft and insurance problem is a UK problem. It does not travel with the car. An export buyer is not pricing in a London insurance quote, which means the discount the UK market applies to your car is a discount we do not have to apply. It is also why the first thing we ask about a car from those years is whether the security update has been done — a question a general buyer will not think to ask.",
       ],
       sources: [
         {
@@ -74,7 +78,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "If your Range Rover is under five years old, it is a strong candidate for our Cyprus route, and that is usually where our best numbers come from. Older cars we still buy — they just get priced against the UK trade rather than an export buyer.",
+      "We buy every Range Rover, whatever its age. On the younger ones there is export demand as well as UK demand, and that is usually where our strongest numbers come from. On an older car the number is priced against the UK trade — still a firm offer, still collected free, just arrived at a different way.",
     ],
     lookFor: [
       "Whether the security update has been applied, on cars from 2018 to 2022",
@@ -87,7 +91,7 @@ export const MODELS: ModelEntry[] = [
       {
         question: "Does the theft situation mean you will offer me less?",
         answer:
-          "No, and for most cars it is the reason we can offer more. UK buyers discount these cars because of insurance costs and theft risk. Our Cyprus buyers do not, because that problem does not exist there. We price against the market the car is actually going to.",
+          "No, and for most cars it is the reason we can offer more. UK buyers discount these cars because of insurance costs and theft risk. Export buyers do not, because that problem does not travel with the car. We price against the market the car is actually going to.",
       },
       {
         question: "Do you buy the Range Rover Sport as well?",
@@ -142,7 +146,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "Evoques under five years old go into our Cyprus route, where compact premium SUVs in the right specification are in steady demand. That is generally where our strongest Evoque numbers come from.",
+      "We buy Evoques of any age. On the younger ones there is export demand for well-specified cars on top of the UK market, and that is generally where our strongest Evoque numbers come from.",
     ],
     lookFor: [
       "Oil change history, and whether it was serviced more often than the minimum",
@@ -206,7 +210,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "The Velar suits our Cyprus route well when it is under five years old and specified the way that market likes. Higher-specification cars in restrained colours travel best.",
+      "We buy any Velar. A younger, well-specified one also attracts export demand on top of the UK market, and higher-specification cars in restrained colours do best there.",
     ],
     lookFor: [
       "Which infotainment system the car has",
@@ -270,7 +274,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "Under five years old, the Discovery Sport fits our Cyprus route, where practical seven-seat options in this size are thin on the ground. A 5+2 car under five years old is about the strongest position this model can be in.",
+      "We buy every Discovery Sport. On a younger one there is export demand as well, because practical seven-seat options this size are thin on the ground — a young 5+2 is about the strongest position this model can be in.",
     ],
     lookFor: [
       "Whether the car has the third row of seats",
@@ -338,7 +342,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "Defenders under five years old are among the most straightforward cars we place on our Cyprus route. Strong home-market values and strong export demand at the same time is a rare combination, and it is the reason our Defender offers tend to surprise people.",
+      "We buy any Defender. A younger one is among the most straightforward cars we place with exporters, and strong home-market values alongside strong export demand is a rare combination — it is the reason our Defender offers tend to surprise people.",
     ],
     lookFor: [
       "Body style — 90, 110 or 130 — and the exact trim",
@@ -406,7 +410,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "Lexus models under five years old fit our Cyprus route, where the brand's reliability reputation does a lot of the selling. The RX and NX in particular travel well.",
+      "We buy any Lexus. On the younger ones there is export demand too, where the brand's reliability reputation does a lot of the selling, and the RX and NX in particular travel well.",
     ],
     lookFor: [
       "Whether Hybrid Health Checks have been kept up, and when the last one was",
@@ -470,7 +474,7 @@ export const MODELS: ModelEntry[] = [
       ],
     },
     exportNote: [
-      "GLEs under five years old go into our Cyprus route. Large, well-specified and right-hand drive is a good combination there, and it is usually where the strongest GLE numbers come from.",
+      "We buy any GLE. On a younger one there is export demand as well as UK demand — large, well-specified and right-hand drive is a good combination for an exporter — and that is usually where the strongest GLE numbers come from.",
     ],
     lookFor: [
       "Which generation — the 2019 change matters more than a facelift usually would",

@@ -57,9 +57,19 @@ export function Footer() {
               )}
             </ul>
           </nav>
-          <nav aria-label="Cars we buy">
+          <nav aria-label="What we buy">
             <p className="mb-2 text-caption tracking-wide text-paper/50 uppercase">
-              Cars we buy
+              What we buy
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/valuation" className="link-draw font-medium">
+                  Any car, any age
+                </Link>
+              </li>
+            </ul>
+            <p className="mt-4 mb-2 text-caption tracking-wide text-paper/50 uppercase">
+              Where we pay more
             </p>
             <ul className="space-y-2 text-sm">
               {MODELS.map((model) => (

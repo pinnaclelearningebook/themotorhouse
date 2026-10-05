@@ -3,7 +3,8 @@ import { Section } from "@/components/ui/Section";
 
 /**
  * The reason why — the argument that makes a strong offer believable.
- * Cyprus only. Never widen this claim without evidence (SOURCES.md).
+ * Names no destination: the market is identified only on /export.
+ * Never widen the underlying claim without evidence (SOURCES.md).
  */
 export function WhyOffersDiffer() {
   return (
@@ -13,17 +14,17 @@ export function WhyOffersDiffer() {
           Why our offers on certain cars are stronger
         </h2>
         <p className="mt-6 text-paper/80">
-          We supply buyers in Cyprus, where traffic drives on the left and
-          right-hand-drive cars are the local standard. The island imports
-          most of what it drives, and the UK is one of the main sources —
-          our cars are already the right way round.
+          We buy any car. On a minority of them — young, well-specified
+          models — we also sell to exporters we work with, supplying a
+          market where right-hand drive is the local standard rather than
+          an oddity.
         </p>
         <p className="mt-4 text-paper/80">
-          That demand is why our offer on a young Range Rover, Defender,
-          Lexus or Mercedes GLE can beat a general buyer&apos;s. It only
-          applies to cars under five years old, which is why we are specific
-          about what we target. We still buy everything else, at a fair
-          number priced against the UK trade.
+          That export demand is why our offer on a young Range Rover,
+          Defender, Lexus or Mercedes GLE can beat a general buyer&apos;s.
+          It is the exception rather than the rule: most of what we buy is
+          bought, prepared and sold here, at a fair number priced against
+          the UK trade.
         </p>
         <p className="mt-6">
           <Link href="/export" className="link-draw font-medium text-paper">

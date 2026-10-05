@@ -4,6 +4,7 @@ import { Section } from "@/components/ui/Section";
 import { PlateForm } from "@/components/ui/PlateForm";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { MODELS } from "@/config/models";
+import { EXPORT_MARKET } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Why we pay more for some cars",
@@ -38,7 +39,7 @@ export default function ExportPage() {
       <Section ground="paper" labelledBy="cyprus-heading">
         <div className="max-w-3xl">
           <h2 id="cyprus-heading" className="font-display text-display-3">
-            We supply buyers in Cyprus
+            We supply buyers in {EXPORT_MARKET}
           </h2>
           <p className="mt-6 max-w-prose">
             Cyprus drives on the left. Right-hand-drive cars are not a
@@ -124,11 +125,18 @@ export default function ExportPage() {
       <Section ground="paper" labelledBy="models-heading">
         <div className="max-w-3xl">
           <h2 id="models-heading" className="font-display text-display-3">
-            The cars this applies to
+            Where this makes the biggest difference
           </h2>
+          <p className="mt-4 max-w-prose">
+            To be clear about what this page is: we buy any car, of any age
+            and in any condition, and most of what we buy has nothing to do
+            with export. This page explains why the offer on{" "}
+            <em>some</em> cars is stronger. It is not a list of what we
+            accept.
+          </p>
           <p className="mt-4 max-w-prose text-structure">
-            These are the models our Cyprus buyers ask for. Under five years
-            old, in good specification, this is where our offers are
+            These are the models the exporters we work with ask for. Younger
+            examples in good specification are where our offers are
             strongest.
           </p>
         </div>

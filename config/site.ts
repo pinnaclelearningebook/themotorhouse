@@ -34,7 +34,15 @@ export function absoluteUrl(path: string): string {
   return `${siteUrl()}${path === "/" ? "" : path}`;
 }
 
-/** The only export market we currently supply. Never widen this without evidence. */
+/**
+ * The only export market we currently supply. Never widen this without
+ * evidence (SOURCES.md).
+ *
+ * Named on /export and in the FAQ, and nowhere else. Everywhere else the
+ * story is told as "export demand" or "the exporters we work with" —
+ * the site is a general car buying service first, and export is why
+ * some offers are strong rather than what the business is about.
+ */
 export const EXPORT_MARKET = "Cyprus" as const;
 
 export const CONTACT = {

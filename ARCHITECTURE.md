@@ -186,6 +186,8 @@ Triggered on `lead.created` and `lead.updated` (debounced 30s). Inngest function
 
 Paid calls (`provenance.run`, `valuation.run`) are separate Inngest functions triggered only by a button in `/admin`, logged with cost and actor. There is no code path that runs them automatically.
 
+**Everything the decision engine produces is internal.** `export_eligible`, `recommended_channel`, `channel_decided`, `score`, `confidence`, `max_bid`, `projected_margin` and `reasoning` are for `/admin` only. None of them is ever rendered to a seller, included in an email to a seller, or returned by any route the browser can reach. A seller is told a number, and that we collect and pay. Which channel their car went to is not something they are shown or told.
+
 `lib/decision/score.ts` is a pure function `(lead, vehicle, mot, enrichmentInputs, settings) → Enrichment`. It has tests covering: export-eligible target model; too old at landing; target model with provenance flag; domestic high-margin; domestic below floor; Cat N; missing MOT data. Reasoning strings are human sentences, never codes.
 
 ## 6. Virtual employee — agent/

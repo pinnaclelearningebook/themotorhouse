@@ -37,7 +37,14 @@ export interface Submission {
   indicativeOffer: number | null;
   firmOffer: number | null;
   offerSentAt: string | null;
-  /** Derived: under 5 years old + target model. */
+  /**
+   * Derived: under 5 years old at landing + target model.
+   *
+   * INTERNAL ONLY. Never rendered to a seller, never in an email to a
+   * seller, never in an API response the browser can read. A seller is
+   * told a number and that we collect and pay; which channel their car
+   * went to is our business, not theirs.
+   */
   exportEligible: boolean | null;
   outcome: Outcome | null;
   /** The commercially important field — when to follow up. */

@@ -14,7 +14,7 @@ import { SITE } from "@/config/site";
  * phone the header's one job is keeping the form a tap away.
  *
  * At Milestone 3 the nav carries the commercial routes: the seven model
- * pages behind a "Cars we buy" disclosure, plus /export. How it works,
+ * pages behind a "What we buy" disclosure, plus /export. How it works,
  * About and FAQ moved to footer-only, since navigation should serve the
  * seller's decision rather than our sitemap.
  *
@@ -57,10 +57,27 @@ function ModelsMenu() {
         onClick={() => setOpen((value) => !value)}
         className="link-draw text-sm"
       >
-        Cars we buy
+        What we buy
       </button>
       {open && (
-        <ul className="absolute top-full left-0 z-50 mt-3 w-60 rounded border border-line bg-paper py-2">
+        <ul className="absolute top-full left-0 z-50 mt-3 w-64 rounded border border-line bg-paper py-2">
+          <li>
+            <Link
+              href="/valuation"
+              onClick={() => setOpen(false)}
+              className="block border-b border-line px-4 py-3 transition-colors duration-200 hover:bg-paper-warm"
+            >
+              <span className="block text-sm font-medium">Any car, any age</span>
+              <span className="mt-0.5 block text-caption text-structure">
+                Most of what we buy is not on this list
+              </span>
+            </Link>
+          </li>
+          <li className="px-4 pt-3 pb-1">
+            <span className="text-caption tracking-wide text-structure uppercase">
+              Where we pay more
+            </span>
+          </li>
           {MODELS.map((model) => (
             <li key={model.slug}>
               <Link
@@ -89,7 +106,7 @@ function HeaderBar({ interactive }: { interactive: boolean }) {
           {interactive ? (
             <ModelsMenu />
           ) : (
-            <span className="text-sm">Cars we buy</span>
+            <span className="text-sm">What we buy</span>
           )}
           <Link href="/export" className="link-draw text-sm">
             Why we pay more

@@ -5,7 +5,6 @@ import { Paragraphs, renderCopy } from "@/components/models/Prose";
 import { FaqJsonLd } from "@/components/seo/FaqJsonLd";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getModel, type ModelEntry } from "@/config/models";
-import { EXPORT_MARKET } from "@/config/site";
 
 /**
  * The single model page template. All copy comes from the entry in
@@ -75,14 +74,14 @@ export function ModelPage({ model }: { model: ModelEntry }) {
       <Section ground="ink" labelledBy="export-heading">
         <div className="max-w-3xl">
           <h2 id="export-heading" className="font-display text-display-3">
-            Under five years old? That is where our number gets stronger
+            Where the number gets stronger
           </h2>
           <div className="mt-6 flex flex-col gap-4 text-paper/80">
             <Paragraphs copy={model.exportNote} />
           </div>
           <p className="mt-6">
             <Link href="/export" className="link-draw font-medium text-paper">
-              Why {EXPORT_MARKET} changes what we can pay
+              Why export demand changes what we can pay
             </Link>
           </p>
         </div>

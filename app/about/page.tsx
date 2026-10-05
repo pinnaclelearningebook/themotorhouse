@@ -47,10 +47,11 @@ export default function AboutPage() {
           <p className="mt-6 text-paper/80">
             We buy anything, but we actively look for young premium SUVs —
             Range Rover, Evoque, Velar, Discovery Sport, Defender, Lexus,
-            Mercedes GLE. We supply buyers in Cyprus, where traffic drives
-            on the left and right-hand-drive cars are the local standard,
-            and where a good one is worth more than a UK retail buyer will
-            pay. That demand flows straight into what we can offer you.
+            Mercedes GLE. On those, we also sell to exporters we work
+            with, into a market where right-hand drive is the local
+            standard and a good one is worth more than a UK retail buyer
+            will pay. That demand flows straight into what we can offer
+            you.
           </p>
         </div>
       </Section>
