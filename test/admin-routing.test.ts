@@ -71,6 +71,18 @@ describe("admin route structure", () => {
     expect(gateAt).toBeLessThan(sendAt);
   });
 
+  it("checks the allow-list before verifying a code too", () => {
+    // The code path is a second way in, so it needs the same gate. An
+    // address that could never have been sent a code has no business
+    // being verified either.
+    const action = read("app/admin/login/actions.ts");
+    const gateAt = action.search(/!isAllowlisted\(address\)\)\s*\{/);
+    const verifyAt = action.search(/supabase\.auth\.verifyOtp\(/);
+    expect(gateAt, "no allow-list guard in verifyCode").toBeGreaterThan(-1);
+    expect(verifyAt).toBeGreaterThan(-1);
+    expect(gateAt).toBeLessThan(verifyAt);
+  });
+
   it("keeps Supabase keys out of the browser bundle", () => {
     // One set of env names. A NEXT_PUBLIC_ pair drifted out of sync once
     // already: the names the login form read existed nowhere at all.
