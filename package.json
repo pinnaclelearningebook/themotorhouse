@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
+    "@vercel/blob": "^2.8.0",
     "airtable": "^0.12.2",
     "gray-matter": "^4.0.3",
     "next": "16.3.3",
@@ -33,6 +34,7 @@
     "eslint-config-next": "16.3.3",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vercel": "^62.2.0",
     "vitest": "^5.0.3"
   }
 }

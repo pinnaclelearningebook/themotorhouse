@@ -1,5 +1,6 @@
 import type { MotTest, VehicleIdentity } from "@/lib/types";
 import { formatReg } from "@/lib/reg";
+import { titleCaseVehicle as titleCase } from "@/lib/format";
 
 /**
  * "Is this your car?" — the recognition moment (CLAUDE.md section 4,
@@ -19,12 +20,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <dd className="data-inline text-right text-sm">{value}</dd>
     </div>
   );
-}
-
-function titleCase(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/\b[a-z]/g, (character) => character.toUpperCase());
 }
 
 export function VehicleCard({
