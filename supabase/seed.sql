@@ -24,5 +24,19 @@ insert into settings (key, value, updated_by) values
   ('margin_floor_domestic', '500'::jsonb,  'seed'),
   -- Not Alex's to decide: two hours is the promise the site already
   -- makes on every page, so the inbox marks a breach against it.
-  ('sla_hours',             '2'::jsonb,    'seed')
+  ('sla_hours',             '2'::jsonb,    'seed'),
+
+  -- The virtual employee (Phase D).
+  --
+  -- agent_enabled is false deliberately. She stays off in every
+  -- environment until someone turns her on knowingly, because the failure
+  -- mode of shipping her early is a seller being told something we cannot
+  -- stand behind — and that is the one thing this brand is positioned
+  -- against. Flipping it is a settings change, not a deploy.
+  ('agent_enabled',         'false'::jsonb, 'seed'),
+  ('agent_model',           '"claude-sonnet-5-5"'::jsonb, 'seed'),
+  -- Cost ceilings. An endpoint reachable by anyone who loads /valuation is
+  -- a standing bill, so the limits ship with it rather than after it.
+  ('agent_max_turns',       '30'::jsonb,   'seed'),
+  ('agent_max_output_tokens', '400'::jsonb, 'seed')
 on conflict (key) do nothing;

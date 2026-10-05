@@ -12,6 +12,7 @@ describe("migrations", () => {
 
     expect(tables).toEqual([
       "admin_users",
+      "agent_blocks",
       "api_rate_limits",
       "audit_log",
       "car_costs",
@@ -102,18 +103,46 @@ describe("migrations", () => {
   it("seed only settings that are actually decided", async () => {
     const db = await freshDb();
     await seed(db);
-    const { rows } = await db.query<{ key: string; value: number }>(
-      "select key, value::text::int as value from settings order by key",
+    const { rows } = await db.query<{ key: string; value: string }>(
+      "select key, value::text as value from settings order by key",
     );
     // Landed-cost constants are deliberately absent — PENDING-INFO.md,
     // Phase C. The engine must fail loudly rather than compute from
     // guesses. sla_hours is here because two hours is not a decision
     // anyone still owes: it is the promise the site already makes.
+    //
+    // The agent_* rows are switches and ceilings rather than money, so
+    // seeding them invents nothing. agent_enabled is false: Maya stays
+    // off everywhere until someone turns her on knowingly.
     expect(rows).toEqual([
-      { key: "margin_floor_domestic", value: 500 },
-      { key: "margin_floor_export", value: 3500 },
-      { key: "sla_hours", value: 2 },
+      { key: "agent_enabled", value: "false" },
+      { key: "agent_max_output_tokens", value: "400" },
+      { key: "agent_max_turns", value: "30" },
+      { key: "agent_model", value: '"claude-sonnet-5-5"' },
+      { key: "margin_floor_domestic", value: "500" },
+      { key: "margin_floor_export", value: "3500" },
+      { key: "sla_hours", value: "2" },
     ]);
+
+    // The rule that matters most here, stated as its own assertion rather
+    // than left implicit in the list above.
+    const seededKeys = rows.map((r) => r.key);
+    for (const guessed of [
+      "shipping_cost",
+      "marine_insurance",
+      "cyprus_clearance",
+      "cyprus_registration",
+      "recon_default",
+      "cra_contingency",
+    ]) {
+      expect(seededKeys, `${guessed} must not be seeded`).not.toContain(guessed);
+    }
+
+    // Maya must be off in the seed, whatever else changes around her.
+    expect(
+      rows.find((r) => r.key === "agent_enabled")?.value,
+      "agent_enabled must seed false",
+    ).toBe("false");
     await db.close();
   });
 
