@@ -40,6 +40,8 @@ Behind the site are two channels the seller never needs to understand:
 
 Conventions: `app/` routes · `components/ui|sections|forms|admin|agent/` · `lib/` logic · `lib/adapters/` third-party integrations · `agent/` the virtual employee's prompt and tools · `content/` MDX · `config/` typed data. No `any`. No unused exports. No commented-out code.
 
+**Environment variables are changed from the CLI, not the dashboard.** When a session needs a variable added or changed in Vercel, Claude does it with `vercel env add <name> <target>` across every environment that needs it, and verifies with `vercel env ls` (names and environments only, never values). For a secret Claude does not hold, ask for it in `.env.local` and read it from there rather than having it pasted into chat. Note that `--value <v> --yes` is required for the `preview` target, and that CLI versions before 62 ignore `--yes` there and hang on a branch prompt — use `npx vercel@latest` if the installed CLI is older.
+
 ## 3. Placeholder convention
 
 Never invent business facts. Phone, address, company number, review, statistic, "cars bought this month", a price — if it isn't known, it's a placeholder.

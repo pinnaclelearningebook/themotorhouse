@@ -70,6 +70,7 @@ Both government APIs are applied for separately and neither is instant. Apply be
 
 ### Decisions
 
+- [ ] **Revisit when the lead row is created** — decided 5 October 2026, to revisit once real abandonment data exists. CLAUDE.md section 9 requires both a confirmed registration *and* contact details before a lead exists, and the four-step form puts contact details in step 4. So steps 2 and 3 are held client-side and **a seller who abandons at step 3 leaves nothing behind** — not even a phone number. That is a real regression against the two-step form, accepted deliberately to keep the rule honest. If the drop-off between steps 2 and 4 turns out to be material, move one contact field (phone) to step 2 and create the lead there.
 - [ ] **Inngest or Vercel cron for background jobs** — ARCHITECTURE.md section 9 has this as the one open TBD. Claude Code recommends with reasoning at the start of Session 3; the choice gets recorded in that table.
 - [ ] **Margin floors** — export default £3,500, domestic default £500. Confirm with Alex before they go into the settings seed.
 - [ ] **Landed-cost defaults** — shipping, marine insurance, Cyprus clearance, Cyprus registration, Cyprus VAT handling. Every one is a settings row, editable later without a deploy, but the seed needs real starting numbers rather than invented ones.
