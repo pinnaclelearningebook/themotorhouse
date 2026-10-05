@@ -4,6 +4,10 @@ import { db } from "@/lib/db";
 import { DecisionPanel, type DecisionEnrichment } from "@/components/admin/DecisionPanel";
 import { MoneyPanel } from "@/components/admin/MoneyPanel";
 import { OfferPanel, type OfferRow } from "@/components/admin/OfferPanel";
+import {
+  TranscriptPanel,
+  type ConversationRecord,
+} from "@/components/admin/TranscriptPanel";
 import { carPnl } from "@/lib/admin/pnl";
 import { todayIso, offerValidUntilIso } from "@/lib/admin/dates";
 import { provenanceUnavailableReason } from "@/lib/adapters/provenance";
@@ -90,6 +94,13 @@ export default async function LeadPage({
     soldPrice: (lead.sold_price as number) ?? null,
     costLines: (costRows ?? []) as { kind: string; amount: number }[],
   });
+
+  const { data: conversationRows } = await db()
+    .from("conversations")
+    .select("id, started_at, mode, turn_count, transcript, structured_notes")
+    .eq("lead_id", id)
+    .order("started_at", { ascending: false });
+  const conversations = (conversationRows ?? []) as unknown as ConversationRecord[];
 
   const { data: enrichments } = await db()
     .from("enrichments")
@@ -219,6 +230,8 @@ export default async function LeadPage({
               </div>
             )}
           </section>
+
+          <TranscriptPanel conversations={conversations} />
 
           <section className="rounded border border-line p-6">
             <h2 className="font-display text-2xl">MOT history</h2>
