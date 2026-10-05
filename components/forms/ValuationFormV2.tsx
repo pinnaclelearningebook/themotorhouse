@@ -2,11 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { submitLead } from "@/app/actions/valuation";
+import {
+  completeLeadAction,
+  patchCarAction,
+  patchSaleAction,
+  startLeadAction,
+} from "@/app/actions/valuation";
 import { IdentifyStep, type IdentifyResult } from "./IdentifyStep";
 import { StepCar, type CarDetails } from "./StepCar";
 import { StepSale, type SaleDetails } from "./StepSale";
 import { StepYou, type ContactDetails } from "./StepYou";
+import { PhoneStep } from "./PhoneStep";
 import type { PendingPhoto } from "./PhotoUpload";
 
 /**
@@ -53,7 +59,7 @@ const EMPTY_CONTACT: ContactDetails = {
   marketingConsent: false,
 };
 
-type Step = "identify" | "car" | "sale" | "you" | "done";
+type Step = "identify" | "phone" | "car" | "sale" | "you" | "done";
 
 /** Reads the current DOM values for an uncontrolled step before leaving it. */
 function readFields(names: string[]): Record<string, string> {
@@ -105,9 +111,12 @@ export function ValuationFormV2({
 }) {
   const [step, setStep] = useState<Step>("identify");
   const [identified, setIdentified] = useState<IdentifyResult | null>(null);
+  // Set the moment step 1 persists. Everything after this patches it.
+  const [leadId, setLeadId] = useState<string | null>(null);
   const [car, setCar] = useState<CarDetails>(EMPTY_CAR);
   const [sale, setSale] = useState<SaleDetails>(EMPTY_SALE);
   const [contact, setContact] = useState<ContactDetails>(EMPTY_CONTACT);
+  const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [formError, setFormError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
@@ -131,6 +140,18 @@ export function ValuationFormV2({
       knownFaults: read.knownFaults ?? car.knownFaults,
       modifications: read.modifications ?? car.modifications,
     });
+    startTransition(async () => {
+      if (!leadId) return;
+      await patchCarAction(leadId, {
+        mileage: read.mileage || null,
+        serviceHistory: read.serviceHistory || null,
+        keepers: read.keepers || null,
+        condition: Object.keys(car.condition).length ? car.condition : null,
+        warningLights: read.warningLights || null,
+        knownFaults: read.knownFaults || null,
+        modifications: read.modifications || null,
+      });
+    });
     setStep("sale");
   }
 
@@ -146,62 +167,78 @@ export function ValuationFormV2({
       return;
     }
     setErrors({});
+    startTransition(async () => {
+      if (!leadId) return;
+      await patchSaleAction(leadId, {
+        reasonForSale: next.reasonForSale || null,
+        timeline: next.timeline,
+        financeOutstanding: next.financeOutstanding || null,
+        settlementKnown: next.settlementKnown
+          ? next.settlementKnown === "yes"
+          : null,
+        partExchangeInterest: next.partExchangeInterest
+          ? next.partExchangeInterest === "yes"
+          : null,
+        fairPrice: next.fairPrice || null,
+        othersApproached: next.othersApproached || null,
+      });
+    });
     setStep("you");
   }
 
+  async function startWithPhone(enteredPhone: string) {
+    setPhone(enteredPhone);
+    const result = await startLeadAction({
+      reg: identified?.reg ?? "",
+      phone: enteredPhone,
+      model: car.model || undefined,
+    });
+    if (result.status === "error") {
+      setErrors(result.fieldErrors);
+      setFormError(result.formError);
+      return;
+    }
+    if (result.status === "created") {
+      setLeadId(result.id);
+      setErrors({});
+      setFormError(undefined);
+      setStep("car");
+    }
+  }
+
   function submit() {
-    const read = readFields([
-      "name", "phone", "email", "postcode", "contactWindow",
-    ]);
+    const read = readFields(["name", "email", "postcode", "contactWindow"]);
     const next = { ...contact, ...read } as ContactDetails;
     setContact(next);
 
-    const payload = {
-      reg: identified?.reg ?? "",
-      // Only sent when the lookup had no model and the seller typed one.
-      model: car.model || undefined,
-      mileage: car.mileage,
-      serviceHistory: car.serviceHistory || null,
-      keepers: car.keepers || null,
-      condition: Object.keys(car.condition).length ? car.condition : null,
-      warningLights: car.warningLights || null,
-      knownFaults: car.knownFaults || null,
-      modifications: car.modifications || null,
-      reasonForSale: sale.reasonForSale || null,
-      timeline: sale.timeline,
-      financeOutstanding: sale.financeOutstanding || null,
-      settlementKnown: sale.settlementKnown ? sale.settlementKnown === "yes" : null,
-      partExchangeInterest: sale.partExchangeInterest
-        ? sale.partExchangeInterest === "yes"
-        : null,
-      fairPrice: sale.fairPrice || null,
-      othersApproached: sale.othersApproached || null,
-      name: next.name,
-      phone: next.phone,
-      email: next.email,
-      postcode: next.postcode,
-      contactWindow: next.contactWindow || null,
-      marketingConsent: next.marketingConsent,
-    };
-
     startTransition(async () => {
-      const result = await submitLead(payload);
+      if (!leadId) return;
+      const result = await completeLeadAction(
+        leadId,
+        {
+          name: next.name,
+          email: next.email,
+          postcode: next.postcode,
+          contactWindow: next.contactWindow || null,
+          marketingConsent: next.marketingConsent,
+        },
+        {
+          reg: identified?.reg ?? "",
+          phone: phone,
+          mileage: car.mileage ? Number(car.mileage) : null,
+        },
+      );
       if (result.status === "error") {
         setErrors(result.fieldErrors);
         setFormError(result.formError);
         return;
       }
-      if (result.status === "success") {
-        // Photos attach after the lead exists. The seller is not made to
-        // wait on it — the auto-reply still invites photos by email if
-        // this fails.
-        await attachPhotos(result.id, car.photos);
-        setErrors({});
-        setFormError(undefined);
-        setStep("done");
-        onComplete?.(result.id);
-        router.push("/valuation/thank-you");
-      }
+      await attachPhotos(leadId, car.photos);
+      setErrors({});
+      setFormError(undefined);
+      setStep("done");
+      onComplete?.(leadId);
+      router.push("/valuation/thank-you");
     });
   }
 
@@ -211,8 +248,26 @@ export function ValuationFormV2({
         initialReg={initialReg}
         onIdentified={(result) => {
           setIdentified(result);
-          setStep("car");
+          setStep("phone");
         }}
+      />
+    );
+  }
+
+  if (step === "phone") {
+    return (
+      <PhoneStep
+        reg={identified.reg}
+        vehicle={identified.vehicle}
+        value={phone}
+        onContinue={(entered) =>
+          startTransition(() => {
+            void startWithPhone(entered);
+          })
+        }
+        pending={pending}
+        error={errors.phone?.[0]}
+        formError={formError}
       />
     );
   }

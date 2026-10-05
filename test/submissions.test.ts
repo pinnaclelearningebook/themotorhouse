@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { freshDb } from "./db";
-import { leadSchema } from "../lib/validation";
+import { carSchema, saleSchema } from "../lib/validation";
 
 /**
  * The four-step form sends database-native enum values directly, which
@@ -23,19 +23,19 @@ async function enumLabels(typname: string): Promise<string[]> {
 describe("form values match the database enums", () => {
   it("timeline", async () => {
     expect(await enumLabels("sale_timeline")).toEqual(
-      [...leadSchema.shape.timeline.options].sort(),
+      [...saleSchema.shape.timeline.options].sort(),
     );
   });
 
   it("finance outstanding", async () => {
-    const schema = leadSchema.shape.financeOutstanding.unwrap().unwrap();
+    const schema = saleSchema.shape.financeOutstanding.unwrap().unwrap();
     expect(await enumLabels("finance_outstanding")).toEqual(
       [...schema.options].sort(),
     );
   });
 
   it("service history", async () => {
-    const schema = leadSchema.shape.serviceHistory.unwrap().unwrap();
+    const schema = carSchema.shape.serviceHistory.unwrap().unwrap();
     expect(await enumLabels("service_history")).toEqual(
       [...schema.options].sort(),
     );

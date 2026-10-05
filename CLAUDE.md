@@ -170,9 +170,9 @@ Model and mileage come from MOT history and are absent on vehicles under ~3 year
 
 **Step 3 — The sale.** Reason for selling (free text) · timeline (asap / this month / next few months / just researching) · outstanding finance (yes/no/unsure, settlement known?) · part-exchange interest · fair price in their mind (optional, never echoed as an offer) · anyone else approached.
 
-**Step 4 — You.** Name · phone · email · postcode · preferred contact window · marketing consent (unticked, separate from the enquiry).
+**Step 4 — You.** Name · email · postcode · preferred contact window · marketing consent (unticked, separate from the enquiry). Phone was taken at the end of step 1.
 
-**Persistence.** A lead exists from the moment reg is confirmed and contact details land (collect name/phone early if the seller skips ahead; the order above is the default, not a cage). Every later step patches the same record. Abandonment at any step leaves a usable lead. The operator alert fires on first persistence, and again with the score when enrichment completes.
+**Persistence.** A lead exists from the moment the car is confirmed and a phone number lands. Step 1 therefore ends with a single phone field — "Best number to reach you" — and creates the row with registration, vehicle and phone. Steps 2, 3 and 4 patch that same record, so abandonment at any point from step 1 onward leaves a lead someone can ring. The operator alert fires on first persistence, again on completion, and again with the score when enrichment completes.
 
 **"Just researching" is a follow-up date, not a dead lead.** Never make it optional.
 

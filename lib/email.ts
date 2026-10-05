@@ -8,11 +8,20 @@ import { SITE, PROMISES } from "@/config/site";
 export interface AlertPayload {
   id: string;
   reg: string;
-  mileage: number;
-  postcode: string;
-  name: string;
   phone: string;
-  email: string;
+  /**
+   * "started" fires the moment a car is confirmed and a phone number
+   * lands — a registration and a number, nothing else, because that is
+   * already enough to ring someone and it is the alert that catches a
+   * seller who never finishes the form.
+   *
+   * "completed" fires when the rest arrives.
+   */
+  stage: "started" | "completed";
+  mileage?: number | null;
+  postcode?: string | null;
+  name?: string | null;
+  email?: string | null;
   marketingConsent?: boolean;
 }
 
@@ -91,25 +100,48 @@ export async function sendOperatorAlert(
     return;
   }
 
+  const started = submission.stage === "started";
+  const lines = started
+    ? [
+        `A seller started an enquiry on ${SITE.name} and gave a number.`,
+        "",
+        `Registration: ${submission.reg}`,
+        `Phone: ${submission.phone}`,
+        "",
+        "They have not finished the form yet. If nothing follows this",
+        "email, the number above is still worth a call.",
+        "",
+        `Record: ${submission.id}`,
+      ]
+    : [
+        `Enquiry completed on ${SITE.name}.`,
+        "",
+        `Registration: ${submission.reg}`,
+        submission.mileage
+          ? `Mileage: ${submission.mileage.toLocaleString("en-GB")}`
+          : null,
+        submission.postcode ? `Postcode: ${submission.postcode}` : null,
+        submission.name ? `Name: ${submission.name}` : null,
+        `Phone: ${submission.phone}`,
+        submission.email ? `Email: ${submission.email}` : null,
+        "",
+        `Record: ${submission.id}`,
+        `The seller has been told to expect contact within ${PROMISES.offerWithinHours} hours.`,
+      ].filter((line): line is string => line !== null);
+
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await send(resend, {
-    from: process.env.EMAIL_FROM as string,
-    to: operatorEmails(),
-    subject: `New enquiry: ${submission.reg} — ${submission.mileage.toLocaleString("en-GB")} miles`,
-    text: [
-      `New offer request via ${SITE.name}.`,
-      "",
-      `Registration: ${submission.reg}`,
-      `Mileage: ${submission.mileage.toLocaleString("en-GB")}`,
-      `Postcode: ${submission.postcode}`,
-      `Name: ${submission.name}`,
-      `Phone: ${submission.phone}`,
-      `Email: ${submission.email}`,
-      "",
-      `Record: ${submission.id}`,
-      `The seller has been told to expect contact within ${PROMISES.offerWithinHours} hours.`,
-    ].join("\n"),
-  }, "operator alert");
+  await send(
+    resend,
+    {
+      from: process.env.EMAIL_FROM as string,
+      to: operatorEmails(),
+      subject: started
+        ? `Lead started: ${submission.reg}`
+        : `New enquiry: ${submission.reg}`,
+      text: lines.join("\n"),
+    },
+    "operator alert",
+  );
 }
 
 export async function sendSellerConfirmation(
@@ -119,16 +151,17 @@ export async function sendSellerConfirmation(
     logUnsent("seller confirmation", submission);
     return;
   }
+  if (!submission.email) return;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await send(resend, {
     from: process.env.EMAIL_FROM as string,
-    to: submission.email,
+    to: submission.email as string,
     subject: `Offer request received — ${submission.reg}`,
     text: [
       `Got it. You'll hear from a person within ${PROMISES.offerWithinHours} hours.`,
       "",
-      `We have your ${submission.reg} down at ${submission.mileage.toLocaleString("en-GB")} miles. When we call, we'll confirm a firm offer — the number we give is the number we pay.`,
+      `We have your ${submission.reg} down${submission.mileage ? ` at ${submission.mileage.toLocaleString("en-GB")} miles` : ""}. When we call, we'll confirm a firm offer — the number we give is the number we pay.`,
       "",
       "One thing that helps: reply to this email with a few photos of the car. The outside from each corner, the interior, and anything you'd want us to know about. It means the offer we make is one we can stand behind.",
       "",
