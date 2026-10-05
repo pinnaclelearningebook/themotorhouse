@@ -67,8 +67,12 @@ Both government APIs are applied for separately and neither is instant. Apply be
 
 ### Keys and access
 
-- [ ] **Admin allow-list emails** — `ADMIN_ALLOWLIST`, comma-separated. Who can sign into `/admin` via magic link. Sid and Alex at minimum.
+- [x] ~~Admin allow-list emails~~ — set 5 October 2026, two addresses, pushed to all three Vercel environments and reconciled into `admin_users` with `npm run sync-admins`.
 - [ ] **Inngest keys** — `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`, only if Inngest wins the job-runner decision below.
+- [ ] **Supabase Auth redirect allow-list** — blocks admin sign-in on every deployed environment. Supabase only redirects a magic link to its Site URL plus the URIs on the allow-list, and a new project ships with Site URL `http://localhost:3000` and an empty list, so a link clicked on production currently has nowhere valid to land. Needs, in Authentication → URL Configuration:
+  - Site URL: the production origin
+  - Redirect URLs: `https://<production-domain>/admin/auth/callback` and `https://*-themotorhouse.vercel.app/admin/auth/callback` for previews
+  There is no `supabase/config.toml` in the repo and no management access token on this machine, so this cannot be set or read from the CLI as things stand — it is a dashboard change, or a `supabase init` plus `supabase config push` if we want it version-controlled. Local sign-in on port 3000 works without it.
 
 ### Decisions
 

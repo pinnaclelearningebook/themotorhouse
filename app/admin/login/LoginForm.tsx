@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/forms/fields";
+import { sendMagicLink } from "./actions";
 
 /**
  * Magic-link sign-in.
+ *
+ * The Supabase call happens in the Server Action, not here, so the
+ * browser never needs the project keys and there is one set of
+ * environment variable names rather than a public and a private pair.
  *
  * The response is deliberately identical whether or not the address is
  * on the allow-list: confirming which addresses are admins to anyone who
  * can load the page would be a gift to someone enumerating them.
  */
-export function LoginForm() {
+export function LoginForm({ linkFailed = false }: { linkFailed?: boolean }) {
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,14 +29,7 @@ export function LoginForm() {
     setPending(true);
     setError(null);
     try {
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-      );
-      await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/admin` },
-      });
+      await sendMagicLink(email);
       setSent(true);
     } catch {
       setError("Could not send the link. Try again.");
@@ -51,6 +48,11 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submit} noValidate>
+      {linkFailed && (
+        <p role="alert" className="mb-4 text-sm font-medium text-oxblood">
+          That link has expired or had already been used. Ask for another.
+        </p>
+      )}
       <TextField label="Email" name="email" type="email" autoComplete="email" />
       {error && (
         <p role="alert" className="mt-3 text-sm font-medium text-oxblood">

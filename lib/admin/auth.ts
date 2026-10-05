@@ -20,6 +20,11 @@ export interface AdminSession {
   email: string;
 }
 
+/** Is this address on the env allow-list? Used before any auth call. */
+export function isAllowlisted(email: string): boolean {
+  return allowlist().includes(email.trim().toLowerCase());
+}
+
 function allowlist(): string[] {
   return (process.env.ADMIN_ALLOWLIST ?? "")
     .split(",")
@@ -74,7 +79,7 @@ export async function currentAdmin(): Promise<AdminSession | null> {
   if (!email) return null;
 
   // Env allow-list first: cheap, and the thing an operator edits.
-  if (!allowlist().includes(email)) return null;
+  if (!isAllowlisted(email)) return null;
 
   // Then the table, which is what the database policies actually read.
   // If the two disagree the table wins, and sync-admins reconciles them.

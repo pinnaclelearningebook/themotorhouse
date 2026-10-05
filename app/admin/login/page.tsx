@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6">
       <h1 className="font-display text-display-3">Sign in</h1>
@@ -25,7 +30,7 @@ export default function AdminLoginPage() {
         </p>
       )}
       <div className="mt-8">
-        <LoginForm />
+        <LoginForm linkFailed={error === "link"} />
       </div>
     </main>
   );
