@@ -21,6 +21,8 @@ export function TextField({
   autoComplete,
   mono = false,
   optional = false,
+  defaultValue,
+  hint,
 }: {
   label: string;
   name: string;
@@ -30,6 +32,8 @@ export function TextField({
   autoComplete?: string;
   mono?: boolean;
   optional?: boolean;
+  defaultValue?: string | number;
+  hint?: string;
 }) {
   const errorId = `${name}-error`;
   return (
@@ -40,10 +44,12 @@ export function TextField({
           <span className="ml-2 font-normal text-structure">Optional</span>
         )}
       </label>
+      {hint && <p className="mb-2 text-caption text-structure">{hint}</p>}
       <input
         id={name}
         name={name}
         type={type}
+        defaultValue={defaultValue}
         inputMode={inputMode}
         autoComplete={autoComplete}
         aria-invalid={error ? true : undefined}

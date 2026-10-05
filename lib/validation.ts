@@ -37,6 +37,17 @@ export const stepOneSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(100),
   phone: phoneSchema,
   email: z.email("Enter an email address"),
+  /**
+   * Only asked when the lookup could not supply a model — DVLA has no
+   * model field and MOT history does not exist under ~3 years. Stored
+   * against the vehicle, not the lead.
+   */
+  model: z
+    .string()
+    .trim()
+    .max(60)
+    .optional()
+    .transform((value) => value || undefined),
   marketingConsent: z.boolean().default(false),
 });
 

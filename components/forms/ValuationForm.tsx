@@ -12,7 +12,10 @@ import { stepOneSchema } from "@/lib/validation";
 import { Button } from "@/components/ui/Button";
 import { PlateInput } from "@/components/ui/PlateInput";
 import { RadioGroup, TextArea, TextField, FieldError } from "./fields";
+import { IdentifyStep, type IdentifyResult } from "./IdentifyStep";
 import { PROMISES } from "@/config/site";
+import type { VehicleIdentity } from "@/lib/types";
+import { formatReg } from "@/lib/reg";
 
 type FieldErrors = Record<string, string[] | undefined>;
 
@@ -24,14 +27,28 @@ export function ValuationForm({ initialReg }: { initialReg?: string }) {
     submitStepOne,
     stepOneInitial,
   );
+  // Set once the seller has confirmed the car, or declined the card and
+  // chosen to type the details. Until then the identify step is shown.
+  const [identified, setIdentified] = useState<IdentifyResult | null>(null);
 
   if (stepOne.status === "success") {
     return <StepTwo submissionId={stepOne.id} reg={stepOne.reg} />;
   }
 
+  if (!identified) {
+    return <IdentifyStep initialReg={initialReg} onIdentified={setIdentified} />;
+  }
+
+  // Mileage at the most recent MOT, used as a starting point the seller
+  // edits. Absent on any vehicle without MOT history.
+  const lastMileage =
+    identified.mot.find((test) => test.odometer !== null)?.odometer ?? null;
+
   return (
     <StepOne
-      initialReg={initialReg}
+      initialReg={identified.reg}
+      vehicle={identified.vehicle}
+      initialMileage={lastMileage}
       action={stepOneAction}
       pending={stepOnePending}
       serverErrors={stepOne.status === "error" ? stepOne.fieldErrors : {}}
@@ -42,12 +59,16 @@ export function ValuationForm({ initialReg }: { initialReg?: string }) {
 
 function StepOne({
   initialReg,
+  vehicle,
+  initialMileage,
   action,
   pending,
   serverErrors,
   formError,
 }: {
   initialReg?: string;
+  vehicle?: VehicleIdentity | null;
+  initialMileage?: number | null;
   action: (formData: FormData) => void;
   pending: boolean;
   serverErrors: FieldErrors;
@@ -67,6 +88,7 @@ function StepOne({
       name: formData.get("name"),
       phone: formData.get("phone"),
       email: formData.get("email"),
+      model: formData.get("model") ?? undefined,
       marketingConsent: formData.get("marketingConsent") === "on",
     });
     if (!parsed.success) {
@@ -84,13 +106,35 @@ function StepOne({
       noValidate
       className="step-in flex flex-col gap-6"
     >
-      <div>
-        <span className="mb-1.5 block text-sm font-medium">
-          Your registration
-        </span>
-        <PlateInput defaultValue={initialReg} />
-        <FieldError id="reg-error" error={errors.reg?.[0]} />
-      </div>
+      {vehicle ? (
+        <div>
+          <span className="mb-1.5 block text-sm font-medium">Your car</span>
+          <p className="data-inline text-lg">
+            {[formatReg(vehicle.reg), vehicle.make, vehicle.model]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <input type="hidden" name="reg" value={vehicle.reg} />
+          <FieldError id="reg-error" error={errors.reg?.[0]} />
+        </div>
+      ) : (
+        <div>
+          <span className="mb-1.5 block text-sm font-medium">
+            Your registration
+          </span>
+          <PlateInput defaultValue={initialReg} />
+          <FieldError id="reg-error" error={errors.reg?.[0]} />
+        </div>
+      )}
+
+      {vehicle && !vehicle.model && (
+        <TextField
+          label="Model"
+          name="model"
+          hint="The DVLA record does not carry the model, and this car has no MOT history to take it from yet."
+          error={errors.model?.[0]}
+        />
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2">
         <TextField
@@ -98,6 +142,12 @@ function StepOne({
           name="mileage"
           inputMode="numeric"
           mono
+          defaultValue={initialMileage ?? undefined}
+          hint={
+            initialMileage
+              ? "Taken from the last MOT. Change it if it has moved on."
+              : undefined
+          }
           error={errors.mileage?.[0]}
         />
         <TextField

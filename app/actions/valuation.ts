@@ -37,6 +37,7 @@ export async function submitStepOne(
     name: formData.get("name"),
     phone: formData.get("phone"),
     email: formData.get("email"),
+    model: formData.get("model") ?? undefined,
     marketingConsent: formData.get("marketingConsent") === "on",
   });
 

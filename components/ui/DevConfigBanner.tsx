@@ -1,5 +1,7 @@
 import { isStoreConfigured } from "@/lib/submissions";
 import { isEmailConfigured } from "@/lib/email";
+import { isDvlaConfigured } from "@/lib/adapters/dvla";
+import { isDvsaConfigured } from "@/lib/adapters/dvsa";
 
 /**
  * Development-only warning that submissions are going nowhere.
@@ -14,12 +16,22 @@ export function DevConfigBanner() {
   const missing: string[] = [];
   if (!isStoreConfigured()) {
     missing.push(
-      "Airtable keys missing — submissions are NOT stored anywhere",
+      "Supabase not configured — submissions are NOT stored anywhere",
     );
   }
   if (!isEmailConfigured()) {
     missing.push(
       "Resend config missing — no operator alert, no seller auto-reply",
+    );
+  }
+  if (!isDvlaConfigured()) {
+    missing.push(
+      "DVLA key missing — no vehicle lookup, sellers type everything by hand",
+    );
+  }
+  if (!isDvsaConfigured()) {
+    missing.push(
+      "DVSA MOT credentials missing — no model and no mileage on the card",
     );
   }
 

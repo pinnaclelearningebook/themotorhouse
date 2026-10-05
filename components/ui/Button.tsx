@@ -17,16 +17,20 @@ export function Button({
   type = "submit",
   disabled,
   className = "",
+  onClick,
 }: {
   children: React.ReactNode;
   type?: "submit" | "button";
   disabled?: boolean;
   className?: string;
+  /** Only meaningful inside a client component. */
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       className={`${buttonClasses} ${className}`}
     >
       {children}

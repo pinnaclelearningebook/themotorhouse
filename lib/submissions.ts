@@ -52,14 +52,39 @@ function logUnpersisted(action: string, payload: unknown) {
   );
 }
 
+/**
+ * Resolve the vehicle row written by /api/vehicle/lookup. Done here from
+ * the registration rather than taking an id from the client, so a
+ * submitted form cannot point a lead at an arbitrary vehicle row.
+ */
+async function findVehicleId(reg: string): Promise<string | null> {
+  const { data } = await db()
+    .from("vehicles")
+    .select("id")
+    .eq("reg", reg.replace(/\s+/g, "").toUpperCase())
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
+}
+
 export async function createSubmission(
   data: StepOneData,
-  vehicleId?: string | null,
 ): Promise<{ id: string }> {
   if (!isStoreConfigured()) {
     const id = `unpersisted-${crypto.randomUUID()}`;
-    logUnpersisted("Step 1", { id, vehicleId, ...data });
+    logUnpersisted("Step 1", { id, ...data });
     return { id };
+  }
+
+  const vehicleId = await findVehicleId(data.reg);
+
+  // The seller supplies the model only when the lookup could not. Fill
+  // the gap on the vehicle row rather than overwriting what DVSA gave us.
+  if (vehicleId && data.model) {
+    await db()
+      .from("vehicles")
+      .update({ model: data.model })
+      .eq("id", vehicleId)
+      .is("model", null);
   }
 
   const { data: row, error } = await db()
