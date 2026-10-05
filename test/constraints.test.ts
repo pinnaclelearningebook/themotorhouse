@@ -206,3 +206,82 @@ describe("the decision engine is pure", () => {
     expect(source).not.toMatch(/\bdb\s*\(\)/);
   });
 });
+
+describe("the agent endpoint", () => {
+  const chat = readFileSync(
+    join(ROOT_DIR, "app/api/agent/chat/route.ts"),
+    "utf8",
+  );
+
+  it("checks the kill switch before spending anything", () => {
+    // Nothing may be bought before agent_enabled is read. If the switch
+    // check drifts below the model call, turning Maya off stops her
+    // replying but not costing.
+    const switchAt = chat.search(/if\s*\(!settings\.enabled\)/);
+    const modelAt = chat.search(/await complete\(/);
+    expect(switchAt).toBeGreaterThan(-1);
+    expect(modelAt).toBeGreaterThan(-1);
+    expect(switchAt).toBeLessThan(modelAt);
+  });
+
+  it("resolves the session from the cookie, never from the body", () => {
+    // A lead id in the request body would let anyone read or write any
+    // seller's record by guessing one.
+    expect(chat).toMatch(/resolveSession\(\)/);
+    expect(chat).not.toMatch(/body\s*\.\s*leadId/);
+    const session = readFileSync(join(ROOT_DIR, "lib/agent/session.ts"), "utf8");
+    expect(session).toMatch(/session_token/);
+  });
+
+  it("guards the model's turn before it reaches the seller", () => {
+    const modelAt = chat.search(/await complete\(/);
+    const guardAt = chat.search(/runGuards\(/);
+    const respondAt = chat.lastIndexOf("NextResponse.json({");
+    expect(modelAt).toBeLessThan(guardAt);
+    expect(guardAt).toBeLessThan(respondAt);
+  });
+
+  it("stores the blocked text but never returns it", () => {
+    // The transcript holds what the seller saw. The original lives in
+    // agent_blocks alone, so re-reading a conversation cannot resurface a
+    // number nobody stood behind.
+    expect(chat).toMatch(/agent_blocks/);
+    expect(chat).toMatch(/original:\s*verdict\.original/);
+    expect(chat).toMatch(/reply:\s*outgoing/);
+  });
+
+  it("fails the kill switch closed", () => {
+    const settings = readFileSync(
+      join(ROOT_DIR, "lib/agent/settings.ts"),
+      "utf8",
+    );
+    // Anything other than exactly true is off, including a missing row,
+    // a string, or an unreadable settings table.
+    expect(settings).toMatch(/enabled:\s*false/);
+    expect(settings).toMatch(/=== true/);
+  });
+
+  it("calls no paid adapter", () => {
+    for (const file of ["app/api/agent/chat/route.ts", "agent/provider.ts", "agent/tools.ts"]) {
+      const code = readFileSync(join(ROOT_DIR, file), "utf8");
+      expect(code).not.toMatch(/runProvenance|runValuation/);
+    }
+  });
+
+  it("lets Maya write no field that could be mistaken for an offer", () => {
+    const tools = readFileSync(join(ROOT_DIR, "agent/tools.ts"), "utf8");
+    for (const forbidden of [
+      "indicative_offer",
+      "firm_offer",
+      "channel_decided",
+      "channel_recommended",
+      "sold_price",
+    ]) {
+      expect(
+        tools.includes(forbidden),
+        `agent tools must not write ${forbidden}`,
+      ).toBe(false);
+    }
+    expect(tools).not.toMatch(/from\(["']offers["']\)/);
+  });
+});

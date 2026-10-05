@@ -33,6 +33,20 @@ export const LOOKUP_WINDOWS: RateLimitWindow[] = [
 ];
 
 /**
+ * /api/agent/chat: 20 turns per minute, 200 per day, per IP.
+ *
+ * Looser per minute than the lookup because a conversation is naturally
+ * bursty, tighter per day because every turn costs money. The per-session
+ * turn cap in settings is the other half of this: this stops one IP
+ * opening a hundred conversations, that stops one conversation running a
+ * hundred turns.
+ */
+export const AGENT_WINDOWS: RateLimitWindow[] = [
+  { seconds: 60, max: 20 },
+  { seconds: 86_400, max: 200 },
+];
+
+/**
  * The windowing decision, separated from storage so it can be tested
  * directly. Given the timestamps of prior requests, decide whether
  * another is allowed and, if not, how long until the oldest request in
