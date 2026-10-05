@@ -88,9 +88,10 @@ Both government APIs are applied for separately and neither is instant. Apply be
 
 ## Phase D — Maya, the virtual employee
 
-- [ ] **Maya's real name** — working name only. It appears in the widget, the agent prompt, the auto-reply and the AI disclosure, so changing it later touches several places. Decide before Session 5.
-- [ ] **ElevenLabs account** — `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`. Create the account and the agent before Session 5.
-- [ ] **Voice choice** — which ElevenLabs voice. It is the first thing a seller hears, so it belongs with the brand decisions rather than the technical ones.
+- [ ] **Maya's real name** — working name only, now a single value in `config/site.ts` as `AGENT.name`, with `agent/prompt.md` templated on `{{AGENT_NAME}}`. Changing it is a one-line edit, so the decision can wait until the prompt has been read.
+- [ ] **ElevenLabs account** — `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`. Needed **before Session 6**, not Session 5: text mode runs through our own endpoint so the guards can see every turn, and ElevenLabs enters as voice transport calling that same endpoint as a custom LLM (verified against their custom-LLM docs, ARCHITECTURE section 9).
+- [ ] **Voice choice** — which ElevenLabs voice. It is the first thing a seller hears, so it belongs with the brand decisions rather than the technical ones. Before Session 6.
+- [ ] **`ANTHROPIC_API_KEY`** — the model behind Maya. Needed from step 3 of Session 5 onward, not for the prompt itself. The model name is a settings row (`agent_model`, default `claude-sonnet-5-5`) so it can change without a deploy.
 - [ ] **Approval of `agent/prompt.md`** — you approve every line of what Maya is allowed to say, per SESSION-PROMPTS.md. Claude Code shows it before any integration code.
 - [ ] **Voice legal review** — AI disclosure wording, recording consent wording, and transcript retention, added to the privacy and cookie policies. Goes to the same solicitor as the Phase A review.
 

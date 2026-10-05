@@ -72,6 +72,27 @@ export const COMPANY = {
  * operational promises — PENDING-INFO.md tracks confirmation of the
  * two-hour response time before launch.
  */
+/**
+ * The virtual employee (CLAUDE.md section 10).
+ *
+ * The name is here rather than in the prompt because it appears in four
+ * places — the widget, agent/prompt.md, the seller auto-reply and the AI
+ * disclosure — and a name that lives in one of them drifts out of the
+ * others. agent/prompt.md carries {{AGENT_NAME}} and is templated at
+ * load time.
+ *
+ * "Maya" is a working name pending a decision in PENDING-INFO.md.
+ */
+export const AGENT = {
+  name: "Maya",
+  /**
+   * Shown on first contact and in the widget. UK GDPR and the CAP rules
+   * both point the same way: a seller should never be unsure whether
+   * they are talking to a person.
+   */
+  disclosure: "I'm an assistant, not a person",
+} as const;
+
 export const PROMISES = {
   offerWithinHours: 2,
   collection: "Free collection anywhere in mainland UK",
