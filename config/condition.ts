@@ -12,21 +12,25 @@ export const CONDITION_AREAS = [
     id: "bodywork",
     label: "Bodywork",
     prompt: "Panels, paint, bumpers, glass.",
+    ask: "What should we know about the bodywork?",
   },
   {
     id: "interior",
     label: "Interior",
     prompt: "Seats, trim, carpets, and how it smells.",
+    ask: "What should we know about the interior?",
   },
   {
     id: "mechanical",
     label: "How it drives",
     prompt: "Engine, gearbox, brakes, suspension, anything that has changed.",
+    ask: "What should we know mechanically?",
   },
   {
     id: "tyres",
     label: "Tyres and wheels",
     prompt: "Tread left, and any kerbing.",
+    ask: "What should we know about the tyres?",
   },
 ] as const;
 

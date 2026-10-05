@@ -1,46 +1,29 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
-import { stepOneSchema, stepTwoSchema } from "@/lib/validation";
-import { createSubmission, updateSubmission } from "@/lib/submissions";
+import { leadSchema } from "@/lib/validation";
+import { createLead } from "@/lib/submissions";
 import { sendOperatorAlert, sendSellerConfirmation } from "@/lib/email";
 
-export type StepOneState =
+const TRY_AGAIN =
+  "Something went wrong at our end. Please try again, or call us instead.";
+
+export type LeadState =
   | { status: "idle" }
   | {
       status: "error";
       fieldErrors: Record<string, string[] | undefined>;
       formError?: string;
     }
-  | { status: "success"; id: string; reg: string };
+  | { status: "success"; id: string };
 
-export type StepTwoState =
-  | { status: "idle" }
-  | {
-      status: "error";
-      fieldErrors: Record<string, string[] | undefined>;
-      formError?: string;
-    };
-
-const TRY_AGAIN =
-  "Something went wrong at our end. Please try again, or call us instead.";
-
-export async function submitStepOne(
-  _prev: StepOneState,
-  formData: FormData,
-): Promise<StepOneState> {
-  const parsed = stepOneSchema.safeParse({
-    reg: formData.get("reg"),
-    mileage: formData.get("mileage"),
-    postcode: formData.get("postcode"),
-    name: formData.get("name"),
-    phone: formData.get("phone"),
-    email: formData.get("email"),
-    model: formData.get("model") ?? undefined,
-    marketingConsent: formData.get("marketingConsent") === "on",
-  });
-
+/**
+ * The four-step form's single write. Steps 2 and 3 were held
+ * client-side, so this is the first and only persistence point — see
+ * CLAUDE.md section 9 and the decision recorded in PENDING-INFO.md.
+ */
+export async function submitLead(payload: unknown): Promise<LeadState> {
+  const parsed = leadSchema.safeParse(payload);
   if (!parsed.success) {
     return {
       status: "error",
@@ -50,16 +33,26 @@ export async function submitStepOne(
 
   let id: string;
   try {
-    ({ id } = await createSubmission(parsed.data));
+    ({ id } = await createLead(parsed.data));
   } catch (error) {
-    console.error("createSubmission failed", error);
+    console.error("createLead failed", error);
     return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
   }
 
-  // The lead is stored — email failures must not fail the submission.
+  // The lead is stored. Email failures must not fail the submission.
+  const alert = {
+    id,
+    reg: parsed.data.reg,
+    mileage: parsed.data.mileage,
+    postcode: parsed.data.postcode,
+    name: parsed.data.name,
+    phone: parsed.data.phone,
+    email: parsed.data.email,
+    marketingConsent: parsed.data.marketingConsent,
+  };
   const results = await Promise.allSettled([
-    sendOperatorAlert({ ...parsed.data, id }),
-    sendSellerConfirmation({ ...parsed.data, id }),
+    sendOperatorAlert(alert),
+    sendSellerConfirmation(alert),
   ]);
   for (const result of results) {
     if (result.status === "rejected") {
@@ -67,39 +60,5 @@ export async function submitStepOne(
     }
   }
 
-  return { status: "success", id, reg: parsed.data.reg };
-}
-
-export async function submitStepTwo(
-  _prev: StepTwoState,
-  formData: FormData,
-): Promise<StepTwoState> {
-  const id = formData.get("submissionId");
-  if (typeof id !== "string" || id.length === 0) {
-    return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
-  }
-
-  const parsed = stepTwoSchema.safeParse({
-    financeOutstanding: formData.get("financeOutstanding"),
-    serviceHistory: formData.get("serviceHistory"),
-    keepers: formData.get("keepers") || null,
-    conditionNotes: formData.get("conditionNotes"),
-    sellTimeline: formData.get("sellTimeline"),
-  });
-
-  if (!parsed.success) {
-    return {
-      status: "error",
-      fieldErrors: z.flattenError(parsed.error).fieldErrors,
-    };
-  }
-
-  try {
-    await updateSubmission(id, parsed.data);
-  } catch (error) {
-    console.error("updateSubmission failed", error);
-    return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
-  }
-
-  redirect("/valuation/thank-you");
+  return { status: "success", id };
 }

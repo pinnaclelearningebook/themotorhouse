@@ -20,6 +20,8 @@ import { titleCaseVehicle } from "@/lib/format";
  */
 
 export interface CarDetails {
+  /** Only collected when the lookup could not supply a model. */
+  model: string;
   mileage: string;
   serviceHistory: string;
   keepers: string;
@@ -65,6 +67,15 @@ export function StepCar({
       </p>
 
       <div className="mt-10 flex flex-col gap-8">
+        {vehicle && !vehicle.model && (
+          <TextField
+            label="Model"
+            name="model"
+            defaultValue={value.model}
+            hint="The DVLA record does not carry the model, and this car has no MOT history to take it from yet."
+          />
+        )}
+
         <div className="grid gap-6 sm:grid-cols-2">
           <TextField
             label="Mileage"

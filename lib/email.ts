@@ -1,6 +1,20 @@
 import { Resend } from "resend";
 import { SITE, PROMISES } from "@/config/site";
-import type { StepOneData } from "@/lib/validation";
+/**
+ * Only what the two emails actually print. Typing these to a form step
+ * coupled the mailer to one version of the form; both the two-step and
+ * four-step paths now satisfy the same shape.
+ */
+export interface AlertPayload {
+  id: string;
+  reg: string;
+  mileage: number;
+  postcode: string;
+  name: string;
+  phone: string;
+  email: string;
+  marketingConsent?: boolean;
+}
 
 /**
  * Transactional email via Resend. The instant seller auto-reply is a P0
@@ -70,7 +84,7 @@ async function send(
 }
 
 export async function sendOperatorAlert(
-  submission: StepOneData & { id: string },
+  submission: AlertPayload,
 ): Promise<void> {
   if (!isEmailConfigured()) {
     logUnsent("operator alert", submission);
@@ -99,7 +113,7 @@ export async function sendOperatorAlert(
 }
 
 export async function sendSellerConfirmation(
-  submission: StepOneData & { id: string },
+  submission: AlertPayload,
 ): Promise<void> {
   if (!isEmailConfigured()) {
     logUnsent("seller confirmation", submission);

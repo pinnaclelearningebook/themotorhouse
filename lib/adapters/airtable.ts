@@ -1,5 +1,27 @@
 import Airtable from "airtable";
-import type { StepOneData, StepTwoData } from "@/lib/validation";
+/**
+ * Frozen local copies of the shapes this adapter was written against.
+ * It deliberately does not import the live validation types: this file
+ * is a record of the Phase A store, and it should not break or silently
+ * change meaning every time the form evolves.
+ */
+interface StepOneData {
+  reg: string;
+  mileage: number;
+  postcode: string;
+  name: string;
+  phone: string;
+  email: string;
+  marketingConsent: boolean;
+}
+
+interface StepTwoData {
+  financeOutstanding: "yes" | "no" | "unsure";
+  serviceHistory: "full" | "partial" | "none";
+  keepers: number | null;
+  conditionNotes: string | null;
+  sellTimeline: "asap" | "this-month" | "next-few-months" | "just-researching";
+}
 
 /**
  * UNUSED — superseded by Postgres in lib/submissions.ts (Phase B).

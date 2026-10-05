@@ -38,10 +38,18 @@ export function absoluteUrl(path: string): string {
  * The only export market we currently supply. Never widen this without
  * evidence (SOURCES.md).
  *
- * Named on /export and in the FAQ, and nowhere else. Everywhere else the
- * story is told as "export demand" or "the exporters we work with" —
- * the site is a general car buying service first, and export is why
- * some offers are strong rather than what the business is about.
+ * Named in exactly three places, and nowhere else:
+ *   /export                            the explainer page
+ *   the FAQ                            where a seller asks directly
+ *   /blog/why-uk-cars-are-exported     the explainer in long form, where
+ *                                      naming one checkable market
+ *                                      instead of gesturing at a
+ *                                      continent IS the argument
+ *
+ * Everywhere else — home, about, model pages, every other post — the
+ * story is told as "export demand" or "the exporters we work with". The
+ * site is a general car buying service first, and export is why some
+ * offers are strong rather than what the business is about.
  */
 export const EXPORT_MARKET = "Cyprus" as const;
 

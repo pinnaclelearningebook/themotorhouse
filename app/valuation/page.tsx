@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Section } from "@/components/ui/Section";
 import { DevConfigBanner } from "@/components/ui/DevConfigBanner";
-import { ValuationForm } from "@/components/forms/ValuationForm";
+import { ValuationFormV2 } from "@/components/forms/ValuationFormV2";
 import { PROMISES } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -29,12 +29,12 @@ export default async function ValuationPage({
             Get my offer
           </h1>
           <p className="mt-4 max-w-prose text-lg">
-            Six questions, then a person calls you with a firm offer within{" "}
-            {PROMISES.offerWithinHours} hours. The number we give is the
-            number we pay.
+            Start with the registration. A person calls you with a firm
+            offer within {PROMISES.offerWithinHours} hours, and the number
+            we give is the number we pay.
           </p>
           <div className="mt-12">
-            <ValuationForm initialReg={reg} />
+            <ValuationFormV2 initialReg={reg} />
           </div>
         </div>
       </Section>

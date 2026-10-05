@@ -73,7 +73,7 @@ export function ConditionGrid({
                   htmlFor={`note-${area.id}`}
                   className="text-caption text-structure"
                 >
-                  What is it? Describing it now is what keeps the offer fixed.
+                  {area.ask} Describing it now is what keeps the offer fixed.
                 </label>
                 <input
                   id={`note-${area.id}`}
