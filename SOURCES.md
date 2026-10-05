@@ -220,6 +220,8 @@ These posts make no factual claims beyond entries already logged above.
 
 ## Claims deliberately NOT made
 
+- **Anything about volume, frequency, track record or experience.** No car has been bought yet, so "most weeks", "we see a lot of these", "in our experience" and "most of the cars we buy" are fabrications of the same kind as an invented review. Policy is always available instead: *we buy cars with finance outstanding* is policy, *we buy them most weeks* is a claim about a past that does not exist. Two instances were found live on 5 October 2026 — one in the finance post, one in the documents post — and rewritten to policy. `agent/guards.ts` blocks the pattern in anything the assistant says.
+
 Kept here so nobody re-adds them believing they were an oversight.
 
 - No typical offer range or price guide anywhere on the site.
