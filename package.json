@@ -12,6 +12,7 @@
     "sync-admins": "node scripts/sync-admins.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "@vercel/blob": "^2.8.0",
     "airtable": "^0.12.2",

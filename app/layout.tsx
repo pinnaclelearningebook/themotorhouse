@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
 import { Newsreader, Inter_Tight, Geist_Mono } from "next/font/google";
-import { Header } from "@/components/ui/Header";
-import { Footer } from "@/components/sections/Footer";
-import { CookieConsent } from "@/components/consent/CookieConsent";
-import { AnalyticsGate } from "@/components/consent/AnalyticsGate";
 import { SITE, siteUrl } from "@/config/site";
 import "./globals.css";
 
@@ -52,13 +48,7 @@ export default function RootLayout({
       lang="en-GB"
       className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
     >
-      <body>
-        <Header />
-        {children}
-        <Footer />
-        <CookieConsent />
-        <AnalyticsGate />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

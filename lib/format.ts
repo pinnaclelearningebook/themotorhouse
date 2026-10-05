@@ -4,7 +4,13 @@
  * sentence-case rule in CLAUDE.md section 4 and makes the site read like
  * a database dump rather than a person describing a car.
  */
-const KEEP_UPPER = new Set(["BMW", "GLE", "GLC", "GLA", "SUV", "AMG", "TDI", "GTI", "4X4"]);
+const KEEP_UPPER = new Set([
+  "BMW", "SUV", "AMG", "TDI", "GTI", "4X4", "GT",
+  // Mercedes
+  "GLE", "GLC", "GLA", "GLB", "GLS", "CLA", "CLS", "SLK",
+  // Lexus
+  "RX", "NX", "UX", "LX", "GX", "ES", "IS", "LS", "LC", "RC", "CT",
+]);
 
 function capitalise(word: string): string {
   if (KEEP_UPPER.has(word.toUpperCase())) return word.toUpperCase();

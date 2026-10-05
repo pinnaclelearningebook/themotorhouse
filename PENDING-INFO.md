@@ -14,6 +14,8 @@ These block a public launch regardless of what gets built afterwards.
 
 ### Business identity
 
+- [ ] **Swap the temporary business Gmail for a Google Workspace address** — `themotorhouse.uk@gmail.com` is in `OPERATOR_EMAILS` and `ADMIN_ALLOWLIST` as a placeholder. At launch it becomes a Workspace address on the real domain. Changing it means updating both variables in all three Vercel environments and re-running `npm run sync-admins`, because the allow-list and the `admin_users` table must agree.
+
 - [ ] **Domain name**
 - [ ] **Business phone number** — the one sellers will actually call
 - [ ] **Business email address**

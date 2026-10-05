@@ -30,6 +30,8 @@ const PAID_CALL_ALLOWED = [
 const INTERNAL_ONLY_ALLOWED = [
   /^lib\//,
   /^app\/admin\//,
+  /^components\/admin\//, // admin UI is internal by definition
+  /^config\/settings-schema\.ts$/,
   /^app\/api\/admin\//,
   /^app\/api\/cron\//,
   /^app\/actions\//,
@@ -154,6 +156,32 @@ describe("decision output stays internal", () => {
         internal.test(code) && !allowed(file, INTERNAL_ONLY_ALLOWED),
     ).map(({ file }) => file);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("the admin dev bypass cannot reach production", () => {
+  it("is guarded by NODE_ENV === development", () => {
+    const source = readFileSync(join(ROOT_DIR, "lib/admin/auth.ts"), "utf8");
+    const bypass = source.indexOf("ADMIN_DEV_BYPASS");
+    expect(bypass, "ADMIN_DEV_BYPASS should exist or this test is stale")
+      .toBeGreaterThan(-1);
+    // The NODE_ENV check must be in the same condition, before it.
+    const guard = source.lastIndexOf(
+      'process.env.NODE_ENV === "development"',
+      bypass,
+    );
+    expect(guard).toBeGreaterThan(-1);
+    expect(bypass - guard).toBeLessThan(120);
+  });
+
+  it("is the only bypass in the admin auth path", () => {
+    const source = stripComments(
+      readFileSync(join(ROOT_DIR, "lib/admin/auth.ts"), "utf8"),
+    );
+    const returnsSession = source.match(/return \{ email/g) ?? [];
+    // One for the dev bypass, one for the real path. A third would mean
+    // someone added another way in.
+    expect(returnsSession.length).toBe(2);
   });
 });
 
