@@ -50,7 +50,7 @@ export async function sendMagicLink(email: string): Promise<void> {
 }
 
 /**
- * Sign in with the 6-digit code instead of the link.
+ * Sign in with the emailed code instead of the link.
  *
  * Supabase puts both in the same email. The code exists because the link
  * does not always survive the journey: Outlook's SafeLinks and similar
@@ -75,8 +75,11 @@ export async function verifyCode(
   if (!address || !isAllowlisted(address)) {
     return { error: "That code did not work. Ask for another link." };
   }
-  if (!/^\d{6}$/.test(token)) {
-    return { error: "The code is six digits." };
+  // Not a hardcoded six. Supabase's OTP length is a project setting and
+  // this project issues eight, which a /^\d{6}$/ check rejected outright —
+  // found by minting a real code rather than assuming the default.
+  if (!/^\d{6,10}$/.test(token)) {
+    return { error: "The code is the row of digits in the email." };
   }
 
   const supabase = await supabaseServer();

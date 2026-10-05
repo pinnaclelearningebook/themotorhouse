@@ -6,7 +6,7 @@ import { TextField } from "@/components/forms/fields";
 import { sendMagicLink, verifyCode } from "./actions";
 
 /**
- * Magic-link sign-in, with the 6-digit code as a fallback.
+ * Magic-link sign-in, with the emailed code as a fallback.
  *
  * The Supabase calls happen in Server Actions, not here, so the browser
  * never needs the project keys and there is one set of environment
@@ -70,13 +70,13 @@ export function LoginForm({ linkFailed = false }: { linkFailed?: boolean }) {
 
         <form onSubmit={verify} className="mt-8" noValidate>
           <p className="text-sm text-structure">
-            The same email carries a six-digit code. Use it if the link does
+            The same email carries a sign-in code. Use it if the link does
             not work — some email scanners open links before you do, which
             spends them.
           </p>
           <div className="mt-4">
             <TextField
-              label="Six-digit code"
+              label="Sign-in code"
               name="code"
               type="text"
               inputMode="numeric"
