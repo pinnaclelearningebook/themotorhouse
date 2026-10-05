@@ -157,7 +157,11 @@ POST { reg }  →  { vehicle: VehicleIdentity, mot: MotTest[], source: "live"|"c
 
 Keys absent → return `{ vehicle: null, mot: [], source: "stub" }` and render the dev banner. Partial failure (DVLA ok, MOT down) returns what succeeded with `mot_unavailable: true`; the form proceeds without pre-filled mileage.
 
-The "Is this your car?" card shows: make · model · colour · fuel · engine · year · MOT expiry · last recorded mileage with its date. All mono. Derivative/trim comes only from the paid valuation adapter later; until then the seller types it.
+The "Is this your car?" card renders from whatever the two sources returned, in mono.
+
+`make` · `colour` · `fuel` · `engine` · `year` · `mot expiry` come from DVLA and are near-always present. `model` and `last recorded mileage` come from DVSA MOT history, which **does not exist for a vehicle under ~3 years old** — the first MOT is due three years after first use. That excludes much of the export target, which is cars under five years.
+
+**A missing model is a normal state, not an error.** The card shows what is known and asks the seller to confirm the model in a single field. The recognition lever carries on make, year, colour and engine, which together are strongly identifying. `derivative`/trim stays seller-typed until a paid valuation adapter exists.
 
 ## 4. Photo upload
 
@@ -236,4 +240,8 @@ Missing optional keys → adapter returns `null` and `/admin` shows the control 
 | 2026-10-05 | No auto-offer path | One wrong automated offer costs more than a year of saved minutes |
 | 2026-10-05 | ElevenLabs for Maya v1, provider-swappable | Fastest route to a voice that feels like a person; agent logic kept in-repo |
 | 2026-10-05 | Guards on agent output are code, not prompt | Prompts fail quietly; regex and context checks fail loudly |
+| 2026-10-05 | The identify card tolerates a missing model | DVLA VES has no model field; DVSA MOT has model and mileage but only after first MOT at ~3 years, which excludes most export-target cars. Verified against the DVLA VES v1.2.0 schema before building. |
+| 2026-10-05 | `api_rate_limits` table rather than in-memory counters | `/api/vehicle/lookup` limits are per-IP and must hold across serverless instances; Postgres is already in the stack and no other shared store is |
+| 2026-10-05 | Vehicle row written at reg-confirm, lead row at first contact field | CLAUDE.md section 9 requires both reg confirmed *and* contact details before a lead exists; writing a lead at confirm would create uncontactable rows and nothing for the operator alert to fire on |
+| 2026-10-05 | Settings seed carries only the two documented margin floors | Landed-cost constants are unconfirmed in PENDING-INFO; seeding invented numbers would let the Phase C decision engine compute plausible margins from fiction. Absent values fail loudly instead. |
 | TBD (Phase C) | Inngest vs Vercel cron for jobs | Record the choice and reasoning here |

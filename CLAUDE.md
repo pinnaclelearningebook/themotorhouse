@@ -160,7 +160,9 @@ Model pages: H1 `Sell your [model]` · specialist opener · export eligibility b
 
 ## 9. The form (v2 — Phase B and C)
 
-**Step 1 — Identify.** Plate input → live lookup → "Is this your car?" card (make, model, year, colour, fuel, engine, MOT expiry, last recorded mileage, all in mono) → confirm, or "not my car" → manual entry. On confirm, make/model/year/mileage pre-fill.
+**Step 1 — Identify.** Plate input → live lookup → "Is this your car?" card (make, year, colour, fuel, engine, MOT expiry, plus model and last recorded mileage **when available**, all in mono) → confirm, or "not my car" → manual entry. On confirm, make/model/year/mileage pre-fill.
+
+Model and mileage come from MOT history and are absent on vehicles under ~3 years old. The card treats that as normal and asks for the model in one field — see ARCHITECTURE.md section 3.
 
 **Step 2 — The car.** Mileage (pre-filled, editable) · service history · keepers · condition by area (bodywork / interior / mechanical / tyres: good/fair/poor + note) · warning lights · known faults · modifications · photos (up to 12, guided prompts for specific shots, previews, delete).
 

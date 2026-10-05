@@ -12,7 +12,7 @@ export function AutoDealerJsonLd() {
     "@type": "AutoDealer",
     name: SITE.name,
     description:
-      "A UK car buying service. Firm offers on premium cars, free collection anywhere in mainland UK, payment before the transporter leaves.",
+      "A UK car buying service. We buy any car, anywhere in mainland UK. Firm offers, free collection, payment before the transporter leaves.",
   };
   if (!isAwaiting(CONTACT.phone)) data.telephone = CONTACT.phone;
   if (!isAwaiting(CONTACT.email)) data.email = CONTACT.email;
