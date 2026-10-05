@@ -3,6 +3,7 @@ import { Section } from "@/components/ui/Section";
 import { DevConfigBanner } from "@/components/ui/DevConfigBanner";
 import { ValuationFormV2 } from "@/components/forms/ValuationFormV2";
 import { PROMISES } from "@/config/site";
+import { agentSettings } from "@/lib/agent/settings";
 
 export const metadata: Metadata = {
   title: "Get my offer",
@@ -17,6 +18,9 @@ export default async function ValuationPage({
   searchParams: Promise<{ reg?: string }>;
 }) {
   const { reg } = await searchParams;
+  // Resolved server-side so a seller is never offered an assistant that
+  // would immediately fail. agent_enabled seeds false.
+  const { enabled: agentEnabled } = await agentSettings();
 
   return (
     <main>
@@ -34,7 +38,7 @@ export default async function ValuationPage({
             we give is the number we pay.
           </p>
           <div className="mt-12">
-            <ValuationFormV2 initialReg={reg} />
+            <ValuationFormV2 initialReg={reg} agentEnabled={agentEnabled} />
           </div>
         </div>
       </Section>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { db } from "@/lib/db";
 import { createSession } from "@/lib/agent/session";
 import { agentSettings } from "@/lib/agent/settings";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
@@ -8,15 +9,21 @@ import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
 /**
  * Open a conversation.
  *
- * Takes the lead and vehicle the widget is sitting beside. Both are
- * checked to exist before a session is issued, so a fabricated id cannot
- * create a conversation attached to someone else's record — and the token
- * this returns, not the ids, is what authorises everything afterwards.
+ * The conversation starts against a vehicle, resolved here from the
+ * registration rather than passed in as an id. No lead is attached yet:
+ * that happens through /api/agent/notes once the form has created one and
+ * the browser can prove it. The token this issues, not any id in a body,
+ * is what authorises every later turn.
  */
 
+/**
+ * Only a registration. Deliberately no lead id and no vehicle id: an id
+ * accepted here would be an id taken on trust, and the lead is attached
+ * later through /api/agent/notes, which checks the browser actually
+ * created it.
+ */
 const bodySchema = z.object({
-  leadId: z.string().uuid().nullable().optional(),
-  vehicleId: z.string().uuid().nullable().optional(),
+  reg: z.string().trim().min(2).max(10).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -36,10 +43,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
   }
 
-  const session = await createSession({
-    leadId: parsed.data.leadId ?? null,
-    vehicleId: parsed.data.vehicleId ?? null,
-  });
+  // Resolve the vehicle ourselves. A missing row is fine — Maya works
+  // with no vehicle context and says so rather than guessing.
+  let vehicleId: string | null = null;
+  if (parsed.data.reg) {
+    const { data } = await db()
+      .from("vehicles")
+      .select("id")
+      .eq("reg", parsed.data.reg.toUpperCase().replace(/\s+/g, ""))
+      .maybeSingle();
+    vehicleId = (data?.id as string) ?? null;
+  }
+
+  const session = await createSession({ leadId: null, vehicleId });
 
   if (!session) {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });

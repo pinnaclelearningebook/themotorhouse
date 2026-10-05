@@ -15,6 +15,7 @@ import {
   startLead,
 } from "@/lib/submissions";
 import { sendOperatorAlert, sendSellerConfirmation } from "@/lib/email";
+import { rememberOwnedLead } from "@/lib/agent/session";
 import { runEnrichment } from "@/lib/decision/enrich";
 
 /**
@@ -53,6 +54,16 @@ export async function startLeadAction(payload: unknown): Promise<ActionState> {
   } catch (error) {
     console.error("startLead failed", error);
     return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
+  }
+
+  // Bind the lead to this browser. The agent endpoint will only accept a
+  // lead id this cookie vouches for, because a registration is visible on
+  // any parked car and would otherwise be enough to claim someone's
+  // record. See lib/agent/session.ts.
+  try {
+    await rememberOwnedLead(id);
+  } catch (error) {
+    console.error("could not record lead ownership", error);
   }
 
   // Fires on first persistence per CLAUDE.md section 9. Thin by design:

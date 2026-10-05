@@ -1,0 +1,287 @@
+"use client";
+
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { AGENT } from "@/config/site";
+import {
+  dismissAgent,
+  subscribeToDismissal,
+  getDismissalSnapshot,
+  getDismissalServerSnapshot,
+} from "./dismissal";
+
+/**
+ * {@link AGENT.name} beside the form, in text mode.
+ *
+ * Silent by default and opt-in, per CLAUDE.md section 10: a seller who
+ * wants nothing to do with this must be able to fill the form without
+ * being spoken to. "Just the form" persists for the session, and once
+ * dismissed nothing re-offers it.
+ *
+ * Notes buffer while there is no lead. She appears when the car is
+ * identified, and the lead is created at the phone field, so anything the
+ * seller says in between would otherwise have nowhere to go. The buffer
+ * replays once a lead id arrives (ARCHITECTURE.md section 9).
+ */
+
+const STALL_MS = 30_000;
+
+interface Turn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export function AgentWidget({
+  leadId,
+  reg,
+  vehicleName,
+}: {
+  leadId: string | null;
+  /** The server resolves the vehicle from this; no ids cross the wire. */
+  reg: string;
+  vehicleName: string | null;
+}) {
+  const dismissal = useSyncExternalStore(
+    subscribeToDismissal,
+    getDismissalSnapshot,
+    getDismissalServerSnapshot,
+  );
+  const [opened, setOpened] = useState(false);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const started = useRef(false);
+  const buffered = useRef<string[]>([]);
+
+  // Stall detection. Listening at the document means the form needs no
+  // knowledge of this component. Thirty seconds on one field, once per
+  // field, and only while she is already open — an unopened widget
+  // interrupting someone is exactly what section 10 forbids.
+  useEffect(() => {
+    if (!opened) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const helped = new Set<string>();
+
+    function onFocusIn(event: FocusEvent) {
+      const target = event.target as HTMLElement | null;
+      const name = target?.getAttribute?.("name");
+      if (!name || helped.has(name)) return;
+      timer = setTimeout(() => {
+        helped.add(name);
+        void send(`I've been sitting on the "${name}" field for a while.`, true);
+      }, STALL_MS);
+    }
+    function onFocusOut() {
+      if (timer) clearTimeout(timer);
+    }
+
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+      if (timer) clearTimeout(timer);
+    };
+    // send is stable enough for this: it only reads refs and setState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened]);
+
+  // Flush anything said before the lead existed.
+  useEffect(() => {
+    if (!leadId || buffered.current.length === 0) return;
+    const pendingNotes = buffered.current.splice(0);
+    void fetch("/api/agent/notes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ leadId, notes: pendingNotes }),
+    }).catch(() => {
+      // Losing a buffered note must not break the form. The transcript
+      // still holds it, and the operator reads that.
+    });
+  }, [leadId]);
+
+  async function open() {
+    setOpened(true);
+    if (started.current) return;
+    started.current = true;
+
+    const response = await fetch("/api/agent/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reg }),
+    }).catch(() => null);
+
+    if (!response || !response.ok) {
+      setUnavailable(true);
+      return;
+    }
+
+    // Disclosure first, before anything else is said (section 10 legal).
+    setTurns([
+      {
+        role: "assistant",
+        content: `${AGENT.disclosure}. ${
+          vehicleName
+            ? `I can see the ${vehicleName} on your screen.`
+            : "I'll have your car's details once the registration goes in."
+        } Ask me anything about how this works.`,
+      },
+    ]);
+  }
+
+  function dismiss() {
+    setOpened(false);
+    dismissAgent();
+  }
+
+  async function send(message: string, silentUser = false) {
+    if (!message.trim() || pending) return;
+    setPending(true);
+    if (!silentUser) {
+      setTurns((prior) => [...prior, { role: "user", content: message }]);
+      setDraft("");
+    }
+    if (!leadId) buffered.current.push(message);
+
+    const response = await fetch("/api/agent/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message }),
+    }).catch(() => null);
+
+    if (!response || !response.ok) {
+      setTurns((prior) => [
+        ...prior,
+        {
+          role: "assistant",
+          content:
+            "I've dropped out for a moment. The form works without me, and a person will still call you.",
+        },
+      ]);
+      setPending(false);
+      return;
+    }
+
+    const body = (await response.json()) as { reply?: string };
+    setTurns((prior) => [
+      ...prior,
+      { role: "assistant", content: body.reply ?? "" },
+    ]);
+    setPending(false);
+  }
+
+  // "pending" is the server snapshot: render nothing until the client
+  // knows whether this seller already dismissed her.
+  if (dismissal !== "offered") return null;
+
+  if (!opened) {
+    return (
+      <div className="mt-10 rounded border border-line p-4">
+        <p className="text-sm">
+          {AGENT.name} can talk you through this, or you can carry on
+          alone. {AGENT.disclosure}.
+        </p>
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={open}
+            className="rounded bg-oxblood px-4 py-2 text-sm text-paper transition-colors duration-200 hover:bg-oxblood-lt"
+          >
+            Talk to {AGENT.name}
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            className="rounded border border-line px-4 py-2 text-sm transition-colors duration-200 hover:border-oxblood"
+          >
+            Just the form
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section
+      aria-label={`Chat with ${AGENT.name}`}
+      className="mt-10 rounded border border-line"
+    >
+      <header className="flex items-baseline justify-between border-b border-line px-4 py-3">
+        <p className="text-sm font-medium">
+          {AGENT.name}
+          <span className="ml-2 text-caption text-structure">
+            {AGENT.disclosure}
+          </span>
+        </p>
+        <button
+          type="button"
+          onClick={dismiss}
+          className="text-caption text-structure underline hover:text-oxblood"
+        >
+          Just the form
+        </button>
+      </header>
+
+      <div className="max-h-80 overflow-y-auto px-4 py-4">
+        {unavailable ? (
+          <p className="text-sm text-structure">
+            {AGENT.name} isn&apos;t available right now. The form works
+            exactly the same without her.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {turns.map((turn, index) => (
+              <li
+                key={index}
+                className={turn.role === "user" ? "text-right" : ""}
+              >
+                <span
+                  className={`inline-block max-w-[85%] rounded px-3 py-2 text-sm ${
+                    turn.role === "user"
+                      ? "bg-paper-warm text-left"
+                      : "border border-line"
+                  }`}
+                >
+                  {turn.content}
+                </span>
+              </li>
+            ))}
+            {pending && (
+              <li className="text-caption text-structure" role="status">
+                {AGENT.name} is typing
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+
+      {!unavailable && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void send(draft);
+          }}
+          className="flex gap-2 border-t border-line px-4 py-3"
+        >
+          <label className="sr-only" htmlFor="agent-draft">
+            Message {AGENT.name}
+          </label>
+          <input
+            id="agent-draft"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="Ask about anything"
+            className="min-w-0 flex-1 rounded border border-line bg-paper px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            disabled={pending || !draft.trim()}
+            className="rounded border border-line px-3 py-2 text-sm transition-colors duration-200 enabled:hover:border-oxblood disabled:opacity-50"
+          >
+            Send
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}

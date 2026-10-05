@@ -14,6 +14,8 @@ import { StepSale, type SaleDetails } from "./StepSale";
 import { StepYou, type ContactDetails } from "./StepYou";
 import { PhoneStep } from "./PhoneStep";
 import type { PendingPhoto } from "./PhotoUpload";
+import { AgentWidget } from "@/components/agent/AgentWidget";
+import { titleCaseVehicle } from "@/lib/format";
 
 /**
  * The four-step form (CLAUDE.md section 9).
@@ -105,9 +107,18 @@ async function attachPhotos(leadId: string, photos: PendingPhoto[]) {
 export function ValuationFormV2({
   initialReg,
   onComplete,
+  agentEnabled = false,
 }: {
   initialReg?: string;
   onComplete?: (leadId: string) => void;
+  /**
+   * Whether to offer the assistant at all. Resolved on the server from the
+   * agent_enabled setting, so when she is off the seller is not offered
+   * something that would immediately fail — and the default is false, so a
+   * call site that forgets the prop shows no widget rather than a broken
+   * one.
+   */
+  agentEnabled?: boolean;
 }) {
   const [step, setStep] = useState<Step>("identify");
   const [identified, setIdentified] = useState<IdentifyResult | null>(null);
@@ -242,6 +253,29 @@ export function ValuationFormV2({
     });
   }
 
+  /**
+   * The assistant sits below whichever step is showing, from the moment
+   * the car is identified (CLAUDE.md section 10) — never on the
+   * registration step, where the only thing asked for is one field.
+   */
+  function withAgent(node: React.ReactNode) {
+    if (!agentEnabled || !identified) return node;
+    const name = [identified.vehicle?.make, identified.vehicle?.model]
+      .filter(Boolean)
+      .map((part) => titleCaseVehicle(part as string))
+      .join(" ");
+    return (
+      <>
+        {node}
+        <AgentWidget
+          leadId={leadId}
+          reg={identified.reg}
+          vehicleName={name || null}
+        />
+      </>
+    );
+  }
+
   if (step === "identify" || !identified) {
     return (
       <IdentifyStep
@@ -255,7 +289,7 @@ export function ValuationFormV2({
   }
 
   if (step === "phone") {
-    return (
+    return withAgent(
       <PhoneStep
         reg={identified.reg}
         vehicle={identified.vehicle}
@@ -273,7 +307,7 @@ export function ValuationFormV2({
   }
 
   if (step === "car") {
-    return (
+    return withAgent(
       <StepCar
         vehicle={identified.vehicle}
         reg={identified.reg}
@@ -286,7 +320,7 @@ export function ValuationFormV2({
   }
 
   if (step === "sale") {
-    return (
+    return withAgent(
       <StepSale
         value={sale}
         onBack={() => setStep("car")}
@@ -297,7 +331,7 @@ export function ValuationFormV2({
   }
 
   if (step === "you") {
-    return (
+    return withAgent(
       <StepYou
         value={contact}
         onChange={setContact}

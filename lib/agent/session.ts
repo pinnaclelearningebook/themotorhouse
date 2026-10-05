@@ -79,3 +79,46 @@ export async function resolveSession(): Promise<
     turnCount: (data.turn_count as number) ?? 0,
   };
 }
+
+/* ─── which leads this browser actually created ──────────────────────── */
+
+const OWNED_LEADS = "tmh_leads";
+
+/**
+ * Remember that this browser created this lead.
+ *
+ * Without this, the agent endpoint would take a lead id on trust, and a
+ * registration is visible on any parked car — so anyone could open a
+ * session for someone else's vehicle, claim their lead and have set_field
+ * write to it. Read-only damage would have been limited (read_form_state
+ * returns field names, never values) but writing to a stranger's record is
+ * not something to leave open.
+ *
+ * httpOnly so page scripts cannot read or forge it, and capped so a long
+ * session cannot grow an unbounded cookie.
+ */
+export async function rememberOwnedLead(leadId: string): Promise<void> {
+  const store = await cookies();
+  const existing = (store.get(OWNED_LEADS)?.value ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (existing.includes(leadId)) return;
+
+  store.set(OWNED_LEADS, [...existing, leadId].slice(-10).join(","), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+}
+
+export async function ownsLead(leadId: string): Promise<boolean> {
+  const store = await cookies();
+  return (store.get(OWNED_LEADS)?.value ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .includes(leadId);
+}

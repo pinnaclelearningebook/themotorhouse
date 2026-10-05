@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Section } from "@/components/ui/Section";
 import { FormPreview } from "./FormPreview";
+import { agentSettings } from "@/lib/agent/settings";
 
 /**
  * Development-only harness for reviewing form steps as they are built,
@@ -9,7 +10,8 @@ import { FormPreview } from "./FormPreview";
  */
 export const metadata = { robots: { index: false, follow: false } };
 
-export default function FormPreviewPage() {
+export default async function FormPreviewPage() {
+  const { enabled } = await agentSettings();
   if (process.env.NODE_ENV === "production") notFound();
   return (
     <main>
@@ -21,7 +23,7 @@ export default function FormPreviewPage() {
           <h1 id="preview-heading" className="sr-only">
             Form step preview
           </h1>
-          <FormPreview />
+          <FormPreview agentEnabled={enabled} />
         </div>
       </Section>
     </main>
