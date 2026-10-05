@@ -44,3 +44,54 @@ export interface Submission {
   nextContactDate: string | null;
   notes: string | null;
 }
+
+/**
+ * Vehicle identity as returned by /api/vehicle/lookup.
+ *
+ * `model` is nullable and frequently null: DVLA VES has no model field at
+ * all, and DVSA MOT history — which does — holds nothing for a vehicle
+ * under ~3 years old. See ARCHITECTURE.md section 3.
+ */
+export interface VehicleIdentity {
+  reg: string;
+  make: string | null;
+  model: string | null;
+  derivative: string | null;
+  colour: string | null;
+  fuel: string | null;
+  engineCc: number | null;
+  yearOfManufacture: number | null;
+  firstRegistered: string | null;
+  taxStatus: string | null;
+  taxDue: string | null;
+  motStatus: string | null;
+  motExpiry: string | null;
+  co2: number | null;
+  euroStatus: string | null;
+  typeApproval: string | null;
+  wheelplan: string | null;
+}
+
+export type MotDefectType = "advisory" | "minor" | "major" | "dangerous" | "fail";
+
+export interface MotDefect {
+  type: MotDefectType;
+  text: string;
+}
+
+export interface MotTest {
+  testDate: string | null;
+  result: string | null;
+  expiryDate: string | null;
+  odometer: number | null;
+  odometerUnit: string | null;
+  defects: MotDefect[];
+}
+
+export interface VehicleLookup {
+  vehicle: VehicleIdentity | null;
+  mot: MotTest[];
+  source: "live" | "cache" | "stub";
+  /** True when DVLA answered but MOT history did not. */
+  motUnavailable?: boolean;
+}
