@@ -70,7 +70,8 @@ Both government APIs are applied for separately and neither is instant. Apply be
 
 ### Decisions
 
-- [ ] **Inngest or Vercel cron for background jobs** — ARCHITECTURE.md section 9 has this as the one open TBD. Claude Code recommends with reasoning at the start of Session 3; the choice gets recorded in that table.
+- [ ] **Vercel plan: Hobby or Pro** — Hobby caps cron at one run per day, so a lead whose inline enrichment failed waits until 06:00 to be swept. Pro allows every minute. Decided against upgrading for now; Phase C part 2 will also sweep on `/admin` load, which closes most of the gap without a bill.
+- [x] ~~Inngest or Vercel cron~~ — decided 5 October 2026: Vercel cron plus an inline trigger. Recorded in ARCHITECTURE section 9.
 - [ ] **Margin floors** — export default £3,500, domestic default £500. Confirm with Alex before they go into the settings seed.
 - [ ] **Landed-cost defaults** — shipping, marine insurance, Cyprus clearance, Cyprus registration, Cyprus VAT handling. Every one is a settings row, editable later without a deploy, but the seed needs real starting numbers rather than invented ones.
 - [ ] **Recon default and CRA contingency percentage** — same seed, same rule: no invented figures.
