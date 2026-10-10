@@ -20,10 +20,24 @@
  */
 
 /** Used verbatim when a price slips through. Matches agent/prompt.md. */
+/**
+ * The response time, qualified, in the one wording everything uses.
+ *
+ * The evening clause is published (FAQ 1, verbatim). The weekend clause is
+ * the honest gap: PENDING-INFO still asks whether two hours is realistic
+ * seven days a week. Until that is answered the promise is never stated
+ * bare, and RESPONSE_TIME is the single place the wording lives so the
+ * prompt, the deflection and the knowledge base cannot drift apart.
+ */
+export const RESPONSE_TIME =
+  "within {{OFFER_HOURS}} hours on a weekday, and if you enquire late in " +
+  "the evening you'll hear first thing the next morning — I don't know yet " +
+  "how weekends are handled";
+
 export const PRICE_DEFLECTION =
   "I'm not the one who sets the number, and I'd rather not guess at it. " +
-  "A person prices your car once your details are in, and that's with you " +
-  "within {{OFFER_HOURS}} hours. Is there anything I can help you finish?";
+  `A person prices your car once your details are in, ${RESPONSE_TIME}. ` +
+  "Photographs and your service history are what help them most.";
 
 /** Used when a turn is blocked for anything other than a price. */
 export const GENERAL_DEFLECTION =
@@ -33,6 +47,7 @@ export const GENERAL_DEFLECTION =
 export type GuardRule =
   | "price"
   | "service-time"
+  | "unqualified-promise"
   | "frequency"
   | "urgency"
   | "internal"
@@ -83,8 +98,12 @@ const PRICE_PATTERNS: RegExp[] = [
   // Explicit currency.
   /£\s?\d/,
   /\b\d[\d,]*\s?(?:k\b|grand\b|quid\b|pounds?\b|gbp\b)/i,
-  // Spelled-out money.
-  /\b(?:ten|eleven|twelve|fifteen|eighteen|twenty|twenty[- ]five|thirty|thirty[- ]five|forty|fifty|sixty|seventy|eighty|ninety|hundred)\s+(?:thousand|grand|k)\b/i,
+  // Spelled-out money, including compounds. "Twenty eight thousand" has a
+  // unit word between the ten and the thousand, which an adjacent-only
+  // pattern misses — and spoken numbers are nearly always said that way.
+  /\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)(?:[-\s]+(?:one|two|three|four|five|six|seven|eight|nine|hundred))*[-\s]+(?:thousand|grand|k)\b/i,
+  // A bare "thirty grand" with nothing before it.
+  /\b(?:one|two|three|four|five|six|seven|eight|nine)?[-\s]*(?:thousand|grand)\b(?=[^.]*$)/i,
   // Vague bands, which are prices with deniability.
   /\b(?:mid|high|low)[- ](?:teens|twenties|thirties|forties|fifties)\b/i,
   /\bin the (?:teens|twenties|thirties|forties|fifties)\b/i,
@@ -102,11 +121,33 @@ function looksLikeMoneyNumber(raw: string): boolean {
   return Number(digits) >= 1000;
 }
 
+/**
+ * A comma-grouped figure with no unit attached.
+ *
+ * "around 28,500" is a price whatever words surround it, and requiring a
+ * money word nearby missed it. Mileage is the one honest collision, so a
+ * figure followed by a distance unit is left alone — "18,400 miles" is
+ * not an offer.
+ */
+const GROUPED_NUMBER = /\b\d{1,3}(?:,\d{3})+\b(?!\s*(?:miles|mile|mi\b|km|kilometres))/gi;
+
+function detectGroupedFigure(text: string): { match: string; index: number } | null {
+  for (const found of text.matchAll(GROUPED_NUMBER)) {
+    if (looksLikeMoneyNumber(found[0])) {
+      return { match: found[0], index: found.index };
+    }
+  }
+  return null;
+}
+
 function detectPrice(text: string): string | null {
   for (const pattern of PRICE_PATTERNS) {
     const match = pattern.exec(text);
     if (match) return withContext(text, match[0], match.index);
   }
+
+  const grouped = detectGroupedFigure(text);
+  if (grouped) return withContext(text, grouped.match, grouped.index);
 
   // A bare number near a money word: "it'd get you 24000", "the figure is
   // 24,000". Sentence-scoped so an unrelated number elsewhere is ignored.
@@ -142,6 +183,14 @@ const FREQUENCY_PATTERNS: RegExp[] = [
   /\bordinary thing for us\b/i,
   /\bday in,? day out\b/i,
   /\bmost of the cars we\b/i,
+  // The denials. "We haven't bought one of those" is as much a claim
+  // about our history as "we've bought hundreds", and it invites the
+  // next question.
+  /\bwe (?:haven'?t|have not|never) (?:bought|had|seen|taken)\b/i,
+  /\bwe'?ve never (?:bought|had|seen|taken)\b/i,
+  /\bthe last one we (?:bought|had|took)\b/i,
+  /\bwe don'?t (?:get|see) many\b/i,
+  /\bnone (?:have|has) come through\b/i,
 ];
 
 /* ─── service times we have not published ────────────────────────────── */
@@ -204,6 +253,25 @@ function detectServiceTime(text: string): string | null {
     }
   }
   return null;
+}
+
+/**
+ * The response time stated without its qualification.
+ *
+ * Weekends are undecided, so "you'll hear within two hours" on its own is
+ * a promise we might not keep — and breaking that one undermines the
+ * positioning the whole site rests on. Any mention has to carry the
+ * weekday, evening or weekend wording with it.
+ */
+const RESPONSE_TIME_MENTION = /\b(?:two|2)\s*hours?\b/i;
+const RESPONSE_TIME_QUALIFIER =
+  /\b(?:weekday|weekdays|evening|next morning|weekend|weekends|saturday|sunday|don'?t know|do not know|can'?t say)\b/i;
+
+function detectUnqualifiedPromise(text: string): string | null {
+  const mention = RESPONSE_TIME_MENTION.exec(text);
+  if (!mention) return null;
+  if (RESPONSE_TIME_QUALIFIER.test(text)) return null;
+  return withContext(text, mention[0], mention.index);
 }
 
 /* ─── pressure, urgency, flattery ────────────────────────────────────── */
@@ -371,6 +439,7 @@ export function runGuards(
 
   const checks: [GuardRule, string | null][] = [
     ["service-time", detectServiceTime(text)],
+    ["unqualified-promise", detectUnqualifiedPromise(text)],
     ["frequency", firstMatch(text, FREQUENCY_PATTERNS)],
     ["urgency", firstMatch(text, URGENCY_PATTERNS)],
     ["internal", firstMatch(text, INTERNAL_PATTERNS)],

@@ -64,6 +64,51 @@ export function systemPrompt(opts: {
     .concat("\n\n---\n\n# Knowledge\n\n", knowledgeAsText());
 }
 
+/**
+ * The system prompt as cacheable blocks.
+ *
+ * The first block — the prompt file and the knowledge base — is identical
+ * on every request, so it is marked for caching and read back rather than
+ * re-sent. It is also by far the larger of the two. The second block
+ * carries this car and this form state, which change per conversation and
+ * must not be cached.
+ */
+export function systemBlocks(opts: {
+  vehicle: VehicleFacts | null;
+  formState: string;
+}): unknown[] {
+  const vehicle = opts.vehicle
+    ? Object.entries(opts.vehicle)
+        .filter(([, v]) => v !== null && v !== undefined && v !== "")
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" · ")
+    : "none yet";
+
+  return [
+    {
+      type: "text",
+      text: staticPrompt(),
+      cache_control: { type: "ephemeral" },
+    },
+    {
+      type: "text",
+      text: `# This conversation\n\nVehicle context: ${vehicle}\n\nForm state: ${opts.formState}`,
+    },
+  ];
+}
+
+/** The invariant half: the prompt file plus the knowledge base. */
+function staticPrompt(): string {
+  if (cached === null) {
+    cached = readFileSync(join(process.cwd(), "agent/prompt.md"), "utf8");
+  }
+  return cached
+    .replace(/\{\{AGENT_NAME\}\}/g, AGENT.name)
+    .replace(/\{\{DISCLOSURE\}\}/g, AGENT.disclosure)
+    .replace(/\{\{OFFER_HOURS\}\}/g, String(PROMISES.offerWithinHours))
+    .concat("\n\n---\n\n# Knowledge\n\n", knowledgeAsText());
+}
+
 export interface ChatTurn {
   role: "user" | "assistant";
   content: string;
@@ -125,6 +170,127 @@ function scriptedReplyForTests(): string | null {
   if (process.env.NODE_ENV === "production") return null;
   const scripted = process.env.AGENT_TEST_SCRIPTED_REPLY;
   return scripted && scripted.length > 0 ? scripted : null;
+}
+
+export interface StreamEvent {
+  type: "text" | "tool_use" | "done";
+  text?: string;
+  toolUse?: ToolUse;
+  stopReason?: string;
+}
+
+/**
+ * The same call, streamed.
+ *
+ * Voice uses this so speech can begin before the whole turn exists. The
+ * guarding that makes that safe lives in lib/agent/run.ts: each completed
+ * sentence is checked against everything said so far in the turn, not on
+ * its own, so a price split across a boundary is caught by the sentence
+ * that completes it.
+ */
+export async function* completeStream(opts: {
+  system: unknown[];
+  messages: WireMessage[];
+  model: string;
+  maxTokens: number;
+  tools?: readonly unknown[];
+  timeoutMs?: number;
+}): AsyncGenerator<StreamEvent> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error(agentUnavailableReason() ?? "not configured");
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    signal: AbortSignal.timeout(opts.timeoutMs ?? MODEL_TIMEOUT_MS),
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: opts.model,
+      max_tokens: opts.maxTokens,
+      thinking: { type: "between_tools" },
+      system: opts.system,
+      messages: opts.messages,
+      stream: true,
+      ...(opts.tools ? { tools: opts.tools } : {}),
+    }),
+  });
+
+  if (!response.ok || !response.body) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`stream failed (${response.status}): ${detail.slice(0, 200)}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let stopReason = "unknown";
+
+  // Tool calls arrive as a block id and name, then their arguments in
+  // fragments of JSON that have to be reassembled before parsing.
+  const building = new Map<number, { id: string; name: string; json: string }>();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      let event: Record<string, unknown>;
+      try {
+        event = JSON.parse(line.slice(6));
+      } catch {
+        continue;
+      }
+
+      const type = event.type as string;
+
+      if (type === "content_block_start") {
+        const block = event.content_block as Record<string, unknown>;
+        if (block?.type === "tool_use") {
+          building.set(event.index as number, {
+            id: block.id as string,
+            name: block.name as string,
+            json: "",
+          });
+        }
+      } else if (type === "content_block_delta") {
+        const d = event.delta as Record<string, unknown>;
+        if (d?.type === "text_delta") {
+          yield { type: "text", text: d.text as string };
+        } else if (d?.type === "input_json_delta") {
+          const partial = building.get(event.index as number);
+          if (partial) partial.json += (d.partial_json as string) ?? "";
+        }
+      } else if (type === "content_block_stop") {
+        const partial = building.get(event.index as number);
+        if (partial) {
+          let input: Record<string, unknown> = {};
+          try {
+            input = partial.json ? JSON.parse(partial.json) : {};
+          } catch {
+            input = {};
+          }
+          yield {
+            type: "tool_use",
+            toolUse: { id: partial.id, name: partial.name, input },
+          };
+          building.delete(event.index as number);
+        }
+      } else if (type === "message_delta") {
+        const d = event.delta as Record<string, unknown>;
+        if (d?.stop_reason) stopReason = d.stop_reason as string;
+      }
+    }
+  }
+
+  yield { type: "done", stopReason };
 }
 
 export async function complete(opts: {

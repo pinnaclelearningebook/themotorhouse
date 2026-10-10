@@ -4,8 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { agentSettings } from "@/lib/agent/settings";
 import { hasLlmSecret } from "@/lib/agent/voice";
-import { runTurn } from "@/lib/agent/run";
-import { runGuards, sentences, type VehicleContext } from "@/agent/guards";
+import { streamVoiceTurn } from "@/lib/agent/run";
+import { sentences, type VehicleContext } from "@/agent/guards";
 import { getVehicleContext, readFormState } from "@/agent/tools";
 import { PROMISES } from "@/config/site";
 
@@ -32,6 +32,9 @@ export const dynamic = "force-dynamic";
 
 /** How long an admin test conversation may be served while Maya is off. */
 const ADMIN_TEST_WINDOW_MS = 30 * 60 * 1000;
+
+/** Spoken replies are shorter than typed ones. */
+const VOICE_MAX_TOKENS = 200;
 
 const bodySchema = z.object({
   messages: z
@@ -209,72 +212,122 @@ export async function POST(request: NextRequest) {
 
   const formState = await readFormState(session);
 
-  let reply;
-  try {
-    reply = await runTurn({
-      session,
-      history,
-      message: latest,
-      vehicle,
-      formState: JSON.stringify(formState.data ?? {}),
-      model: settings.model,
-      // Shorter than text. A spoken paragraph is tiring, and a shorter
-      // reply is less surface for a guard to have to catch.
-      maxTokens: Math.min(settings.maxOutputTokens, 220),
-    });
-  } catch (error) {
-    console.error("[agent] voice turn failed:", error);
-    return speak(
-      "I've dropped out for a moment. The form still works, and a person will call you.",
-    );
-  }
-
   const guardContext: VehicleContext = vehicle ?? {};
-  const verdict = runGuards(reply.text, guardContext);
+  const encoder = new TextEncoder();
 
-  let outgoing: string;
-  if (verdict.ok) {
-    outgoing = verdict.text;
-  } else {
-    outgoing = verdict.replacement.replace(
-      /\{\{OFFER_HOURS\}\}/g,
-      String(PROMISES.offerWithinHours),
-    );
-    await db().from("agent_blocks").insert({
-      lead_id: session.leadId,
-      conversation_id: session.conversationId,
-      rule: verdict.rule,
-      matched: verdict.matched,
-      original: verdict.original,
-      replacement: outgoing,
-    });
-  }
+  /**
+   * Released sentence by sentence, each one checked against everything
+   * said so far in the turn. Speech starts as soon as the first sentence
+   * is safe rather than when the whole turn is finished.
+   */
+  const stream = new ReadableStream({
+    async start(controller) {
+      let spoken = "";
+      let blocked: { rule: string; matched: string; original: string } | null =
+        null;
+      let timings = { firstTokenAt: null as number | null, firstSentenceAt: null as number | null };
 
-  // The transcript ElevenLabs sends after the call is the record of the
-  // audio; this keeps our own copy of what was actually approved to be
-  // spoken, which is what the operator reads.
-  const { data: existing } = await db()
-    .from("conversations")
-    .select("transcript")
-    .eq("id", session.conversationId)
-    .maybeSingle();
+      try {
+        for await (const event of streamVoiceTurn({
+          session,
+          history,
+          message: latest,
+          vehicle,
+          guardContext,
+          formState: JSON.stringify(formState.data ?? {}),
+          model: settings.model,
+          // Shorter than text. A spoken paragraph is tiring, and a
+          // shorter reply is less surface for a guard to have to catch.
+          maxTokens: Math.min(settings.maxOutputTokens, VOICE_MAX_TOKENS),
+        })) {
+          if (event.type === "sentence") {
+            spoken = `${spoken}${spoken ? " " : ""}${event.text}`;
+            controller.enqueue(
+              encoder.encode(sseChunk(delta(`${event.text} `))),
+            );
+          } else if (event.type === "blocked") {
+            blocked = {
+              rule: event.rule,
+              matched: event.matched,
+              original: event.original,
+            };
+            const deflection = event.replacement.replace(
+              /\{\{OFFER_HOURS\}\}/g,
+              String(PROMISES.offerWithinHours),
+            );
+            // Nothing more of the model's turn is released. The seller
+            // hears the deflection after whatever was already safe.
+            for (const sentence of sentences(deflection)) {
+              controller.enqueue(
+                encoder.encode(sseChunk(delta(`${sentence} `))),
+              );
+            }
+            spoken = `${spoken}${spoken ? " " : ""}${deflection}`;
+          } else if (event.type === "finished") {
+            timings = {
+              firstTokenAt: event.firstTokenAt,
+              firstSentenceAt: event.firstSentenceAt,
+            };
+          }
+        }
+      } catch (error) {
+        console.error("[agent] voice turn failed:", error);
+        const apology =
+          "I've dropped out for a moment. The form still works, and a person will call you.";
+        controller.enqueue(encoder.encode(sseChunk(delta(apology))));
+        spoken = spoken || apology;
+      }
 
-  const transcript = Array.isArray(existing?.transcript)
-    ? (existing.transcript as unknown[])
-    : [];
+      controller.enqueue(encoder.encode(sseChunk(finish())));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
 
-  await db()
-    .from("conversations")
-    .update({
-      mode: "voice",
-      transcript: [
-        ...transcript,
-        { role: "user", content: latest },
-        { role: "assistant", content: outgoing },
-      ],
-      turn_count: turnCount + 1,
-    })
-    .eq("id", session.conversationId);
+      console.warn(
+        `[agent] voice turn ttft=${timings.firstTokenAt ?? "n/a"}ms ` +
+          `ttfs=${timings.firstSentenceAt ?? "n/a"}ms blocked=${blocked?.rule ?? "no"}`,
+      );
 
-  return speak(outgoing);
+      if (blocked) {
+        await db().from("agent_blocks").insert({
+          lead_id: session.leadId,
+          conversation_id: session.conversationId,
+          rule: blocked.rule,
+          matched: blocked.matched,
+          original: blocked.original,
+          replacement: spoken,
+        });
+      }
+
+      const { data: existing } = await db()
+        .from("conversations")
+        .select("transcript")
+        .eq("id", session.conversationId)
+        .maybeSingle();
+
+      const transcript = Array.isArray(existing?.transcript)
+        ? (existing.transcript as unknown[])
+        : [];
+
+      await db()
+        .from("conversations")
+        .update({
+          mode: "voice",
+          transcript: [
+            ...transcript,
+            { role: "user", content: latest },
+            { role: "assistant", content: spoken },
+          ],
+          turn_count: turnCount + 1,
+        })
+        .eq("id", session.conversationId);
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+    },
+  });
 }

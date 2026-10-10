@@ -51,7 +51,7 @@ function promisePage(): KnowledgePage {
     id: "promises",
     title: "What we promise, in full",
     body: [
-      `A firm offer within ${PROMISES.offerWithinHours} hours, from a person.`,
+      `A firm offer within ${PROMISES.offerWithinHours} hours on a weekday, from a person. If the enquiry comes in late in the evening, the answer comes first thing the next morning. How weekends are handled is not settled, and is not something to state either way.`,
       `${PROMISES.collection}.`,
       `${PROMISES.payment}.`,
       "No deductions. Not at collection, not ever.",

@@ -478,7 +478,7 @@ describe("the voice surfaces", () => {
     // alone spend a model call finding out.
     const secretAt = llm.search(/hasLlmSecret\(/);
     const settingsAt = llm.search(/await agentSettings\(\)/);
-    const modelAt = llm.search(/await runTurn\(/);
+    const modelAt = llm.search(/streamVoiceTurn\(/);
     expect(secretAt).toBeGreaterThan(-1);
     expect(secretAt).toBeLessThan(settingsAt);
     expect(settingsAt).toBeLessThan(modelAt);
@@ -492,23 +492,39 @@ describe("the voice surfaces", () => {
   it("applies the same kill switch, turn cap and guards as text", () => {
     expect(llm).toMatch(/if \(!settings\.enabled\)/);
     expect(llm).toMatch(/turnCount >= settings\.maxTurns/);
-    expect(llm).toMatch(/runGuards\(/);
     expect(llm).toMatch(/agent_blocks/);
+    // The guards now run inside the release loop, which is where they
+    // have to be for streaming to be safe at all.
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/runGuards\(prefix/);
   });
 
-  it("guards the whole turn before any sentence is emitted", () => {
-    // Sentences are split only after runGuards has passed the turn, so a
-    // price spread across a sentence boundary cannot slip between two
-    // separately guarded fragments.
-    const guardAt = llm.search(/const verdict = runGuards\(/);
-    const speakAt = llm.search(/return speak\(outgoing\)/);
-    expect(guardAt).toBeGreaterThan(-1);
-    expect(guardAt).toBeLessThan(speakAt);
-    expect(llm).toMatch(/sentences\(text\)/);
+  it("guards the prefix, not the sentence, before releasing speech", () => {
+    // Each completed sentence is checked against everything said so far in
+    // the turn. Guarding a sentence alone would let a price through in
+    // pieces: no single fragment holds both the number and what makes it
+    // a price.
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/const prefix = `\$\{released\}/);
+    expect(run).toMatch(/runGuards\(prefix, opts\.guardContext\)/);
+    // And releasing stops at the first failure.
+    expect(run).toMatch(/type: "blocked"[\s\S]{0,200}?return;/);
   });
 
-  it("caps voice replies shorter than text", () => {
-    expect(llm).toMatch(/Math\.min\(settings\.maxOutputTokens, \d+\)/);
+  it("caps spoken replies shorter than typed ones", () => {
+    expect(llm).toMatch(/VOICE_MAX_TOKENS\s*=\s*\d+/);
+    expect(llm).toMatch(/Math\.min\(settings\.maxOutputTokens, VOICE_MAX_TOKENS\)/);
+  });
+
+  it("caches the invariant half of the prompt", () => {
+    // The prompt and knowledge are identical on every request and are by
+    // far the larger half; the vehicle and form state are not and must
+    // not be cached with them.
+    const provider = readFileSync(join(ROOT_DIR, "agent/provider.ts"), "utf8");
+    expect(provider).toMatch(/cache_control: \{ type: "ephemeral" \}/);
+    const cacheAt = provider.indexOf("cache_control");
+    const contextAt = provider.indexOf("# This conversation");
+    expect(cacheAt).toBeLessThan(contextAt);
   });
 
   it("rejects an unsigned or unverified webhook before writing", () => {

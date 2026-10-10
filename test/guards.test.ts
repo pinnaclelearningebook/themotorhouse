@@ -45,6 +45,13 @@ const PRICES = [
 ];
 
 /** Ways a model invents a past the business does not have. */
+/** The response time stated bare, while weekends are undecided. */
+const UNQUALIFIED = [
+  "That's with you within 2 hours.",
+  "A person will price it and you'll have the offer within two hours.",
+  "Within 2 hours, from a person, not an algorithm.",
+];
+
 const FREQUENCY = [
   "We buy cars with finance outstanding most weeks.",
   "We see a lot of these.",
@@ -58,6 +65,12 @@ const FREQUENCY = [
   "We've seen that before.",
   "Cars like this come in every day.",
   "We do this all the time.",
+  // The denials are claims too.
+  "We haven't bought one of those.",
+  "We've bought lots of these.",
+  "We've never had a Defender through.",
+  "The last one we bought was similar.",
+  "We don't get many of those.",
 ];
 
 /** Response times nobody has published or agreed to keep. */
@@ -104,7 +117,7 @@ const CONTACT = [
 /** Turns that are correct, useful and must not be touched. */
 const LEGITIMATE = [
   "Put yes, and don't worry about the amount. We buy cars with finance still outstanding.",
-  "A person prices your car once your details are in, and that's with you within 2 hours.",
+  "A person prices your car once your details are in, within 2 hours on a weekday, and if you enquire late in the evening you'll hear first thing the next morning — I don't know yet how weekends are handled.",
   "The offer stands for seven days, provided the mileage hasn't materially increased.",
   "No deductions. Not at collection, not ever.",
   "Payment reaches you before the transporter leaves with the car.",
@@ -160,7 +173,7 @@ describe("service-time guard", () => {
     // FAQ 1, verbatim. A guard that blocked her own correct answer would
     // be worse than no guard, because it would train us to loosen it.
     const published = [
-      "A person prices your car and your firm offer reaches you within 2 hours.",
+      "A person prices your car and your firm offer reaches you within 2 hours on a weekday.",
       "If you enquire late in the evening, you'll hear first thing the next morning.",
       "The offer stands for seven days, provided the mileage hasn't materially increased.",
       "I've noted that you'd prefer to be called at weekends.",
@@ -174,6 +187,36 @@ describe("service-time guard", () => {
     for (const text of published) {
       const result = runGuards(text, DEFENDER);
       expect(result.ok, `wrongly blocked: ${text}`).toBe(true);
+    }
+  });
+});
+
+describe("unqualified response time", () => {
+  it.each(UNQUALIFIED)("blocks: %s", (text) => {
+    const result = runGuards(text, DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("unqualified-promise");
+  });
+
+  it("allows it when the qualification travels with it", () => {
+    const qualified = [
+      "A person prices your car once your details are in, within 2 hours on a weekday, and if you enquire late in the evening you'll hear first thing the next morning — I don't know yet how weekends are handled.",
+      "Within two hours on a weekday. I can't say how weekends are handled.",
+      "I don't know whether the 2 hours holds on a Saturday.",
+    ];
+    for (const text of qualified) {
+      const result = runGuards(text, DEFENDER);
+      expect(result.ok, `wrongly blocked: ${text}`).toBe(true);
+    }
+  });
+
+  it("qualifies the deflection it sends in place of a price", () => {
+    // The replacement must not itself break the rule it enforces.
+    const result = runGuards("It's worth about £28,000.", DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      const spoken = result.replacement.replace(/\{\{OFFER_HOURS\}\}/g, "2");
+      expect(runGuards(spoken, DEFENDER).ok).toBe(true);
     }
   });
 });

@@ -150,3 +150,185 @@ export async function runTurn(opts: {
   // route still guards whatever is returned here.
   throw new Error(`tool loop exceeded ${MAX_TOOL_ROUNDS} rounds`);
 }
+
+/* ─── voice: streamed, with cumulative-prefix guarding ───────────────── */
+
+import { completeStream, systemBlocks } from "@/agent/provider";
+import { runGuards, sentences, type VehicleContext } from "@/agent/guards";
+
+export interface ReleasedSentence {
+  type: "sentence";
+  text: string;
+  /** Milliseconds from the start of the turn. */
+  at: number;
+}
+
+export interface BlockedTurn {
+  type: "blocked";
+  rule: string;
+  matched: string;
+  /** The whole turn as the model wrote it, including what was released. */
+  original: string;
+  replacement: string;
+  at: number;
+}
+
+export interface TurnFinished {
+  type: "finished";
+  /** Everything released to speech. */
+  spoken: string;
+  firstTokenAt: number | null;
+  firstSentenceAt: number | null;
+}
+
+export type VoiceEvent = ReleasedSentence | BlockedTurn | TurnFinished;
+
+/**
+ * A spoken turn, released sentence by sentence.
+ *
+ * Each time a sentence completes, the guards run over **everything said so
+ * far in this turn** — every sentence already released plus the new one —
+ * rather than the new sentence alone. That is what catches a price split
+ * across a boundary: "It's worth about." passes on its own and means
+ * nothing, but once "Twenty eight thousand." arrives the prefix reads
+ * "It's worth about. Twenty eight thousand." and the number is caught
+ * before that sentence is spoken.
+ *
+ * Earlier sentences have already been spoken by then and cannot be
+ * recalled. That is the real cost of streaming at all, and it is why the
+ * check is cumulative: the most a leak can be is a fragment that was
+ * harmless until the next one completed it, and the sentence carrying the
+ * number never goes out.
+ */
+export async function* streamVoiceTurn(opts: {
+  session: AgentSession;
+  history: { role: "user" | "assistant"; content: string }[];
+  message: string;
+  vehicle: Parameters<typeof systemBlocks>[0]["vehicle"];
+  guardContext: VehicleContext;
+  formState: string;
+  model: string;
+  maxTokens: number;
+}): AsyncGenerator<VoiceEvent> {
+  const startedAt = Date.now();
+  const since = () => Date.now() - startedAt;
+
+  const system = systemBlocks({
+    vehicle: opts.vehicle,
+    formState: opts.formState,
+  });
+
+  const messages: WireMessage[] = [
+    ...opts.history.map((turn) => ({ role: turn.role, content: turn.content })),
+    { role: "user" as const, content: opts.message },
+  ];
+
+  let firstTokenAt: number | null = null;
+  let firstSentenceAt: number | null = null;
+  let released = "";
+
+  for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
+    let turnText = "";
+    let pending = "";
+    const toolUses = [];
+    let stopReason = "unknown";
+
+    for await (const event of completeStream({
+      system,
+      messages,
+      model: opts.model,
+      maxTokens: opts.maxTokens,
+      tools: TOOL_DEFINITIONS,
+      timeoutMs: TURN_BUDGET_MS,
+    })) {
+      if (event.type === "text" && event.text) {
+        if (firstTokenAt === null) firstTokenAt = since();
+        turnText += event.text;
+        pending += event.text;
+
+        // A sentence is only complete when another one has started, or
+        // the stream ends; otherwise "£28." looks finished mid-number.
+        const parts = sentences(pending);
+        while (parts.length > 1) {
+          const candidate = parts.shift() as string;
+          const prefix = `${released}${released ? " " : ""}${candidate}`;
+          const verdict = runGuards(prefix, opts.guardContext);
+
+          if (!verdict.ok) {
+            yield {
+              type: "blocked",
+              rule: verdict.rule,
+              matched: verdict.matched,
+              original: turnText,
+              replacement: verdict.replacement,
+              at: since(),
+            };
+            return;
+          }
+
+          released = prefix;
+          if (firstSentenceAt === null) firstSentenceAt = since();
+          yield { type: "sentence", text: candidate, at: since() };
+          pending = parts.join(" ");
+        }
+      } else if (event.type === "tool_use" && event.toolUse) {
+        toolUses.push(event.toolUse);
+      } else if (event.type === "done") {
+        stopReason = event.stopReason ?? "unknown";
+      }
+    }
+
+    // Whatever is left is the last sentence of this block.
+    if (pending.trim()) {
+      const prefix = `${released}${released ? " " : ""}${pending.trim()}`;
+      const verdict = runGuards(prefix, opts.guardContext);
+      if (!verdict.ok) {
+        yield {
+          type: "blocked",
+          rule: verdict.rule,
+          matched: verdict.matched,
+          original: turnText,
+          replacement: verdict.replacement,
+          at: since(),
+        };
+        return;
+      }
+      released = prefix;
+      if (firstSentenceAt === null) firstSentenceAt = since();
+      yield { type: "sentence", text: pending.trim(), at: since() };
+    }
+
+    if (toolUses.length === 0 || stopReason !== "tool_use") {
+      yield { type: "finished", spoken: released, firstTokenAt, firstSentenceAt };
+      return;
+    }
+
+    messages.push({
+      role: "assistant",
+      content: [
+        ...(turnText ? [{ type: "text", text: turnText }] : []),
+        ...toolUses.map((use) => ({
+          type: "tool_use",
+          id: use.id,
+          name: use.name,
+          input: use.input,
+        })),
+      ],
+    });
+
+    const effects: TurnResult["effects"] = {};
+    const results = [];
+    for (const use of toolUses) {
+      const result = await runTool(opts.session, use.name, use.input, effects);
+      results.push({
+        type: "tool_result",
+        tool_use_id: use.id,
+        content: JSON.stringify(result),
+        ...(result.ok ? {} : { is_error: true }),
+      });
+    }
+    messages.push({ role: "user", content: results });
+  }
+
+  yield { type: "finished", spoken: released, firstTokenAt, firstSentenceAt };
+}
