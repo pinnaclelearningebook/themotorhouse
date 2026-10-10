@@ -126,7 +126,13 @@ export async function runTurn(opts: {
     outputTokens += reply.outputTokens;
 
     if (reply.toolUses.length === 0) {
-      return { text: reply.text, inputTokens, outputTokens };
+      return {
+        // Same reason as voice: a tool-call block written as prose is
+        // not an instruction, it is text, and the seller would read it.
+        text: stripToolSyntax(reply.text).text,
+        inputTokens,
+        outputTokens,
+      };
     }
 
     messages.push({ role: "assistant", content: reply.content });
@@ -152,8 +158,14 @@ export async function runTurn(opts: {
 /* ─── voice: streamed, with cumulative-prefix guarding ───────────────── */
 
 import { completeStream, systemBlocks } from "@/agent/provider";
-import { mentionsResponseTime, type GuardResult } from "@/agent/guards";
-import { runGuards, sentences, type VehicleContext } from "@/agent/guards";
+import {
+  mentionsResponseTime,
+  runGuards,
+  sentences,
+  stripToolSyntax,
+  type GuardResult,
+  type VehicleContext,
+} from "@/agent/guards";
 
 export interface ReleasedSentence {
   type: "sentence";
@@ -273,6 +285,16 @@ export async function* streamVoiceTurn(opts: {
     turnText += event.text;
     pending += event.text;
 
+    // She has no tools in speech and the prompt still describes them, so
+    // she writes the syntax out instead. Cut it before it can be split
+    // into a sentence and spoken.
+    const cut = stripToolSyntax(pending);
+    const wroteToolSyntax = cut.matched !== null;
+    if (wroteToolSyntax) {
+      console.warn("[agent] voice turn wrote tool syntax, discarded:", cut.matched);
+      pending = cut.text;
+    }
+
     const parts = sentences(pending);
     while (parts.length > 1 && spokenCount + held.length < VOICE_SENTENCE_CAP) {
       const candidate = parts.shift() as string;
@@ -306,6 +328,9 @@ export async function* streamVoiceTurn(opts: {
       if (firstSentenceAt === null) firstSentenceAt = since();
       yield { type: "sentence", text: candidate, at: since() };
     }
+
+    // Nothing after invented markup is wanted, so the turn ends here.
+    if (wroteToolSyntax) break;
 
     // Two sentences is the cap. Stop generating rather than paying for
     // words nobody will hear; returning closes the upstream stream.
@@ -359,6 +384,31 @@ export async function* streamVoiceTurn(opts: {
 function voiceSystemBlocks(contextText: string): unknown[] {
   return [
     ...systemBlocks({ vehicle: null, formState: "" }).slice(0, 1),
+    { type: "text", text: VOICE_ONLY },
     { type: "text", text: `# This car\n\n${contextText}` },
   ];
 }
+
+/**
+ * The part of the prompt that is only true in speech.
+ *
+ * The cached half describes the tools, because the typed path has them.
+ * Spoken turns do not, and without being told she reached for one by
+ * writing the syntax out in prose — a production turn ended with
+ * `<invoke name="set_field">`, on its way to the speech synthesiser.
+ * agent/guards.ts cuts it either way; this stops her writing it.
+ */
+const VOICE_ONLY = `# In speech
+
+You are speaking out loud. You have no tools in this conversation: no
+lookups, no writes, nothing to call. Everything you know about the car is
+below.
+
+Never write a tool call, XML, a function name or any other markup. There
+is nothing listening for it and it would be read aloud.
+
+Anything worth passing to the person who rings them is captured for you,
+afterwards, without you doing anything. So never announce it and never
+describe it. Asked whether you have noted something, do not discuss the
+record at all, in either direction: the person who calls will have what
+they have told you, and that is the whole answer.`;

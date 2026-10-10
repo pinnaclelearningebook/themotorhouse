@@ -106,6 +106,35 @@ export function firstSentences(text: string, limit: number): string {
   return text.slice(0, consumed);
 }
 
+/**
+ * Cut the turn at the first thing shaped like a tool call.
+ *
+ * In speech she has no tools, and the system prompt still describes
+ * them, so she reached for one by writing the syntax out in prose. A
+ * production voice turn ended with `<invoke name="set_field">` and
+ * `<parameter name="field">reason_for_sale</parameter>`, which went to
+ * the speech synthesiser and would have been read aloud to a seller.
+ *
+ * Truncation rather than a block: the sentences before it were good, and
+ * what follows is markup she invented. A partial tag at the end of a
+ * delta simply does not match yet, so it stays unreleased until it
+ * either completes and is cut, or turns out to be ordinary prose.
+ */
+const TOOL_SYNTAX =
+  /<\/?\s*(?:antml:)?(?:invoke|parameter|function_calls?|function_results?|tool_use|tool_call)\b/i;
+
+export function stripToolSyntax(text: string): {
+  text: string;
+  matched: string | null;
+} {
+  const found = TOOL_SYNTAX.exec(text);
+  if (!found) return { text, matched: null };
+  return {
+    text: text.slice(0, found.index).trimEnd(),
+    matched: text.slice(found.index, found.index + 120),
+  };
+}
+
 export function mentionsResponseTime(text: string): boolean {
   return /\b\d+\s*hours?\b|\b(?:one|two|three|four|five|six|twelve|24)\s*hours?\b/i.test(
     text,

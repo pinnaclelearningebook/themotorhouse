@@ -5,6 +5,7 @@ import {
   runGuards,
   sentences,
   firstSentences,
+  stripToolSyntax,
   claimsARecord,
   PRICE_DEFLECTION,
   GENERAL_DEFLECTION,
@@ -636,5 +637,48 @@ describe("the text sentence cap", () => {
   it("does not cut an abbreviation in half", () => {
     const text = "It is a 2.0 litre, approx. 12,000 miles, one owner.";
     expect(firstSentences(text, 3)).toBe(text);
+  });
+});
+
+describe("tool syntax written as prose", () => {
+  it("cuts the turn at an invoke block and keeps what came before", () => {
+    // From a production voice turn. She has no tools in speech, so she
+    // wrote the syntax out, and it was on its way to the speech
+    // synthesiser to be read aloud.
+    const text =
+      "Not yet, so I'll put it down now. I'm recording the reason for " +
+      'sale as a new job.\n\n<invoke name="set_field">\n' +
+      '<parameter name="field">reason_for_sale</parameter>';
+    const cut = stripToolSyntax(text);
+    expect(cut.text).toBe(
+      "Not yet, so I'll put it down now. I'm recording the reason for " +
+        "sale as a new job.",
+    );
+    expect(cut.matched).toMatch(/<invoke/);
+  });
+
+  it("catches the namespaced and closing forms too", () => {
+    for (const markup of [
+      "<invoke name=\"set_field\">",
+      "</parameter>",
+      "<function_calls>",
+      "<tool_use>",
+    ]) {
+      const cut = stripToolSyntax(`Fine so far. ${markup} rest`);
+      expect(cut.matched, markup).not.toBeNull();
+      expect(cut.text).toBe("Fine so far.");
+    }
+  });
+
+  it("leaves ordinary speech alone, including a partial tag", () => {
+    for (const text of [
+      "Put the mileage in next. A rough figure is fine.",
+      "It is under 5 years old, so under the limit.",
+      // A delta can end mid-tag. Nothing matches until it completes, and
+      // nothing after the marker is ever released, so this is safe.
+      "Not yet, so I'll put it down now. <inv",
+    ]) {
+      expect(stripToolSyntax(text).matched, text).toBeNull();
+    }
   });
 });

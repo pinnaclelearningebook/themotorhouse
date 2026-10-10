@@ -477,7 +477,7 @@ describe("the scripted-reply hook cannot run in production", () => {
 });
 
 describe("the voice surfaces", () => {
-  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
   const webhook = readFileSync(
     join(ROOT_DIR, "app/api/agent/webhook/route.ts"),
     "utf8",
@@ -596,7 +596,7 @@ describe("the voice surfaces", () => {
 });
 
 describe("the admin voice test path", () => {
-  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
   const voiceSession = readFileSync(
     join(ROOT_DIR, "app/api/agent/voice-session/route.ts"),
     "utf8",
@@ -779,7 +779,7 @@ describe("spoken replies", () => {
   });
 
   it("write notes beside the reply, not inside it", () => {
-    const route = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    const route = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
     const startedAt = route.indexOf("extractAndWriteNotes({");
     const streamedAt = route.indexOf("streamVoiceTurn({");
     expect(startedAt).toBeGreaterThan(-1);
@@ -799,7 +799,7 @@ describe("spoken replies", () => {
   });
 
   it("are capped shorter than typed ones", () => {
-    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
     const cap = llm.match(/VOICE_MAX_TOKENS\s*=\s*(\d+)/);
     expect(cap).not.toBeNull();
     expect(Number((cap as RegExpMatchArray)[1])).toBeLessThanOrEqual(200);
@@ -843,7 +843,7 @@ describe("the guard context carries what the lookup knows", () => {
 });
 
 describe("a claim with nothing written", () => {
-  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
 
   it("is logged for review when the notes step wrote nothing", () => {
     // The notes step runs beside the reply, so the model never learns
@@ -1036,9 +1036,35 @@ describe("the voice session hands over the conversation id", () => {
   it("authorises the LLM endpoint by secret and conversation, never a cookie", () => {
     // ElevenLabs' servers call it. They carry no browser cookie, so a
     // cookie check there would refuse every real voice turn.
-    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/[[...openai]]/route.ts"), "utf8");
     expect(llm).toMatch(/hasLlmSecret\(request\.headers\.get\("authorization"\)\)/);
     expect(llm).toMatch(/conversation\?\.admin_test === true/);
     expect(llm).not.toMatch(/agentAccess|currentAdmin|cookies\(/);
+  });
+});
+
+describe("spoken turns have no tools and must not write any", () => {
+  const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+
+  it("tells her so in a voice-only block", () => {
+    expect(run).toMatch(/const VOICE_ONLY = `# In speech/);
+    expect(run).toMatch(/You have no tools in this conversation/);
+    expect(run).toMatch(/\{ type: "text", text: VOICE_ONLY \}/);
+  });
+
+  it("cuts it in code as well as asking in the prompt", () => {
+    // A prompt is a request. The seller hearing XML read aloud is the
+    // kind of failure that gets a coded rule (CLAUDE.md section 10).
+    expect(run).toMatch(/const cut = stripToolSyntax\(pending\);/);
+    expect(run).toMatch(/if \(wroteToolSyntax\) break;/);
+    // And the typed path, where it would be read rather than heard.
+    expect(run).toMatch(/text: stripToolSyntax\(reply\.text\)\.text,/);
+  });
+
+  it("keeps the strip in front of the sentence split", () => {
+    const stripAt = run.search(/const cut = stripToolSyntax\(pending\);/);
+    const splitAt = run.search(/const parts = sentences\(pending\);/);
+    expect(stripAt).toBeGreaterThan(-1);
+    expect(stripAt).toBeLessThan(splitAt);
   });
 });

@@ -65,7 +65,17 @@ async function main() {
     console.log(`Reusing secret ${NAME}`);
   }
 
-  // 2. Point the agent's LLM at us.
+  // 2. Point the agent's LLM at us, and let the client name the
+  //    conversation.
+  //
+  //    custom_llm_extra_body has to be allowed explicitly. It defaults to
+  //    false, and with it false ElevenLabs closes the socket with
+  //    "Custom LLM extra body override is not allowed for this AI agent"
+  //    before a single turn — which is what it did on 11 October 2026,
+  //    on top of both call sites passing the wrong option name. The
+  //    conversation id is how /api/agent/llm knows which conversation a
+  //    spoken turn belongs to; there is no other channel for it, because
+  //    the request comes from ElevenLabs and not from the browser.
   const llmUrl = `${base.replace(/\/$/, "")}/api/agent/llm`;
   const patch = await fetch(`${API}/convai/agents/${agentId}`, {
     method: "PATCH",
@@ -83,6 +93,9 @@ async function main() {
           },
         },
       },
+      platform_settings: {
+        overrides: { custom_llm_extra_body: true },
+      },
     }),
   });
 
@@ -97,7 +110,36 @@ async function main() {
   // 3. Read it back rather than trusting the write.
   const check = await fetch(`${API}/convai/agents/${agentId}`, { headers }).then((r) => r.json());
   const configured = check?.conversation_config?.agent?.prompt;
-  console.log("Verified:", JSON.stringify({ llm: configured?.llm, url: configured?.custom_llm?.url }, null, 2));
+  const overrides = check?.platform_settings?.overrides;
+  const soft = check?.conversation_config?.turn?.soft_timeout_config;
+  console.log(
+    "Verified:",
+    JSON.stringify(
+      {
+        llm: configured?.llm,
+        url: configured?.custom_llm?.url,
+        custom_llm_extra_body_allowed: overrides?.custom_llm_extra_body,
+        soft_timeout: soft
+          ? {
+              seconds: soft.timeout_seconds,
+              message: soft.message,
+              max_per_generation: soft.max_soft_timeouts_per_generation,
+            }
+          : null,
+      },
+      null,
+      2,
+    ),
+  );
+
+  if (overrides?.custom_llm_extra_body !== true) {
+    console.error(
+      "\ncustom_llm_extra_body is not allowed. Without it ElevenLabs closes " +
+        "every conversation before the first turn and no spoken reply is " +
+        "possible.",
+    );
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {
