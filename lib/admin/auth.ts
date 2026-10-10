@@ -16,6 +16,24 @@ import { db } from "@/lib/db";
  * not expose lead data — see supabase/migrations/20261005210000.
  */
 
+/**
+ * Is the emailed sign-in code available?
+ *
+ * The code path works and is tested. The email is the problem: Supabase
+ * refuses template writes to a free project using its own sender, so
+ * `{{ .Token }}` cannot be put in the magic-link template and no code is
+ * ever sent. `/admin/login` offered a box for a code that could not
+ * arrive, and said so in writing, which is a live page telling an admin
+ * something untrue.
+ *
+ * Flip this to true in the same change that gives Resend a verified
+ * domain and runs `npm run configure-auth <url> --smtp sender@domain`.
+ * Custom SMTP lifts the template restriction, and the template is what
+ * puts the code in the email. Nothing else has to change: verifyCode and
+ * its allow-list guard stay exactly as they are.
+ */
+export const CODE_SIGN_IN_AVAILABLE = false;
+
 export interface AdminSession {
   email: string;
 }

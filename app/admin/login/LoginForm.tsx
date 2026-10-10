@@ -15,9 +15,23 @@ import { sendMagicLink, verifyCode } from "./actions";
  * The response to sending is deliberately identical whether or not the
  * address is on the allow-list: confirming which addresses are admins to
  * anyone who can load the page would be a gift to someone enumerating
- * them. The code form is shown either way, for the same reason.
+ * them. When the code form is shown it is shown either way, for the same
+ * reason.
  */
-export function LoginForm({ linkFailed = false }: { linkFailed?: boolean }) {
+export function LoginForm({
+  linkFailed = false,
+  codeSignIn = false,
+}: {
+  linkFailed?: boolean;
+  /**
+   * Whether the emailed code can arrive at all. False while the project
+   * is on Supabase's own sender, because the template cannot carry
+   * {{ .Token }} — see CODE_SIGN_IN_AVAILABLE. The form below is kept
+   * whole behind it rather than deleted: the only thing missing is the
+   * code in the email.
+   */
+  codeSignIn?: boolean;
+}) {
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
@@ -68,33 +82,35 @@ export function LoginForm({ linkFailed = false }: { linkFailed?: boolean }) {
           If that address is on the allow-list, a sign-in link is on its way.
         </p>
 
-        <form onSubmit={verify} className="mt-8" noValidate>
-          <p className="text-sm text-structure">
-            The same email carries a sign-in code. Use it if the link does
-            not work — some email scanners open links before you do, which
-            spends them.
-          </p>
-          <div className="mt-4">
-            <TextField
-              label="Sign-in code"
-              name="code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              mono
-            />
-          </div>
-          {error && (
-            <p role="alert" className="mt-3 text-sm font-medium text-oxblood">
-              {error}
+        {codeSignIn && (
+          <form onSubmit={verify} className="mt-8" noValidate>
+            <p className="text-sm text-structure">
+              The same email carries a sign-in code. Use it if the link does
+              not work — some email scanners open links before you do, which
+              spends them.
             </p>
-          )}
-          <div className="mt-6">
-            <Button disabled={pending}>
-              {pending ? "Checking…" : "Sign in with code"}
-            </Button>
-          </div>
-        </form>
+            <div className="mt-4">
+              <TextField
+                label="Sign-in code"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                mono
+              />
+            </div>
+            {error && (
+              <p role="alert" className="mt-3 text-sm font-medium text-oxblood">
+                {error}
+              </p>
+            )}
+            <div className="mt-6">
+              <Button disabled={pending}>
+                {pending ? "Checking…" : "Sign in with code"}
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     );
   }

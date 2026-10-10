@@ -83,6 +83,45 @@ describe("admin route structure", () => {
     expect(gateAt).toBeLessThan(verifyAt);
   });
 
+  it("does not offer a sign-in code the email cannot carry", () => {
+    // Supabase refuses template writes to a free project on its own
+    // sender, so {{ .Token }} is not in the magic-link email and no code
+    // arrives. The page used to say "the same email carries a sign-in
+    // code" and show a box for it, which was untrue on a live page.
+    //
+    // This asserts the two move together: while CODE_SIGN_IN_AVAILABLE is
+    // false the claim and the box are both behind it, so restoring one
+    // cannot leave the other behind.
+    const auth = read("lib/admin/auth.ts");
+    const form = read("app/admin/login/LoginForm.tsx");
+    const page = read("app/admin/login/page.tsx");
+
+    const available = /CODE_SIGN_IN_AVAILABLE\s*=\s*(true|false)/.exec(auth);
+    expect(available, "CODE_SIGN_IN_AVAILABLE not found").not.toBeNull();
+
+    // The page reads the constant and the form gates on the prop,
+    // whichever way the constant is set.
+    expect(page).toMatch(/codeSignIn=\{CODE_SIGN_IN_AVAILABLE\}/);
+    expect(form).toMatch(/\{codeSignIn\s*&&/);
+
+    if (available?.[1] === "false") {
+      // The claim lives inside the gated form, not beside it.
+      const gateAt = form.search(/\{codeSignIn\s*&&/);
+      const claimAt = form.search(/same email carries a sign-in code/);
+      expect(claimAt, "the claim about the code is gone entirely").toBeGreaterThan(-1);
+      expect(
+        gateAt,
+        "the claim that the email carries a code sits outside the gate, " +
+          "so it renders while no code can arrive",
+      ).toBeLessThan(claimAt);
+    }
+
+    // Either way the route stays, ready to restore.
+    const action = read("app/admin/login/actions.ts");
+    expect(action).toMatch(/export async function verifyCode/);
+    expect(action).toMatch(/supabase\.auth\.verifyOtp\(/);
+  });
+
   it("keeps Supabase keys out of the browser bundle", () => {
     // One set of env names. A NEXT_PUBLIC_ pair drifted out of sync once
     // already: the names the login form read existed nowhere at all.

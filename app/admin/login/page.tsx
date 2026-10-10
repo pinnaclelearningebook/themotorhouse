@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./LoginForm";
-import { isAdminConfigured } from "@/lib/admin/auth";
+import { CODE_SIGN_IN_AVAILABLE, isAdminConfigured } from "@/lib/admin/auth";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -30,7 +30,10 @@ export default async function AdminLoginPage({
         </p>
       )}
       <div className="mt-8">
-        <LoginForm linkFailed={error === "link"} />
+        <LoginForm
+          linkFailed={error === "link"}
+          codeSignIn={CODE_SIGN_IN_AVAILABLE}
+        />
       </div>
     </main>
   );
