@@ -3,7 +3,7 @@ import { Section } from "@/components/ui/Section";
 import { DevConfigBanner } from "@/components/ui/DevConfigBanner";
 import { ValuationFormV2 } from "@/components/forms/ValuationFormV2";
 import { PROMISES } from "@/config/site";
-import { agentSettings } from "@/lib/agent/settings";
+import { agentAccess } from "@/lib/agent/access";
 
 export const metadata: Metadata = {
   title: "Get my offer",
@@ -19,8 +19,10 @@ export default async function ValuationPage({
 }) {
   const { reg } = await searchParams;
   // Resolved server-side so a seller is never offered an assistant that
-  // would immediately fail. agent_enabled seeds false.
-  const { enabled: agentEnabled } = await agentSettings();
+  // would immediately fail, and so the page and the endpoints agree on
+  // one answer. agent_enabled seeds false, which leaves "off" for a
+  // seller and "preview" for a signed-in admin.
+  const { mode } = await agentAccess();
 
   return (
     <main>
@@ -38,7 +40,11 @@ export default async function ValuationPage({
             we give is the number we pay.
           </p>
           <div className="mt-12">
-            <ValuationFormV2 initialReg={reg} agentEnabled={agentEnabled} />
+            <ValuationFormV2
+              initialReg={reg}
+              agentEnabled={mode !== "off"}
+              agentPreview={mode === "preview"}
+            />
           </div>
         </div>
       </Section>

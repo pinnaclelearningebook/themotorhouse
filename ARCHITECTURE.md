@@ -208,6 +208,26 @@ Session flow: seller confirms car → widget mounts silent with "Talk to Maya" /
 
 Guards run on every assistant turn server-side before it reaches the seller. A blocked turn is logged with the original text for weekly review.
 
+### 6a. Who Maya runs for
+
+`lib/agent/access.ts` answers this once per request, and everything reads its answer: the valuation page, `/api/agent/session`, `/api/agent/chat`, `/api/agent/notes` and `/api/agent/voice-session`.
+
+```
+live     agent_enabled is true. Everyone. A real conversation.
+preview  agent_enabled is false and the viewer is a signed-in,
+         allow-listed admin. The public site, the real form, the real
+         endpoints — labelled on screen, and admin_test on the row.
+off      everyone else. No widget, and every door answers 503.
+```
+
+The decision is `decideAgentMode({ enabled, isAdmin })`, a pure function, so the row that matters — a visitor who is not an admin gets nothing while the switch is false — is asserted directly rather than through mocked cookies and a mocked Postgres. `test/public-agent.test.ts` then checks the same thing over HTTP against a deployment, because the unit tests cannot tell you whether the deployed build, the real settings row and the real cookie check agree.
+
+It is one function because it used to be five. Each of those places read `settings.enabled` on its own, which was fine while there was one way to be allowed; with two, a door keeping its own copy of the rule is a door the page never offered.
+
+`admin_test` is written at insert, not by a later update. A preview conversation flagged only once something else happens is an unflagged seller conversation until then, and `/admin/review` would count its turns.
+
+The preview costs the public path one thing: `currentAdmin()` is a Supabase `getUser()` plus an `admin_users` lookup, and `/valuation` is public and on the critical path. So it is asked only when the answer can change something — no Supabase auth cookie, no question. The cookie proves nothing; it only earns the real check. The dev bypass sets no cookie, which would have made the preview invisible on localhost, so `adminDevBypass()` is exported from `lib/admin/auth.ts` and called there: one `NODE_ENV`-guarded definition, not a second copy of the condition.
+
 ## 7. Admin
 
 `/admin/layout.tsx` checks Supabase session + allow-list, else redirects to `/admin/login`. Every page `noindex`. Routes: `/admin` (inbox), `/admin/leads/[id]`, `/admin/pipeline`, `/admin/follow-ups`, `/admin/comparables`, `/admin/settings`, `/admin/review` (Maya guard log).
@@ -312,3 +332,6 @@ Missing optional keys → adapter returns `null` and `/admin` shows the control 
 | 2026-10-11 | Custom SMTP stays off until a sending domain is verified | Supabase's own sender works and is capped at two auth emails an hour, which is survivable. Resend will not send from an unverified domain and `gmail.com` can never be one, and the scoped access token cannot read `analytics_logs_read`, so pointing auth email at Resend with the current `EMAIL_FROM` would stop every sign-in email with no log to explain it. Worse than the rate limit. |
 | 2026-10-11 | The emailed sign-in code cannot work on the free tier, and the magic link is the only route in | Supabase refuses template writes to a free project using its own sender, so `{{ .Token }}` cannot be added to the magic-link email. Site URL and the redirect allow-list went in a separate request and landed, which fixes the link; the code box on `/admin/login` has nothing to accept until a verified sending domain or a paid plan lifts the restriction. |
 | 2026-10-11 | A magic-link sign-in can only be completed by the browser that requested it | `@supabase/ssr` hardcodes `flowType: "pkce"` in `createServerClient`, so `signInWithOtp` registers a code challenge and stores the verifier in the requesting browser's cookies, and `exchangeCodeForSession` in the callback can only redeem the code with that cookie. A link requested from anywhere else lands on `/admin/auth/callback?code=…` and is bounced to `/admin/login?error=link`. Sign-in is therefore something the admin starts themselves; the only route that crosses browsers is a code minted with the service-role key and typed in by hand. |
+| 2026-10-11 | One function decides who Maya runs for, and `admin_test` is set at insert | The admin preview gave a second way to be allowed, and "is Maya on?" was being answered independently in five places. Changing all five in step or leaving a hole, and the hole that matters is a seller reaching an endpoint the page never offered. The decision is pure so the row that matters — not an admin, switch false, gets nothing — is asserted without mocking cookies and Postgres, and `test/public-agent.test.ts` re-checks it over HTTP against the deployment. |
+| 2026-10-11 | The preview is labelled on screen in both the closed offer and the open panel | Previewing on the real page is only useful because it looks like the real page, which makes it the easiest thing in the project to misread. An operator who forgets which of the two they are looking at is the person most likely to believe Maya is live to sellers when she is not — the `ADMIN_DEV_BYPASS` mistake in CLAUDE.md section 17 wearing a third hat. The label is display only; the prop cannot grant access. |
+| 2026-10-11 | A Supabase auth cookie is checked before `currentAdmin()` on the public form | `/valuation` is public and on the critical path, and `currentAdmin()` costs a `getUser()` plus an `admin_users` lookup — two round trips on every anonymous visit for an answer that is no every time. The cookie proves nothing; it only earns the real check. The dev bypass sets no cookie, so it is asked about through the one `NODE_ENV`-guarded predicate rather than a second copy of the condition. |

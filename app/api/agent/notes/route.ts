@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolveSession, ownsLead } from "@/lib/agent/session";
-import { agentSettings } from "@/lib/agent/settings";
+import { agentAccess } from "@/lib/agent/access";
 
 /**
  * Attach a conversation to the lead, and flush what was said before it
@@ -24,8 +24,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const settings = await agentSettings();
-  if (!settings.enabled) {
+  const { mode } = await agentAccess();
+  if (mode === "off") {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 

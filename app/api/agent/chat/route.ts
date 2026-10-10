@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolveSession } from "@/lib/agent/session";
-import { agentSettings } from "@/lib/agent/settings";
+import { agentAccess } from "@/lib/agent/access";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
 import { runGuards, type VehicleContext } from "@/agent/guards";
 import { isAgentConfigured, agentUnavailableReason } from "@/agent/provider";
@@ -19,6 +19,10 @@ import { PROMISES } from "@/config/site";
  * ownership, then the per-IP limit, then the per-conversation turn cap,
  * and only then the model. Every one of those can refuse without a
  * single token being bought.
+ *
+ * "Off" here means off for this caller, not off globally: while
+ * agent_enabled is false a signed-in admin is previewing and a seller is
+ * refused, and the conversation row says which — see lib/agent/access.
  *
  * The guard runs after the model and before the seller, which is the
  * whole reason this endpoint exists rather than a hosted widget
@@ -36,8 +40,8 @@ function clientIp(request: NextRequest): string {
 }
 
 export async function POST(request: NextRequest) {
-  const settings = await agentSettings();
-  if (!settings.enabled) {
+  const { mode, settings } = await agentAccess();
+  if (mode === "off") {
     // Fails closed. Nothing is spent and nothing is said.
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }

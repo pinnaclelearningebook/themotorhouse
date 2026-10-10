@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "sync-admins": "node scripts/sync-admins.mjs",
     "configure-auth": "node scripts/configure-auth.mjs",
+    "test:public-agent": "E2E_PUBLIC_URL=${E2E_PUBLIC_URL:-https://themotorhouse.vercel.app} vitest run test/public-agent.test.ts",
     "test:e2e-guard": "set -a && . ./.env.local && set +a && E2E_BASE_URL=${E2E_BASE_URL:-http://localhost:3000} vitest run test/e2e-guard.test.ts",
     "configure-voice": "node scripts/configure-voice.mjs"
   },

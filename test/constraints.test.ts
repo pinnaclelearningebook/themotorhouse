@@ -217,7 +217,7 @@ describe("the agent endpoint", () => {
     // Nothing may be bought before agent_enabled is read. If the switch
     // check drifts below the model call, turning Maya off stops her
     // replying but not costing.
-    const switchAt = chat.search(/if\s*\(!settings\.enabled\)/);
+    const switchAt = chat.search(/if \(mode === "off"\)/);
     const modelAt = chat.search(/await runTurn\(/);
     expect(switchAt).toBeGreaterThan(-1);
     expect(modelAt).toBeGreaterThan(-1);
@@ -592,13 +592,26 @@ describe("the admin voice test path", () => {
   );
 
   it("lets only a signed-in admin open a session while Maya is off", () => {
-    // currentAdmin() is the dashboard's own two gates: a Supabase session
-    // and membership of admin_users. A seller cannot reach this branch.
-    expect(voiceSession).toMatch(/if \(!settings\.enabled\)/);
-    expect(voiceSession).toMatch(/const admin = await currentAdmin\(\);/);
-    expect(voiceSession).toMatch(
-      /if \(!admin\) \{\s*return NextResponse\.json\(\s*\{ error: "unavailable" \}/,
+    // The decision moved to lib/agent/access when the admin preview on
+    // the public site gave a second way to be allowed; five places each
+    // reading settings.enabled would have had to change in step. The
+    // gates themselves are unchanged — currentAdmin() is the dashboard's
+    // own two, a Supabase session and membership of admin_users.
+    const access = readFileSync(
+      join(ROOT_DIR, "lib/agent/access.ts"),
+      "utf8",
     );
+    expect(access).toMatch(/await currentAdmin\(\)/);
+    expect(access).toMatch(/if \(opts\.enabled\) return "live";/);
+    expect(access).toMatch(/if \(opts\.isAdmin\) return "preview";/);
+    expect(access).toMatch(/return "off";/);
+
+    // And the route refuses on the decision, not on its own reading.
+    expect(voiceSession).toMatch(/await agentAccess\(\)/);
+    expect(voiceSession).toMatch(
+      /if \(mode === "off"\) \{\s*return NextResponse\.json\(\{ error: "unavailable" \}/,
+    );
+    expect(voiceSession).not.toMatch(/!settings\.enabled/);
   });
 
   it("marks the conversation rather than inferring it later", () => {
@@ -648,9 +661,11 @@ describe("the admin voice test path", () => {
     expect(panel).toMatch(/admin test, not a seller/);
   });
 
-  it("leaves the public widget unchanged", () => {
-    // The seller-facing path must not know this exists. The widget is
-    // still gated on the prop resolved from the stored setting.
+  it("never lets the widget decide whether it is a test", () => {
+    // The widget is told it is a preview so it can say so on screen, and
+    // that is all it knows. What the endpoints allow, and what goes in
+    // conversations.admin_test, is decided server-side — a client prop
+    // that granted either would be a prop a seller can set.
     const widget = readFileSync(
       join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
       "utf8",
@@ -660,7 +675,7 @@ describe("the admin voice test path", () => {
       join(ROOT_DIR, "app/(site)/valuation/page.tsx"),
       "utf8",
     );
-    expect(page).toMatch(/agentEnabled=\{agentEnabled\}/);
+    expect(page).toMatch(/agentEnabled=\{mode !== "off"\}/);
   });
 });
 
@@ -670,16 +685,21 @@ describe("the admin test path can start from nothing", () => {
     // seller-facing door. An admin starting a voice test cold would
     // otherwise have no way to get a conversation at all, which made the
     // whole test path unreachable until this was found by trying to use
-    // it. The creation sits inside the admin branch, after currentAdmin().
+    // it. Still needed now that /api/agent/session serves a previewing
+    // admin: /admin/review goes straight to voice with no text session
+    // behind it. The creation sits after the access decision and inside
+    // the admin branch.
     const route = readFileSync(
       join(ROOT_DIR, "app/api/agent/voice-session/route.ts"),
       "utf8",
     );
-    const adminAt = route.search(/const admin = await currentAdmin\(\);/);
+    const accessAt = route.search(/await agentAccess\(\)/);
     const createAt = route.search(/await createSession\(/);
-    expect(adminAt).toBeGreaterThan(-1);
-    expect(createAt).toBeGreaterThan(adminAt);
+    expect(accessAt).toBeGreaterThan(-1);
+    expect(createAt).toBeGreaterThan(accessAt);
     expect(route).toMatch(/if \(!session && adminTest\)/);
+    // Flagged at insert, not by a later update.
+    expect(route).toMatch(/createSession\(\{ leadId, vehicleId, adminTest \}\)/);
   });
 });
 

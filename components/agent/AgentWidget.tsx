@@ -26,6 +26,17 @@ import {
 
 const STALL_MS = 30_000;
 
+/**
+ * Shown to an admin previewing her on the public site, in both the
+ * unopened offer and the open panel, so it is impossible to read either
+ * one as what a seller is being shown.
+ */
+const previewLabel = (
+  <p className="rounded border border-dashed border-structure px-3 py-1.5 font-mono text-caption text-structure">
+    Admin preview — {AGENT.name} is off for the public
+  </p>
+);
+
 interface Turn {
   role: "user" | "assistant";
   content: string;
@@ -35,11 +46,22 @@ export function AgentWidget({
   leadId,
   reg,
   vehicleName,
+  preview = false,
 }: {
   leadId: string | null;
   /** The server resolves the vehicle from this; no ids cross the wire. */
   reg: string;
   vehicleName: string | null;
+  /**
+   * An admin is looking at her on the public site while agent_enabled is
+   * false. Labelled, because the whole point of previewing on the real
+   * page is that it looks like the real page — and an operator who
+   * forgets which of the two they are reading is the person most likely
+   * to believe Maya is live to sellers when she is not (CLAUDE.md
+   * section 17). Display only: what the endpoints allow is decided
+   * server-side in lib/agent/access and never from this prop.
+   */
+  preview?: boolean;
 }) {
   const dismissal = useSyncExternalStore(
     subscribeToDismissal,
@@ -274,6 +296,7 @@ export function AgentWidget({
   if (!opened) {
     return (
       <div className="mt-10 rounded border border-line p-4">
+        {preview && previewLabel}
         <p className="text-sm">
           {AGENT.name} can talk you through this, or you can carry on
           alone. {AGENT.disclosure}.
@@ -303,6 +326,7 @@ export function AgentWidget({
       aria-label={`Chat with ${AGENT.name}`}
       className="mt-10 rounded border border-line"
     >
+      {preview && <div className="px-4 pt-4">{previewLabel}</div>}
       <header className="flex items-baseline justify-between border-b border-line px-4 py-3">
         <p className="text-sm font-medium">
           {AGENT.name}

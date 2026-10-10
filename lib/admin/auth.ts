@@ -38,6 +38,26 @@ export interface AdminSession {
   email: string;
 }
 
+/**
+ * Development only, for working on admin pages without a magic link in
+ * the inbox. The NODE_ENV check is not a convention here — Next sets
+ * NODE_ENV to "production" for every build, so this is dead code in any
+ * deployed environment and cannot be switched on by setting the variable
+ * in Vercel. test/constraints.test.ts asserts the guard stays.
+ *
+ * Exported because lib/agent/access needs the same answer: its cheap
+ * pre-check looks for a Supabase auth cookie before paying for
+ * currentAdmin(), and the bypass sets no cookie, so without this the
+ * admin preview would be invisible on localhost for the one developer
+ * most likely to be looking for it. One definition, not two.
+ */
+export function adminDevBypass(): boolean {
+  return (
+    process.env.NODE_ENV === "development" &&
+    process.env.ADMIN_DEV_BYPASS === "1"
+  );
+}
+
 /** Is this address on the env allow-list? Used before any auth call. */
 export function isAllowlisted(email: string): boolean {
   return allowlist().includes(email.trim().toLowerCase());
@@ -75,15 +95,7 @@ export async function supabaseServer() {
 
 /** The signed-in admin, or null. Null means redirect to /admin/login. */
 export async function currentAdmin(): Promise<AdminSession | null> {
-  // Development only, for working on admin pages without a magic link in
-  // the inbox. The NODE_ENV check is not a convention here — Next sets
-  // NODE_ENV to "production" for every build, so this branch is dead code
-  // in any deployed environment and cannot be switched on by setting the
-  // variable. test/constraints.test.ts asserts the guard stays.
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ADMIN_DEV_BYPASS === "1"
-  ) {
+  if (adminDevBypass()) {
     return { email: allowlist()[0] ?? "dev@localhost" };
   }
 

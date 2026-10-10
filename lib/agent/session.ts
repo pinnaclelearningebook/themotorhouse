@@ -19,6 +19,13 @@ const COOKIE = "tmh_agent";
 export async function createSession(opts: {
   leadId: string | null;
   vehicleId: string | null;
+  /**
+   * Marks the row as an admin previewing rather than a seller talking.
+   * Set at insert, not on a later update: a preview conversation that is
+   * only flagged once something else happens is an unflagged seller
+   * conversation until then, and /admin/review would count its turns.
+   */
+  adminTest?: boolean;
 }): Promise<{ conversationId: string } | null> {
   const token = randomBytes(32).toString("hex");
 
@@ -30,6 +37,7 @@ export async function createSession(opts: {
       mode: "text",
       provider: "anthropic",
       session_token: token,
+      admin_test: opts.adminTest === true,
     })
     .select("id")
     .maybeSingle();

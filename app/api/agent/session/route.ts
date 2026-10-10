@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { createSession } from "@/lib/agent/session";
-import { agentSettings } from "@/lib/agent/settings";
+import { agentAccess } from "@/lib/agent/access";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
 
 /**
@@ -27,8 +27,11 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const settings = await agentSettings();
-  if (!settings.enabled) {
+  // live for everyone, preview for an admin, off for a seller while the
+  // switch is false. The page and this endpoint read the same decision,
+  // so there is no door the widget never offered.
+  const { mode, adminTest } = await agentAccess();
+  if (mode === "off") {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     vehicleId = (data?.id as string) ?? null;
   }
 
-  const session = await createSession({ leadId: null, vehicleId });
+  const session = await createSession({ leadId: null, vehicleId, adminTest });
 
   if (!session) {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });

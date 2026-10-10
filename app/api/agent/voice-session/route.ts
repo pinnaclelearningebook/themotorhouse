@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveSession, createSession } from "@/lib/agent/session";
-import { currentAdmin } from "@/lib/admin/auth";
-import { agentSettings } from "@/lib/agent/settings";
+import { agentAccess } from "@/lib/agent/access";
 import {
   signedConversationUrl,
   isVoiceConfigured,
@@ -26,29 +25,25 @@ import {
  */
 
 export async function POST(request: Request) {
-  const settings = await agentSettings();
-
   /**
-   * The admin test path.
+   * The admin preview path.
    *
    * Testing voice on production otherwise means turning agent_enabled on,
    * which makes Maya live to every visitor for the duration. Instead a
-   * signed-in, allow-listed admin may open one conversation while the
-   * switch stays false. The conversation is marked, and /api/agent/llm
-   * will serve it — and only it — for thirty minutes.
+   * signed-in, allow-listed admin gets her while the switch stays false.
+   * The conversation is marked, and /api/agent/llm will serve it — and
+   * only it — for thirty minutes.
    *
-   * currentAdmin() is the same two-gate check the dashboard uses: a
-   * Supabase session, and membership of admin_users. A seller cannot
-   * reach this branch.
+   * The decision is lib/agent/access, which is the same one the valuation
+   * page and the text endpoints read: a Supabase session plus membership
+   * of admin_users. A seller cannot reach preview.
    */
-  let adminTest = false;
-  if (!settings.enabled) {
-    const admin = await currentAdmin();
-    if (!admin) {
-      return NextResponse.json({ error: "unavailable" }, { status: 503 });
-    }
-    adminTest = true;
-    console.warn("[agent] admin voice test started by", admin.email);
+  const { mode, adminTest, adminEmail } = await agentAccess();
+  if (mode === "off") {
+    return NextResponse.json({ error: "unavailable" }, { status: 503 });
+  }
+  if (adminTest) {
+    console.warn("[agent] admin voice preview started by", adminEmail);
   }
 
   if (!isVoiceConfigured()) {
@@ -93,7 +88,7 @@ export async function POST(request: Request) {
       leadId = (lead?.id as string) ?? null;
     }
 
-    const created = await createSession({ leadId, vehicleId });
+    const created = await createSession({ leadId, vehicleId, adminTest });
     if (!created) {
       return NextResponse.json({ error: "unavailable" }, { status: 503 });
     }

@@ -108,6 +108,7 @@ export function ValuationFormV2({
   initialReg,
   onComplete,
   agentEnabled = false,
+  agentPreview = false,
 }: {
   initialReg?: string;
   onComplete?: (leadId: string) => void;
@@ -119,6 +120,8 @@ export function ValuationFormV2({
    * one.
    */
   agentEnabled?: boolean;
+  /** An admin is previewing her while she is off for the public. */
+  agentPreview?: boolean;
 }) {
   const [step, setStep] = useState<Step>("identify");
   const [identified, setIdentified] = useState<IdentifyResult | null>(null);
@@ -271,6 +274,7 @@ export function ValuationFormV2({
           leadId={leadId}
           reg={identified.reg}
           vehicleName={name || null}
+          preview={agentPreview}
         />
       </>
     );
