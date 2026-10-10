@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { freshDb, seed } from "./db";
 
@@ -188,5 +190,51 @@ describe("migrations", () => {
       new Date(after.rows[0].updated_at).getTime(),
     ).toBeGreaterThanOrEqual(new Date(before.rows[0].updated_at).getTime());
     await db.close();
+  });
+});
+
+describe("queries name columns that exist", () => {
+  /**
+   * The vehicle context was selecting fuel_type and engine_capacity, which
+   * the vehicles table does not have. PostgREST returned an error, the
+   * code read `data` as null, and Maya said "I've got nothing on screen"
+   * in every conversation — voice and text — for days. It looked exactly
+   * like a lookup that had found nothing.
+   *
+   * Nothing in TypeScript catches a wrong column name in a string. This
+   * does: every column the agent asks for must appear in the migrations.
+   */
+  it("every column get_vehicle_context selects exists in the schema", () => {
+    const tools = readFileSync(join(process.cwd(), "agent/tools.ts"), "utf8");
+    // Find the vehicles query, then the first quoted string after its
+    // .select( — comments sit between the two and must not confuse it.
+    const from = tools.indexOf('from("vehicles")');
+    expect(from, "no vehicles query found").toBeGreaterThan(-1);
+    const selectAt = tools.indexOf(".select(", from);
+    expect(selectAt, "no select on the vehicles query").toBeGreaterThan(-1);
+    const quoted = tools.slice(selectAt).match(/"([^"]+)"/);
+    expect(quoted, "could not read the selected columns").not.toBeNull();
+
+    const columns = (quoted as RegExpMatchArray)[1]
+      .split(",")
+      .map((column) => column.trim())
+      .filter(Boolean);
+    expect(columns.length).toBeGreaterThan(3);
+
+    const migration = readFileSync(
+      join(process.cwd(), "supabase/migrations/20261005120000_init.sql"),
+      "utf8",
+    );
+    const table = migration.slice(
+      migration.indexOf("create table vehicles"),
+      migration.indexOf(");", migration.indexOf("create table vehicles")),
+    );
+
+    for (const column of columns) {
+      expect(
+        new RegExp(`^\\s+${column}\\s`, "m").test(table),
+        `vehicles has no column "${column}"`,
+      ).toBe(true);
+    }
   });
 });

@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
           model: vehicleData.model as string | null,
           year: vehicleData.year_of_manufacture as number | null,
           colour: vehicleData.colour as string | null,
-          fuel: vehicleData.fuel_type as string | null,
+          fuel: vehicleData.fuel as string | null,
         }
       : null;
 

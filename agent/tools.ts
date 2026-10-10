@@ -151,8 +151,13 @@ export async function getVehicleContext(
 
   const { data } = await db()
     .from("vehicles")
+    // These are the column names as the migration defines them. An
+    // earlier version asked for fuel_type and engine_capacity, which do
+    // not exist, so the select errored and the context came back empty —
+    // every single time, in voice and in text. Maya said "I've got
+    // nothing on screen" throughout and it read as a missing lookup.
     .select(
-      "make, model, year_of_manufacture, colour, fuel_type, engine_capacity, mot_expiry",
+      "make, model, year_of_manufacture, colour, fuel, engine_cc, mot_expiry",
     )
     .eq("id", session.vehicleId)
     .maybeSingle();
