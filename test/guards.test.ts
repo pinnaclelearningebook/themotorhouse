@@ -50,6 +50,13 @@ const UNQUALIFIED = [
   "That's with you within 2 hours.",
   "A person will price it and you'll have the offer within two hours.",
   "Within 2 hours, from a person, not an algorithm.",
+  // A changed number is a changed promise.
+  "You'll get a firm offer within three hours.",
+  // An added qualifier describes a service nobody agreed to provide.
+  "A firm offer within two hours on a weekday. If you enquire late in the evening, you will hear from us first thing the next morning.",
+  "You'll get a firm offer within two hours during business hours.",
+  // Half the promise is not the promise.
+  "You'll get a firm offer within two hours.",
 ];
 
 const FREQUENCY = [
@@ -200,9 +207,13 @@ describe("unqualified response time", () => {
 
   it("allows it when the qualification travels with it", () => {
     const qualified = [
+      // Published, verbatim.
       "A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.",
-      "Within two hours. I can't say how weekends are handled.",
+      // The approved spoken form.
+      "You'll get a firm offer within two hours, and if you get in touch late in the evening, you'll hear from us first thing the next morning.",
+      // Disclaimers are not promises.
       "I don't know whether the 2 hours holds on a Saturday.",
+      "I can't say how weekends are handled.",
     ];
     for (const text of qualified) {
       const result = runGuards(text, DEFENDER);
@@ -430,5 +441,22 @@ describe("figures that are not prices", () => {
     const result = runGuards("It's worth about twenty eight thousand.", DEFENDER);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rule).toBe("price");
+  });
+});
+
+describe("every published form of the promise is accepted", () => {
+  it("accepts the FAQ answer verbatim", () => {
+    // config/faq.ts:21. A guard that blocks the site is wrong about the
+    // site, not the other way round.
+    const faq =
+      "Within two hours of your enquiry, from a person, not an algorithm. If you enquire late in the evening, you will hear from us first thing the next morning.";
+    const result = runGuards(faq, DEFENDER);
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("still rejects a form that is close but not published", () => {
+    const nearly =
+      "Within two hours of your enquiry, from a person. If you enquire in the evening you'll hear tomorrow.";
+    expect(runGuards(nearly, DEFENDER).ok).toBe(false);
   });
 });

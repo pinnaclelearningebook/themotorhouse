@@ -42,16 +42,59 @@ export const RESPONSE_TIME =
   "will hear from us first thing the next morning";
 
 /**
- * What the seller hears in place of a blocked turn.
+ * The spoken form, approved for voice.
  *
- * Deliberately does not open with the refusal. Hearing "I'd rather not
- * guess" as the first thing, twice running, is what makes an assistant
- * feel like a wall — so it leads with what does happen next.
+ * The published sentences read as a notice when said aloud. This says the
+ * same two things in the same order with no addition: the offer, the two
+ * hours, and the evening clause. Nothing is qualified, softened or
+ * re-timed.
  */
+export const RESPONSE_TIME_SPOKEN =
+  "You'll get a firm offer within two hours, and if you get in touch late " +
+  "in the evening, you'll hear from us first thing the next morning.";
+
+/** Normalised for comparison: case, punctuation and spacing do not count. */
+function flatten(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Every form the site already uses, plus the one approved for speech.
+ *
+ * The FAQ answer and the /how-it-works heading word the same promise
+ * differently, and both are published. A guard that accepted only one of
+ * them would block Maya for quoting the site — which it did, on the FAQ
+ * answer, the first time this ran.
+ */
+const ACCEPTED_RESPONSE_TIME = [
+  RESPONSE_TIME,
+  RESPONSE_TIME_SPOKEN,
+  // config/faq.ts, the answer to "How quickly will I get my offer?"
+  "within two hours of your enquiry, from a person, not an algorithm. If " +
+    "you enquire late in the evening, you will hear from us first thing " +
+    "the next morning",
+].map(flatten);
+
+/** Qualifiers the site does not use, and so neither may she. */
+const FORBIDDEN_QUALIFIER =
+  /\b(?:weekday|weekdays|working day|working days|business day|business days|business hours|office hours|mon(?:day)?[-\s]*(?:to|–|-)[-\s]*fri(?:day)?)\b/i;
+
+/** Does this turn mention the response-time promise at all? */
+export function mentionsResponseTime(text: string): boolean {
+  return /\b\d+\s*hours?\b|\b(?:one|two|three|four|five|six|twelve|24)\s*hours?\b/i.test(
+    text,
+  );
+}
+
 export const PRICE_DEFLECTION =
-  `A person prices your car once your details are in: ${RESPONSE_TIME}. ` +
-  "I can't put a number on it myself, but photographs and your service " +
-  "history are what help them most.";
+  "A person prices your car once your details are in. I can't put a " +
+  "number on it myself, but photographs and your service history are what " +
+  "help them most.";
 
 /** Used when a turn is blocked for anything other than a price. */
 export const GENERAL_DEFLECTION =
@@ -311,13 +354,39 @@ function detectServiceTime(text: string): string | null {
  * weekday, evening or weekend wording with it.
  */
 const RESPONSE_TIME_MENTION = /\b(?:two|2)\s*hours?\b/i;
-const RESPONSE_TIME_QUALIFIER =
-  /\b(?:evening|next morning|weekend|weekends|saturday|sunday|don'?t know|do not know|can'?t say|cannot say|won'?t promise)\b/i;
 
+/** Saying she does not know is a disclaimer, not a promise. */
+const DISCLAIMING =
+  /\b(?:don'?t know|do not know|can'?t say|cannot say|won'?t promise|not sure|a person will confirm)\b/i;
+
+/**
+ * The response time, stated in any form but the two approved ones.
+ *
+ * Two are allowed: the published sentences verbatim, and the spoken form
+ * agreed for voice. Both say the same thing. Anything else — a different
+ * number, an added "on a weekday", a shortened version that drops the
+ * evening clause — is a promise that differs from the one on the site,
+ * and the whole positioning rests on that promise being kept.
+ */
 function detectUnqualifiedPromise(text: string): string | null {
+  const forbidden = FORBIDDEN_QUALIFIER.exec(text);
+  if (forbidden) return withContext(text, forbidden[0], forbidden.index);
+
   const mention = RESPONSE_TIME_MENTION.exec(text);
-  if (!mention) return null;
-  if (RESPONSE_TIME_QUALIFIER.test(text)) return null;
+  if (!mention) {
+    // A different number of hours attached to the offer is a changed
+    // promise, not an absent one.
+    const altered = /\b(?:one|three|four|five|six|twelve|24|\d+)\s*hours?\b/i.exec(text);
+    if (altered && /\boffer\b/i.test(text)) {
+      return withContext(text, altered[0], altered.index);
+    }
+    return null;
+  }
+
+  const flat = flatten(text);
+  if (ACCEPTED_RESPONSE_TIME.some((form) => flat.includes(form))) return null;
+  if (DISCLAIMING.test(text)) return null;
+
   return withContext(text, mention[0], mention.index);
 }
 

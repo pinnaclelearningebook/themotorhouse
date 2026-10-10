@@ -228,6 +228,15 @@ export async function* completeStream(opts: {
   let buffer = "";
   let stopReason = "unknown";
 
+  /**
+   * Stop reading when the consumer stops listening.
+   *
+   * Voice caps a turn at two sentences and breaks out of the loop. Without
+   * cancelling, the rest of the completion keeps arriving and being paid
+   * for with nobody to hear it.
+   */
+  try {
+
   // Tool calls arrive as a block id and name, then their arguments in
   // fragments of JSON that have to be reassembled before parsing.
   const building = new Map<number, { id: string; name: string; json: string }>();
@@ -290,7 +299,12 @@ export async function* completeStream(opts: {
     }
   }
 
-  yield { type: "done", stopReason };
+    yield { type: "done", stopReason };
+  } finally {
+    await reader.cancel().catch(() => {
+      // Already closed; nothing to release.
+    });
+  }
 }
 
 export async function complete(opts: {

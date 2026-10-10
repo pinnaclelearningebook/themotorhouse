@@ -508,7 +508,7 @@ describe("the voice surfaces", () => {
     expect(run).toMatch(/const prefix = `\$\{released\}/);
     expect(run).toMatch(/runGuards\(prefix, opts\.guardContext\)/);
     // And releasing stops at the first failure.
-    expect(run).toMatch(/type: "blocked"[\s\S]{0,200}?return;/);
+    expect(run).toMatch(/yield blockOn\(verdict\);\s*return;/);
   });
 
   it("caps spoken replies shorter than typed ones", () => {
@@ -717,12 +717,50 @@ describe("the seeded voice-test car is not a seller", () => {
 });
 
 describe("spoken replies", () => {
-  it("never release the model's between-tools preamble", () => {
-    // With thinking in between_tools mode the model writes "I'll record
-    // that figure first. Then I'll answer you." before calling a tool.
-    // Streaming it put that in the seller's ear.
+  it("use no tools at all", () => {
+    // A tool call is a second model round-trip, and the seller hears the
+    // silence. Everything about the car is loaded into the context
+    // instead; anything worth recording is written beside the reply.
     const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
-    expect(run).toMatch(/if \(toolUses\.length > 0\) \{\s*turnText = "";\s*pending = "";/);
+    const voice = run.slice(run.indexOf("export async function* streamVoiceTurn"));
+    expect(voice).not.toMatch(/TOOL_DEFINITIONS/);
+    expect(voice).not.toMatch(/runTool\(/);
+  });
+
+  it("are capped at two sentences, and stop generating there", () => {
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/VOICE_SENTENCE_CAP\s*=\s*2/);
+    expect(run).toMatch(/>= VOICE_SENTENCE_CAP\) break;/);
+    // And the upstream stream is actually closed rather than left running.
+    const provider = readFileSync(join(ROOT_DIR, "agent/provider.ts"), "utf8");
+    expect(provider).toMatch(/finally \{\s*await reader\.cancel\(\)/);
+  });
+
+  it("hold a response-time sentence until the turn can be judged whole", () => {
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/mentionsResponseTime\(candidate\)/);
+    // Holding one sentence holds the rest, or speech comes out reordered.
+    expect(run).toMatch(/if \(holding \|\| mentionsResponseTime/);
+  });
+
+  it("write notes beside the reply, not inside it", () => {
+    const route = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    const startedAt = route.indexOf("extractAndWriteNotes({");
+    const streamedAt = route.indexOf("streamVoiceTurn({");
+    expect(startedAt).toBeGreaterThan(-1);
+    // Started before the turn it must not delay, awaited before close.
+    expect(startedAt).toBeLessThan(streamedAt);
+    expect(route).toMatch(/const notes = await extraction;/);
+  });
+
+  it("write notes through the same validated writers as the tools", () => {
+    const notes = readFileSync(join(ROOT_DIR, "lib/agent/notes.ts"), "utf8");
+    expect(notes).toMatch(/toolSchemas\.set_field\.safeParse/);
+    expect(notes).toMatch(/toolSchemas\.append_lead_note\.safeParse/);
+    expect(notes).toMatch(/await setField\(/);
+    expect(notes).toMatch(/await appendLeadNote\(/);
+    // Never a direct write that would skip the enum and error checks.
+    expect(notes).not.toMatch(/\.from\(["']leads["']\)/);
   });
 
   it("are capped shorter than typed ones", () => {
@@ -742,7 +780,11 @@ describe("spoken replies", () => {
   it("do not lead the deflection with the refusal", () => {
     const guards = readFileSync(join(ROOT_DIR, "agent/guards.ts"), "utf8");
     const deflection = guards.slice(guards.indexOf("export const PRICE_DEFLECTION"));
-    expect(deflection).toMatch(/^export const PRICE_DEFLECTION =\s*\n\s*`A person prices your car/m);
+    expect(deflection).toMatch(/PRICE_DEFLECTION =\s*\n\s*"A person prices your car/);
+    // The refusal follows; it does not lead.
+    expect(deflection.indexOf("A person prices")).toBeLessThan(
+      deflection.indexOf("I can't put a"),
+    );
   });
 });
 
@@ -752,19 +794,15 @@ describe("the guard context carries what the lookup knows", () => {
     // built it from make, model, year, colour and fuel only, so Maya
     // reading "2996cc" off her own vehicle record was blocked as an
     // invented fact — correct rule, incomplete context.
-    for (const route of [
-      "app/api/agent/chat/route.ts",
-      "app/api/agent/llm/route.ts",
-    ]) {
-      const code = readFileSync(join(ROOT_DIR, route), "utf8");
-      expect(code, `${route} must pass the engine size`).toMatch(
-        /engineCapacity: vehicleData\.engine_cc/,
-      );
-      // And the guard context must be the vehicle itself, not a
-      // hand-copied subset that silently misses new fields.
-      expect(code, `${route} must not rebuild the guard context`).toMatch(
-        /guardContext: VehicleContext = vehicle \?\?? \{\}|guardContext: VehicleContext = vehicle \?\? \{\}/,
-      );
-    }
+    // Text mode builds it in the route; voice builds it in the context
+    // loader. Both must carry the engine size, or Maya is blocked for
+    // reading her own record.
+    const chat = readFileSync(join(ROOT_DIR, "app/api/agent/chat/route.ts"), "utf8");
+    expect(chat).toMatch(/engineCapacity: vehicleData\.engine_cc/);
+    expect(chat).toMatch(/guardContext: VehicleContext = vehicle \?\? \{\}/);
+
+    const context = readFileSync(join(ROOT_DIR, "lib/agent/voice-context.ts"), "utf8");
+    expect(context).toMatch(/engineCapacity:/);
+    expect(context).toMatch(/mileage:/);
   });
 });

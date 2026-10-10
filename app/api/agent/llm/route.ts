@@ -5,8 +5,9 @@ import { db } from "@/lib/db";
 import { agentSettings } from "@/lib/agent/settings";
 import { hasLlmSecret } from "@/lib/agent/voice";
 import { streamVoiceTurn } from "@/lib/agent/run";
-import { sentences, type VehicleContext } from "@/agent/guards";
-import { getVehicleContext, readFormState } from "@/agent/tools";
+import { sentences } from "@/agent/guards";
+import { loadVoiceContext } from "@/lib/agent/voice-context";
+import { extractAndWriteNotes } from "@/lib/agent/notes";
 import { PROMISES } from "@/config/site";
 
 /**
@@ -40,7 +41,7 @@ const ADMIN_TEST_WINDOW_MS = 30 * 60 * 1000;
  * stops a long one reaching the ear at all. It has to leave room for tool
  * arguments, which come out of the same budget.
  */
-const VOICE_MAX_TOKENS = 160;
+const VOICE_MAX_TOKENS = 90;
 
 const bodySchema = z.object({
   messages: z
@@ -203,30 +204,26 @@ export async function POST(request: NextRequest) {
       content: message.content as string,
     }));
 
-  const vehicleResult = await getVehicleContext(session);
-  const vehicleData = (vehicleResult.data ?? {}) as Record<string, unknown>;
-  const vehicle =
-    vehicleData.known === true
-      ? {
-          make: vehicleData.make as string | null,
-          model: vehicleData.model as string | null,
-          year: vehicleData.year_of_manufacture as number | null,
-          colour: vehicleData.colour as string | null,
-          fuel: vehicleData.fuel as string | null,
-          // Passed to the guards as well as the prompt: without the
-          // engine size, Maya reading "2996cc" off her own context was
-          // blocked as a fact she had invented.
-          engineCapacity: vehicleData.engine_cc as number | null,
-          // So quoting the mileage off the MOT record is not treated as
-          // a figure she invented.
-          mileage: vehicleData.lastRecordedMileage as number | null,
-        }
-      : null;
+  // Everything about the car, assembled once. No tool round-trips.
+  const context = await loadVoiceContext(session);
 
-  const formState = await readFormState(session);
-
-  const guardContext: VehicleContext = vehicle ?? {};
   const encoder = new TextEncoder();
+
+  /**
+   * Note extraction runs beside the reply, not inside it.
+   *
+   * Started here so it overlaps the model turn the seller is waiting on.
+   * It is awaited before the stream closes, which costs nothing when it
+   * finishes first and bounds the function's life when it does not.
+   */
+  const extraction = extractAndWriteNotes({
+    session,
+    message: latest,
+    model: settings.model,
+  }).catch((error) => {
+    console.error("[agent] note extraction failed:", error);
+    return { written: [] as string[], note: false };
+  });
 
   /**
    * Released sentence by sentence, each one checked against everything
@@ -245,9 +242,8 @@ export async function POST(request: NextRequest) {
           session,
           history,
           message: latest,
-          vehicle,
-          guardContext,
-          formState: JSON.stringify(formState.data ?? {}),
+          contextText: context.text,
+          guardContext: context.guard,
           model: settings.model,
           // Shorter than text. A spoken paragraph is tiring, and a
           // shorter reply is less surface for a guard to have to catch.
@@ -291,9 +287,12 @@ export async function POST(request: NextRequest) {
         spoken = spoken || apology;
       }
 
+      const notes = await extraction;
       console.warn(
         `[agent] voice turn ttft=${timings.firstTokenAt ?? "n/a"}ms ` +
-          `ttfs=${timings.firstSentenceAt ?? "n/a"}ms blocked=${blocked?.rule ?? "no"}`,
+          `ttfs=${timings.firstSentenceAt ?? "n/a"}ms ` +
+          `blocked=${blocked?.rule ?? "no"} ` +
+          `wrote=${notes.written.join("|") || "nothing"}`,
       );
 
       if (blocked) {
