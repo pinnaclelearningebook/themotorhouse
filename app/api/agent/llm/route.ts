@@ -30,6 +30,9 @@ import { PROMISES } from "@/config/site";
 
 export const dynamic = "force-dynamic";
 
+/** How long an admin test conversation may be served while Maya is off. */
+const ADMIN_TEST_WINDOW_MS = 30 * 60 * 1000;
+
 const bodySchema = z.object({
   messages: z
     .array(
@@ -104,9 +107,6 @@ export async function POST(request: NextRequest) {
   }
 
   const settings = await agentSettings();
-  if (!settings.enabled) {
-    return NextResponse.json({ error: "unavailable" }, { status: 503 });
-  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -122,12 +122,34 @@ export async function POST(request: NextRequest) {
   // comes from ElevenLabs, not from the seller's browser.
   const { data: conversation } = await db()
     .from("conversations")
-    .select("id, lead_id, vehicle_id, turn_count, ended_at")
+    .select("id, lead_id, vehicle_id, turn_count, ended_at, admin_test, started_at")
     .eq("id", conversationId)
     .maybeSingle();
 
   if (!conversation || conversation.ended_at) {
     return NextResponse.json({ error: "no conversation" }, { status: 404 });
+  }
+
+  /**
+   * While Maya is off, exactly one kind of turn is served: one belonging
+   * to a conversation an admin opened for testing, in the last half hour.
+   *
+   * The window matters. Without it an admin_test row would be a permanent
+   * key to a switched-off assistant, and the id travels through
+   * ElevenLabs to get here. Thirty minutes is long enough for a test call
+   * and short enough that a leaked id is worthless by the time anyone
+   * finds it.
+   */
+  if (!settings.enabled) {
+    const isTest = conversation.admin_test === true;
+    const startedAt = Date.parse((conversation.started_at as string) ?? "");
+    const fresh =
+      Number.isFinite(startedAt) && Date.now() - startedAt < ADMIN_TEST_WINDOW_MS;
+
+    if (!isTest || !fresh) {
+      return NextResponse.json({ error: "unavailable" }, { status: 503 });
+    }
+    console.warn("[agent] serving an admin test turn while disabled");
   }
 
   const turnCount = (conversation.turn_count as number) ?? 0;

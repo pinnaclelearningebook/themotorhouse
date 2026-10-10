@@ -31,6 +31,24 @@ export default function CookiesPage() {
           you allowed analytics. Stored locally in your browser, never sent
           to us, kept until you clear it or change your choice.
         </li>
+        <li>
+          <span className="font-mono">tmh_agent</span> — identifies your
+          conversation with our assistant so your answers reach your own
+          enquiry and nobody else&apos;s. Set only if you choose to use it,
+          readable by our server and not by scripts in the page, and it
+          expires after four hours.
+        </li>
+        <li>
+          <span className="font-mono">tmh_leads</span> — records that this
+          browser created a particular enquiry, so nothing can be added to
+          it from anywhere else. Readable by our server and not by scripts
+          in the page, and it expires after a day.
+        </li>
+        <li>
+          <span className="font-mono">tmh_agent_dismissed</span> — remembers
+          that you asked the assistant to leave you alone, so it does not
+          offer itself again. Stored locally for this visit only.
+        </li>
       </ul>
 
       <h2>Analytics</h2>

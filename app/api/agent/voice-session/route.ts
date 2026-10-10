@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { resolveSession } from "@/lib/agent/session";
+import { currentAdmin } from "@/lib/admin/auth";
 import { agentSettings } from "@/lib/agent/settings";
 import {
   signedConversationUrl,
@@ -26,8 +27,28 @@ import {
 
 export async function POST() {
   const settings = await agentSettings();
+
+  /**
+   * The admin test path.
+   *
+   * Testing voice on production otherwise means turning agent_enabled on,
+   * which makes Maya live to every visitor for the duration. Instead a
+   * signed-in, allow-listed admin may open one conversation while the
+   * switch stays false. The conversation is marked, and /api/agent/llm
+   * will serve it — and only it — for thirty minutes.
+   *
+   * currentAdmin() is the same two-gate check the dashboard uses: a
+   * Supabase session, and membership of admin_users. A seller cannot
+   * reach this branch.
+   */
+  let adminTest = false;
   if (!settings.enabled) {
-    return NextResponse.json({ error: "unavailable" }, { status: 503 });
+    const admin = await currentAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: "unavailable" }, { status: 503 });
+    }
+    adminTest = true;
+    console.warn("[agent] admin voice test started by", admin.email);
   }
 
   if (!isVoiceConfigured()) {
@@ -44,7 +65,11 @@ export async function POST() {
   const consentAt = new Date().toISOString();
   const { error } = await db()
     .from("conversations")
-    .update({ mode: "voice", consent_recorded_at: consentAt })
+    .update({
+      mode: "voice",
+      consent_recorded_at: consentAt,
+      admin_test: adminTest,
+    })
     .eq("id", session.conversationId);
 
   if (error) {
@@ -59,6 +84,7 @@ export async function POST() {
 
   return NextResponse.json({
     signedUrl: url,
+    adminTest,
     // Echoed back to us on every custom-LLM call so the turn can be tied
     // to this conversation.
     conversationId: session.conversationId,

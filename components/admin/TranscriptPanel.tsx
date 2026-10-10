@@ -25,6 +25,7 @@ export interface ConversationRecord {
   id: string;
   started_at: string;
   mode: string;
+  admin_test?: boolean | null;
   turn_count: number | null;
   transcript: TranscriptTurn[] | null;
   structured_notes: StructuredNote[] | null;
@@ -65,6 +66,14 @@ export function TranscriptPanel({
                 {conversation.turn_count ?? 0}
               </span>{" "}
               turns
+              {conversation.admin_test && (
+                <>
+                  {" · "}
+                  <span className="font-medium text-oxblood">
+                    admin test, not a seller
+                  </span>
+                </>
+              )}
             </p>
 
             {notes.length > 0 && (

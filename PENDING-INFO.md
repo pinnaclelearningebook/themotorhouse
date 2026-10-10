@@ -96,7 +96,7 @@ Both government APIs are applied for separately and neither is instant. Apply be
 - [ ] **Supabase CLI re-authentication** — `npx supabase db push` now fails with `AccessTokenRequiredError`, so `supabase/migrations/20261010000000_voice_transcript.sql` is written but **not applied**. The post-call webhook writes to `conversations.voice_transcript` and will fail until it is. Run `npx supabase login` (or set `SUPABASE_ACCESS_TOKEN`) then `npx supabase db push`.
 - [ ] **ElevenLabs post-call webhook** — create it in the dashboard, point it at `https://<production>/api/agent/webhook`, and put the generated signing secret in `.env.local` as `ELEVENLABS_WEBHOOK_SECRET`. Unsigned and unverified calls are rejected, so until this exists no voice transcript is stored.
 - [ ] **Voice consent wording** — `components/agent/VoiceConsent.tsx` carries placeholder copy, marked on screen as "Draft wording, pending legal review". It must be replaced by the solicitor's text before launch, and the same wording added to the privacy and cookie policies.
-- [ ] **Voice legal review** — AI disclosure wording, recording consent wording, and transcript retention, added to the privacy and cookie policies. Goes to the same solicitor as the Phase A review.
+- [ ] **Voice legal review** — AI disclosure wording, recording consent wording, and transcript retention. The privacy and cookies pages now describe the assistant, the voice option, the processors (Anthropic and ElevenLabs) and the three cookies it sets; the consent panel copy in `components/agent/VoiceConsent.tsx` is marked on screen as draft. All of it goes to the same solicitor as the Phase A review, together, since the consent panel and the policy must say the same thing.
 
 ---
 

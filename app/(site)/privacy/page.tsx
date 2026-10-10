@@ -76,11 +76,37 @@ export default function PrivacyPage() {
       <h2>Who we share it with</h2>
       <p>
         We use a small number of service providers to run the service, each
-        acting under our instructions: Airtable (enquiry storage), Resend
-        (transactional email) and Vercel (website hosting). If your car has
-        outstanding finance, we share what is needed with your finance
-        company to settle it. We do not sell your information, and we do not
-        pass your details to other car buyers or dealers.
+        acting under our instructions: Supabase (enquiry storage), Resend
+        (transactional email), Vercel (website hosting and photo storage),
+        and — only if you choose to use the assistant described below —
+        Anthropic (the assistant&apos;s replies) and ElevenLabs (speech, if
+        you choose to talk rather than type). If your car has outstanding
+        finance, we share what is needed with your finance company to settle
+        it. We do not sell your information, and we do not pass your details
+        to other car buyers or dealers.
+      </p>
+
+      <h2>The assistant</h2>
+      <p>
+        You can choose to use an assistant while you fill in the form. It is
+        software, not a person, and it says so before it says anything else.
+        Using it is optional, it is silent until you ask for it, and the form
+        works exactly the same without it.
+      </p>
+      <p>
+        What you type to it is sent to Anthropic to produce a reply, and a
+        written record of the conversation is kept on your enquiry so the
+        person who calls you has the context. The assistant never quotes a
+        price, and what it writes is checked by our own software before you
+        see it.
+      </p>
+      <p>
+        If you choose to talk rather than type, your microphone audio is sent
+        to ElevenLabs to turn speech into text and text into speech. We ask
+        before the microphone opens and nothing is recorded before you agree.
+        We keep the written transcript on your enquiry. We do not keep the
+        audio.{" "}
+        <AwaitingInfo label="Voice consent wording — solicitor review" />
       </p>
 
       <h2>How long we keep it</h2>

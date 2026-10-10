@@ -25,6 +25,7 @@ interface BlockRow {
   original: string;
   replacement: string;
   lead_id: string | null;
+  conversation_id: string | null;
 }
 
 const RULE_MEANING: Record<string, string> = {
@@ -41,15 +42,40 @@ export default async function ReviewPage() {
 
   const { data } = await db()
     .from("agent_blocks")
-    .select("id, at, rule, matched, original, replacement, lead_id")
+    .select("id, at, rule, matched, original, replacement, lead_id, conversation_id")
     .order("at", { ascending: false })
     .limit(200);
 
   const rows = (data ?? []) as unknown as BlockRow[];
+
+  // Which of these came from an admin testing voice rather than a seller.
+  const conversationIds = rows
+    .map((row) => row.conversation_id)
+    .filter((id): id is string => Boolean(id));
+
+  const { data: testRows } = conversationIds.length
+    ? await db()
+        .from("conversations")
+        .select("id")
+        .in("id", conversationIds)
+        .eq("admin_test", true)
+    : { data: [] };
+
+  const testConversations = new Set(
+    (testRows ?? []).map((row) => row.id as string),
+  );
+  const isTest = (row: BlockRow) =>
+    Boolean(row.conversation_id && testConversations.has(row.conversation_id));
+
+  // The tally counts real turns only. A test that deliberately provokes a
+  // block would otherwise look like the model misbehaving in front of a
+  // seller, which is the one thing this page exists to measure.
   const byRule = rows.reduce<Record<string, number>>((acc, row) => {
+    if (isTest(row)) return acc;
     acc[row.rule] = (acc[row.rule] ?? 0) + 1;
     return acc;
   }, {});
+  const testCount = rows.filter(isTest).length;
 
   return (
     <div>
@@ -93,6 +119,14 @@ export default async function ReviewPage() {
         </p>
       )}
 
+      {testCount > 0 && (
+        <p className="mt-6 text-caption text-structure">
+          <span className="data-inline font-mono">{testCount}</span> of these
+          came from an admin testing voice and are excluded from the counts
+          below.
+        </p>
+      )}
+
       {Object.keys(byRule).length > 0 && (
         <dl className="mt-8 flex flex-wrap gap-6">
           {Object.entries(byRule)
@@ -121,6 +155,11 @@ export default async function ReviewPage() {
                 <span className="rounded border border-oxblood px-2 py-0.5 text-caption text-oxblood">
                   {row.rule}
                 </span>
+                {isTest(row) && (
+                  <span className="rounded border border-line px-2 py-0.5 text-caption text-structure">
+                    admin test, not a seller
+                  </span>
+                )}
                 <span className="data-inline font-mono text-caption text-structure">
                   {row.at.slice(0, 16).replace("T", " ")}
                 </span>

@@ -97,7 +97,7 @@ export default async function LeadPage({
 
   const { data: conversationRows } = await db()
     .from("conversations")
-    .select("id, started_at, mode, turn_count, transcript, structured_notes")
+    .select("id, started_at, mode, admin_test, turn_count, transcript, structured_notes")
     .eq("lead_id", id)
     .order("started_at", { ascending: false });
   const conversations = (conversationRows ?? []) as unknown as ConversationRecord[];

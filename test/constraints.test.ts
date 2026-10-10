@@ -563,3 +563,76 @@ describe("the voice surfaces", () => {
     expect(widget).toMatch(/onAccept=\{\(\) => void startVoice\(\)\}/);
   });
 });
+
+describe("the admin voice test path", () => {
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+  const voiceSession = readFileSync(
+    join(ROOT_DIR, "app/api/agent/voice-session/route.ts"),
+    "utf8",
+  );
+  const review = readFileSync(
+    join(ROOT_DIR, "app/admin/(workspace)/review/page.tsx"),
+    "utf8",
+  );
+
+  it("lets only a signed-in admin open a session while Maya is off", () => {
+    // currentAdmin() is the dashboard's own two gates: a Supabase session
+    // and membership of admin_users. A seller cannot reach this branch.
+    expect(voiceSession).toMatch(/if \(!settings\.enabled\)/);
+    expect(voiceSession).toMatch(/const admin = await currentAdmin\(\);/);
+    expect(voiceSession).toMatch(
+      /if \(!admin\) \{\s*return NextResponse\.json\(\s*\{ error: "unavailable" \}/,
+    );
+  });
+
+  it("marks the conversation rather than inferring it later", () => {
+    expect(voiceSession).toMatch(/admin_test: adminTest/);
+  });
+
+  it("serves a disabled turn only for a fresh admin_test conversation", () => {
+    // Three conditions, all required: the flag, the row existing, and the
+    // age. Without the window an admin_test row would be a permanent key
+    // to a switched-off assistant.
+    expect(llm).toMatch(/ADMIN_TEST_WINDOW_MS\s*=\s*30 \* 60 \* 1000/);
+    expect(llm).toMatch(/conversation\.admin_test === true/);
+    expect(llm).toMatch(/Date\.now\(\) - startedAt < ADMIN_TEST_WINDOW_MS/);
+    expect(llm).toMatch(/if \(!isTest \|\| !fresh\)/);
+  });
+
+  it("still refuses everyone else while she is off", () => {
+    const gate = llm.slice(llm.indexOf("if (!settings.enabled)"));
+    expect(gate).toMatch(/status: 503/);
+  });
+
+  it("labels test blocks and keeps them out of the tally", () => {
+    // A test that deliberately provokes a block would otherwise read as
+    // the model misbehaving in front of a seller, which is the one thing
+    // this page exists to measure.
+    expect(review).toMatch(/admin test, not a seller/);
+    expect(review).toMatch(/if \(isTest\(row\)\) return acc;/);
+  });
+
+  it("labels a test conversation on the lead it is attached to", () => {
+    const panel = readFileSync(
+      join(ROOT_DIR, "components/admin/TranscriptPanel.tsx"),
+      "utf8",
+    );
+    expect(panel).toMatch(/admin_test/);
+    expect(panel).toMatch(/admin test, not a seller/);
+  });
+
+  it("leaves the public widget unchanged", () => {
+    // The seller-facing path must not know this exists. The widget is
+    // still gated on the prop resolved from the stored setting.
+    const widget = readFileSync(
+      join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+      "utf8",
+    );
+    expect(widget).not.toMatch(/admin_test|adminTest/);
+    const page = readFileSync(
+      join(ROOT_DIR, "app/(site)/valuation/page.tsx"),
+      "utf8",
+    );
+    expect(page).toMatch(/agentEnabled=\{agentEnabled\}/);
+  });
+});
