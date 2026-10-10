@@ -78,13 +78,28 @@ export async function POST(request: Request) {
         .maybeSingle();
       vehicleId = (data?.id as string) ?? null;
     }
-    const created = await createSession({ leadId: null, vehicleId });
+    // Bind the most recent lead for this car, if there is one. A test
+    // conversation with no lead makes every write fail, and the failures
+    // are what she then talks about instead of the car.
+    let leadId: string | null = null;
+    if (vehicleId) {
+      const { data: lead } = await db()
+        .from("leads")
+        .select("id")
+        .eq("vehicle_id", vehicleId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      leadId = (lead?.id as string) ?? null;
+    }
+
+    const created = await createSession({ leadId, vehicleId });
     if (!created) {
       return NextResponse.json({ error: "unavailable" }, { status: 503 });
     }
     session = {
       conversationId: created.conversationId,
-      leadId: null,
+      leadId,
       vehicleId,
       turnCount: 0,
     };

@@ -377,3 +377,14 @@ describe("sentence splitting for speech", () => {
     expect(sentences(turn).join(" ")).toBe(turn);
   });
 });
+
+describe("the prompt forbids narrating the machinery", () => {
+  it("says so explicitly", () => {
+    // A live turn opened with "I'll check the form state first so I
+    // record this properly. The record says leadExists is false" — spoken
+    // aloud, to a seller.
+    const prompt = readFileSync(join(process.cwd(), "agent/prompt.md"), "utf8");
+    expect(prompt).toMatch(/never describe the machinery/i);
+    expect(prompt).toMatch(/never report what a lookup returned/i);
+  });
+});
