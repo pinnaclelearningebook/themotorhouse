@@ -34,11 +34,20 @@ describeIf("a signed-out visitor while Maya is off", () => {
     expect(html).not.toMatch(/Talk to Maya/);
     expect(html).not.toMatch(/Admin preview/);
 
-    // And the prop the form is actually given. The widget mounts only
+    // And the props the form is actually given. The widget mounts only
     // after the car is confirmed, so the absence of the button on step 1
     // proves nothing on its own — this is the part that does.
-    expect(html).toMatch(/"agentEnabled":false/);
-    expect(html).toMatch(/"agentPreview":false/);
+    //
+    // Read out of the flight data rather than matched in place: the
+    // payload is a JSON string inside a script tag, so the quotes arrive
+    // backslash-escaped, and asserting against the whole document prints
+    // the whole document on failure.
+    const props = /\\?"agentEnabled\\?":(true|false)[\s\S]{0,40}?\\?"agentPreview\\?":(true|false)/.exec(
+      html,
+    );
+    expect(props, "the form's agent props are not in the flight data").not.toBeNull();
+    expect(props?.[1], "agentEnabled").toBe("false");
+    expect(props?.[2], "agentPreview").toBe("false");
   });
 
   it("is refused a text conversation", async () => {
