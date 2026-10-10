@@ -272,9 +272,30 @@ export async function* streamVoiceTurn(opts: {
     } else if (pending.trim()) {
       // The answering round. Release it sentence by sentence, each one
       // checked against everything released so far in this turn.
-      for (const candidate of sentences(pending.trim())) {
+      const whole = pending.trim();
+      // The published response time is two sentences: the promise, then
+      // the evening clause that qualifies it. Checking the prefix fires
+      // on the first before the second has arrived, which blocked her for
+      // saying exactly the right thing. That rule is a property of the
+      // turn, so it is judged against the turn.
+      const wholeVerdict = runGuards(whole, opts.guardContext);
+      const qualifierIsComing =
+        wholeVerdict.ok || wholeVerdict.rule !== "unqualified-promise";
+
+      for (const candidate of sentences(whole)) {
         const prefix = `${released}${released ? " " : ""}${candidate}`;
         const verdict = runGuards(prefix, opts.guardContext);
+        if (
+          !verdict.ok &&
+          verdict.rule === "unqualified-promise" &&
+          qualifierIsComing
+        ) {
+          // Harmless on its own and qualified before the turn ends.
+          released = prefix;
+          if (firstSentenceAt === null) firstSentenceAt = since();
+          yield { type: "sentence", text: candidate, at: since() };
+          continue;
+        }
         if (!verdict.ok) {
           yield {
             type: "blocked",

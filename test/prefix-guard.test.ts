@@ -150,3 +150,42 @@ describe("reassembly across delta boundaries", () => {
     expect(releaseStreamed(deltas)).toBe(whole);
   });
 });
+
+describe("a qualification that arrives one sentence late", () => {
+  /**
+   * The published response time is two sentences: the promise, then the
+   * evening clause that qualifies it. Prefix-guarding fired on the first
+   * before the second existed and blocked her for saying exactly the
+   * right thing — twice, in a live voice turn.
+   *
+   * The rule is about what the turn says, so it is judged against the
+   * turn. Everything else stays prefix-checked.
+   */
+  const TURN =
+    "I'm not the one who sets the number. A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.";
+
+  it("fails the prefix but passes the whole turn", () => {
+    const parts = sentences(TURN);
+    const prefix = `${parts[0]} ${parts[1]}`;
+    const onPrefix = runGuards(prefix, CTX);
+    expect(onPrefix.ok).toBe(false);
+    if (!onPrefix.ok) expect(onPrefix.rule).toBe("unqualified-promise");
+
+    expect(runGuards(TURN, CTX).ok).toBe(true);
+  });
+
+  it("still blocks a turn that never qualifies it", () => {
+    const bare = "I'm not the one who sets the number. A firm offer within two hours. Anything else I can help with?";
+    const verdict = runGuards(bare, CTX);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.rule).toBe("unqualified-promise");
+  });
+
+  it("does not excuse a price that arrives late", () => {
+    // The exemption is for this one rule only.
+    const turn = "It's worth about. Twenty eight thousand. A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.";
+    const verdict = runGuards(turn, CTX);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.rule).toBe("price");
+  });
+});
