@@ -594,14 +594,25 @@ describe("the admin voice test path", () => {
     // age. Without the window an admin_test row would be a permanent key
     // to a switched-off assistant.
     expect(llm).toMatch(/ADMIN_TEST_WINDOW_MS\s*=\s*30 \* 60 \* 1000/);
-    expect(llm).toMatch(/conversation\.admin_test === true/);
+    expect(llm).toMatch(/conversation\?\.admin_test === true/);
     expect(llm).toMatch(/Date\.now\(\) - startedAt < ADMIN_TEST_WINDOW_MS/);
-    expect(llm).toMatch(/if \(!isTest \|\| !fresh\)/);
+    expect(llm).toMatch(/!isTest \|\| !fresh/);
   });
 
   it("still refuses everyone else while she is off", () => {
     const gate = llm.slice(llm.indexOf("if (!settings.enabled)"));
     expect(gate).toMatch(/status: 503/);
+  });
+
+  it("gives one answer for every failure while she is off", () => {
+    // Distinguishing "no such conversation" from "not allowed" answers,
+    // for any id someone cares to try, whether that conversation is real.
+    // The id travels through a third party to reach us.
+    expect(llm).toMatch(
+      /if \(!conversation \|\| conversation\.ended_at \|\| !isTest \|\| !fresh\)/,
+    );
+    // The 404 is only reachable when she is on.
+    expect(llm).toMatch(/\} else if \(!conversation \|\| conversation\.ended_at\) \{/);
   });
 
   it("labels test blocks and keeps them out of the tally", () => {

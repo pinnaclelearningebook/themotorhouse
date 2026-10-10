@@ -126,10 +126,6 @@ export async function POST(request: NextRequest) {
     .eq("id", conversationId)
     .maybeSingle();
 
-  if (!conversation || conversation.ended_at) {
-    return NextResponse.json({ error: "no conversation" }, { status: 404 });
-  }
-
   /**
    * While Maya is off, exactly one kind of turn is served: one belonging
    * to a conversation an admin opened for testing, in the last half hour.
@@ -139,17 +135,25 @@ export async function POST(request: NextRequest) {
    * ElevenLabs to get here. Thirty minutes is long enough for a test call
    * and short enough that a leaked id is worthless by the time anyone
    * finds it.
+   *
+   * Every failure here returns the same 503, including a conversation
+   * that does not exist. Distinguishing "no such conversation" from
+   * "not allowed" would answer, for any id someone cared to try, whether
+   * that conversation is real — and the id travels through a third party
+   * to reach us.
    */
   if (!settings.enabled) {
-    const isTest = conversation.admin_test === true;
-    const startedAt = Date.parse((conversation.started_at as string) ?? "");
+    const isTest = conversation?.admin_test === true;
+    const startedAt = Date.parse((conversation?.started_at as string) ?? "");
     const fresh =
       Number.isFinite(startedAt) && Date.now() - startedAt < ADMIN_TEST_WINDOW_MS;
 
-    if (!isTest || !fresh) {
+    if (!conversation || conversation.ended_at || !isTest || !fresh) {
       return NextResponse.json({ error: "unavailable" }, { status: 503 });
     }
     console.warn("[agent] serving an admin test turn while disabled");
+  } else if (!conversation || conversation.ended_at) {
+    return NextResponse.json({ error: "no conversation" }, { status: 404 });
   }
 
   const turnCount = (conversation.turn_count as number) ?? 0;
