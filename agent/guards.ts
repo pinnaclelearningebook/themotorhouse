@@ -764,6 +764,20 @@ function detectSelfCorrection(
 const ABBREVIATIONS =
   /\b(?:mr|mrs|ms|dr|prof|st|rd|ave|no|vs|etc|approx|dept|est|fig|incl|max|min|e\.g|i\.e)\.$/i;
 
+/**
+ * "No." is the abbreviation for a number and also the answer to a
+ * question, and she answers questions.
+ *
+ * Treating it as an abbreviation every time meant a reply opening "No.
+ * We still buy cars with partial history." counted as one sentence, so
+ * the three-sentence cap let four through — found by reading a reply,
+ * not by the cap reporting anything. It is the abbreviation only when a
+ * number follows it.
+ */
+function answeringNo(previous: string, next: string): boolean {
+  return /\bno\.$/i.test(previous) && !/^\d/.test(next);
+}
+
 export function sentences(text: string): string[] {
   const parts = text
     .split(/(?<=[a-z0-9)"'\]][.!?])\s+(?=[A-Z0-9"'(])/g)
@@ -776,7 +790,7 @@ export function sentences(text: string): string[] {
   const joined: string[] = [];
   for (const part of parts) {
     const previous = joined[joined.length - 1];
-    if (previous && ABBREVIATIONS.test(previous)) {
+    if (previous && ABBREVIATIONS.test(previous) && !answeringNo(previous, part)) {
       joined[joined.length - 1] = `${previous} ${part}`;
     } else {
       joined.push(part);

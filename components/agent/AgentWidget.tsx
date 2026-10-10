@@ -43,7 +43,7 @@ interface Turn {
  * seller is being shown.
  */
 const previewLabel = (
-  <p className="rounded border border-dashed border-structure px-3 py-1.5 font-mono text-caption text-structure">
+  <p className="max-w-56 rounded border border-dashed border-structure bg-paper px-3 py-1.5 font-mono text-caption text-structure sm:max-w-none">
     Admin preview — {AGENT.name} is off for the public
   </p>
 );
@@ -374,7 +374,7 @@ export function AgentWidget({
   if (view === "launcher") {
     return (
       <div className="fixed right-4 bottom-4 z-40 flex flex-col items-end gap-2 sm:right-6 sm:bottom-6">
-        {preview && <div className="bg-paper">{previewLabel}</div>}
+        {preview && previewLabel}
         <button
           type="button"
           onClick={() => void open()}
@@ -467,7 +467,18 @@ export function AgentWidget({
         </div>
       )}
 
-      <div ref={log} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div
+        ref={log}
+        /**
+         * grow with an auto basis, not flex-1.
+         *
+         * flex-1 sets the basis to 0, and the panel is sized by its
+         * content rather than given a height, so there is no free space
+         * to distribute and the log collapsed to nothing. The opening
+         * line was in the DOM and none of it was on screen.
+         */
+        className="min-h-0 grow basis-auto overflow-y-auto px-4 py-4"
+      >
         {unavailable ? (
           <p className="text-sm text-structure">
             {AGENT.name} isn&apos;t available right now. The form works

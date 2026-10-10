@@ -682,3 +682,27 @@ describe("tool syntax written as prose", () => {
     }
   });
 });
+
+describe("\"No.\" as an answer, not an abbreviation", () => {
+  it("counts a plain No as its own sentence", () => {
+    // A reply opening "No." counted as one sentence with what followed,
+    // so the three-sentence cap let four reach a seller.
+    const text =
+      "No. We still buy cars with partial or missing history. It does " +
+      "affect the number. If you have the stamped book, mention it.";
+    expect(sentences(text)).toHaveLength(4);
+    expect(firstSentences(text, 3)).toBe(
+      "No. We still buy cars with partial or missing history. It does " +
+        "affect the number.",
+    );
+  });
+
+  it("still joins it when a number follows", () => {
+    expect(sentences("Collection is from No. 4 Mill Lane.")).toHaveLength(1);
+  });
+
+  it("leaves the other abbreviations alone", () => {
+    expect(sentences("Ask for Mr. Patel when they call.")).toHaveLength(1);
+    expect(sentences("It is approx. 12,000 miles.")).toHaveLength(1);
+  });
+});
