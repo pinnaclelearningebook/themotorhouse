@@ -99,3 +99,54 @@ describe("a price split across sentences", () => {
     expect(result.rule).toBe("frequency");
   });
 });
+
+describe("reassembly across delta boundaries", () => {
+  /**
+   * The model streams in fragments that break anywhere, often just after
+   * a space. Rebuilding the unreleased remainder by re-joining trimmed
+   * sentences ate that space and produced "within2 hours" in a live
+   * reply. This reproduces the release loop over realistic fragments.
+   */
+  function releaseStreamed(deltas: string[]): string {
+    let pending = "";
+    let released = "";
+    const spoken: string[] = [];
+
+    for (const delta of deltas) {
+      pending += delta;
+      const parts = sentences(pending);
+      while (parts.length > 1) {
+        const candidate = parts.shift() as string;
+        released = `${released}${released ? " " : ""}${candidate}`;
+        spoken.push(candidate);
+        const consumed = pending.indexOf(candidate) + candidate.length;
+        pending = pending.slice(consumed);
+      }
+    }
+    if (pending.trim()) spoken.push(pending.trim());
+    return spoken.join(" ");
+  }
+
+  it("keeps a space that falls on a delta boundary", () => {
+    const spoken = releaseStreamed([
+      "No cut-off, we buy any car.",
+      " A person prices it within ",
+      "2 hours on a weekday.",
+    ]);
+    expect(spoken).toContain("within 2 hours");
+    expect(spoken).not.toContain("within2");
+  });
+
+  it("reassembles a multi-sentence turn exactly", () => {
+    const whole =
+      "Put yes, and don't worry about the amount. We buy cars with finance still outstanding. Tell me the figure.";
+    // Break it at awkward places, including mid-word and after spaces.
+    const deltas = [
+      "Put yes, and don't worry ",
+      "about the amount. We buy cars with fin",
+      "ance still outstanding. Tell me ",
+      "the figure.",
+    ];
+    expect(releaseStreamed(deltas)).toBe(whole);
+  });
+});

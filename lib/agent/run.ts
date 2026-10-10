@@ -269,7 +269,13 @@ export async function* streamVoiceTurn(opts: {
           released = prefix;
           if (firstSentenceAt === null) firstSentenceAt = since();
           yield { type: "sentence", text: candidate, at: since() };
-          pending = parts.join(" ");
+
+          // Slice the original rather than re-joining the trimmed parts.
+          // Deltas break mid-sentence, often right after a space, and
+          // rebuilding from trimmed pieces ate it — producing "within2
+          // hours" in a live reply.
+          const consumed = pending.indexOf(candidate) + candidate.length;
+          pending = pending.slice(consumed);
         }
       } else if (event.type === "tool_use" && event.toolUse) {
         toolUses.push(event.toolUse);

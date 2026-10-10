@@ -278,10 +278,6 @@ export async function POST(request: NextRequest) {
         spoken = spoken || apology;
       }
 
-      controller.enqueue(encoder.encode(sseChunk(finish())));
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      controller.close();
-
       console.warn(
         `[agent] voice turn ttft=${timings.firstTokenAt ?? "n/a"}ms ` +
           `ttfs=${timings.firstSentenceAt ?? "n/a"}ms blocked=${blocked?.rule ?? "no"}`,
@@ -320,6 +316,15 @@ export async function POST(request: NextRequest) {
           turn_count: turnCount + 1,
         })
         .eq("id", session.conversationId);
+
+      // Only now. Closing the stream first lets the platform tear the
+      // function down before these writes land — which it did: the
+      // transcript came back empty from a conversation that had plainly
+      // happened. The cost is the last few hundred milliseconds of the
+      // response, after the seller has already heard everything.
+      controller.enqueue(encoder.encode(sseChunk(finish())));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
     },
   });
 
