@@ -636,3 +636,22 @@ describe("the admin voice test path", () => {
     expect(page).toMatch(/agentEnabled=\{agentEnabled\}/);
   });
 });
+
+describe("the admin test path can start from nothing", () => {
+  it("opens its own conversation, since the seller door is shut", () => {
+    // /api/agent/session refuses while Maya is off, correctly — it is the
+    // seller-facing door. An admin starting a voice test cold would
+    // otherwise have no way to get a conversation at all, which made the
+    // whole test path unreachable until this was found by trying to use
+    // it. The creation sits inside the admin branch, after currentAdmin().
+    const route = readFileSync(
+      join(ROOT_DIR, "app/api/agent/voice-session/route.ts"),
+      "utf8",
+    );
+    const adminAt = route.search(/const admin = await currentAdmin\(\);/);
+    const createAt = route.search(/await createSession\(/);
+    expect(adminAt).toBeGreaterThan(-1);
+    expect(createAt).toBeGreaterThan(adminAt);
+    expect(route).toMatch(/if \(!session && adminTest\)/);
+  });
+});

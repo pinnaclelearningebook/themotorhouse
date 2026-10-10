@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { resolveSession } from "@/lib/agent/session";
+import { resolveSession, createSession } from "@/lib/agent/session";
 import { currentAdmin } from "@/lib/admin/auth";
 import { agentSettings } from "@/lib/agent/settings";
 import {
@@ -25,7 +25,7 @@ import {
  * that can actually be prevented.
  */
 
-export async function POST() {
+export async function POST(request: Request) {
   const settings = await agentSettings();
 
   /**
@@ -56,7 +56,40 @@ export async function POST() {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 
-  const session = await resolveSession();
+  let session = await resolveSession();
+
+  /**
+   * An admin testing voice has no conversation yet.
+   *
+   * The normal path reaches here with one already open, because the
+   * seller has been typing. An admin starting cold has not, and
+   * /api/agent/session refuses while Maya is off — correctly, since it is
+   * the seller-facing door. So the admin branch opens the conversation
+   * here, where the caller has already been proved to be an admin.
+   */
+  if (!session && adminTest) {
+    const body = (await request.json().catch(() => ({}))) as { reg?: string };
+    let vehicleId: string | null = null;
+    if (body.reg) {
+      const { data } = await db()
+        .from("vehicles")
+        .select("id")
+        .eq("reg", body.reg.toUpperCase().replace(/\s+/g, ""))
+        .maybeSingle();
+      vehicleId = (data?.id as string) ?? null;
+    }
+    const created = await createSession({ leadId: null, vehicleId });
+    if (!created) {
+      return NextResponse.json({ error: "unavailable" }, { status: 503 });
+    }
+    session = {
+      conversationId: created.conversationId,
+      leadId: null,
+      vehicleId,
+      turnCount: 0,
+    };
+  }
+
   if (!session) {
     return NextResponse.json({ error: "no session" }, { status: 401 });
   }
