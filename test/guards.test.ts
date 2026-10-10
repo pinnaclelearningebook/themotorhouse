@@ -460,3 +460,31 @@ describe("every published form of the promise is accepted", () => {
     expect(runGuards(nearly, DEFENDER).ok).toBe(false);
   });
 });
+
+describe("a blend of the approved forms", () => {
+  it("accepts the heading joined to the spoken clause", () => {
+    // Produced live. Both halves, nothing added, no number changed.
+    const blend =
+      "A firm offer within two hours, and if you get in touch late in the evening, you'll hear from us first thing the next morning.";
+    const result = runGuards(blend, DEFENDER);
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("still blocks half the promise", () => {
+    expect(runGuards("A firm offer within two hours.", DEFENDER).ok).toBe(false);
+  });
+
+  it("still blocks an added qualifier inside a blend", () => {
+    const bad =
+      "A firm offer within two hours on a weekday, and if you get in touch late in the evening, you'll hear from us first thing the next morning.";
+    const result = runGuards(bad, DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("unqualified-promise");
+  });
+
+  it("still blocks a changed number inside a blend", () => {
+    const bad =
+      "A firm offer within four hours, and if you get in touch late in the evening, you'll hear from us first thing the next morning.";
+    expect(runGuards(bad, DEFENDER).ok).toBe(false);
+  });
+});

@@ -387,6 +387,25 @@ function detectUnqualifiedPromise(text: string): string | null {
   if (ACCEPTED_RESPONSE_TIME.some((form) => flat.includes(form))) return null;
   if (DISCLAIMING.test(text)) return null;
 
+  /**
+   * A blend of the approved forms is still the approved promise.
+   *
+   * She produced "A firm offer within two hours, and if you get in touch
+   * late in the evening, you'll hear from us first thing the next
+   * morning" — the heading's first half joined to the spoken form's
+   * second. It adds nothing, changes no number and drops no clause, and
+   * blocking it would mean blocking the right answer for its punctuation.
+   *
+   * What must survive is the test that actually matters: both halves
+   * present, nothing added. The forbidden qualifiers and changed numbers
+   * are checked above and are unaffected.
+   */
+  const bothHalves =
+    /\bfirm offer\b/.test(flat) &&
+    /\blate in the evening\b/.test(flat) &&
+    /\bfirst thing the next morning\b/.test(flat);
+  if (bothHalves) return null;
+
   return withContext(text, mention[0], mention.index);
 }
 
