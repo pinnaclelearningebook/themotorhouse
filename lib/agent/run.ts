@@ -245,38 +245,6 @@ export async function* streamVoiceTurn(opts: {
         if (firstTokenAt === null) firstTokenAt = since();
         turnText += event.text;
         pending += event.text;
-
-        // A sentence is only complete when another one has started, or
-        // the stream ends; otherwise "£28." looks finished mid-number.
-        const parts = sentences(pending);
-        while (parts.length > 1) {
-          const candidate = parts.shift() as string;
-          const prefix = `${released}${released ? " " : ""}${candidate}`;
-          const verdict = runGuards(prefix, opts.guardContext);
-
-          if (!verdict.ok) {
-            yield {
-              type: "blocked",
-              rule: verdict.rule,
-              matched: verdict.matched,
-              original: turnText,
-              replacement: verdict.replacement,
-              at: since(),
-            };
-            return;
-          }
-
-          released = prefix;
-          if (firstSentenceAt === null) firstSentenceAt = since();
-          yield { type: "sentence", text: candidate, at: since() };
-
-          // Slice the original rather than re-joining the trimmed parts.
-          // Deltas break mid-sentence, often right after a space, and
-          // rebuilding from trimmed pieces ate it — producing "within2
-          // hours" in a live reply.
-          const consumed = pending.indexOf(candidate) + candidate.length;
-          pending = pending.slice(consumed);
-        }
       } else if (event.type === "tool_use" && event.toolUse) {
         toolUses.push(event.toolUse);
       } else if (event.type === "done") {
@@ -284,24 +252,44 @@ export async function* streamVoiceTurn(opts: {
       }
     }
 
-    // Whatever is left is the last sentence of this block.
-    if (pending.trim()) {
-      const prefix = `${released}${released ? " " : ""}${pending.trim()}`;
-      const verdict = runGuards(prefix, opts.guardContext);
-      if (!verdict.ok) {
-        yield {
-          type: "blocked",
-          rule: verdict.rule,
-          matched: verdict.matched,
-          original: turnText,
-          replacement: verdict.replacement,
-          at: since(),
-        };
-        return;
+    /**
+     * Text from a round that ends in tool calls is never spoken.
+     *
+     * With thinking set to between_tools the model writes a short update
+     * before calling a tool — "I'll record that figure first. Then I'll
+     * answer you." — and streaming it put that preamble in the seller's
+     * ear. It is the model talking to itself. Only the round that
+     * actually answers gets released, which is why the text is held until
+     * the round is over rather than streamed as it arrives.
+     *
+     * This costs the latency streaming was supposed to buy. The
+     * measurements say that was close to nothing anyway: the first
+     * sentence was arriving at roughly the time the whole turn finished.
+     */
+    if (toolUses.length > 0) {
+      turnText = "";
+      pending = "";
+    } else if (pending.trim()) {
+      // The answering round. Release it sentence by sentence, each one
+      // checked against everything released so far in this turn.
+      for (const candidate of sentences(pending.trim())) {
+        const prefix = `${released}${released ? " " : ""}${candidate}`;
+        const verdict = runGuards(prefix, opts.guardContext);
+        if (!verdict.ok) {
+          yield {
+            type: "blocked",
+            rule: verdict.rule,
+            matched: verdict.matched,
+            original: turnText,
+            replacement: verdict.replacement,
+            at: since(),
+          };
+          return;
+        }
+        released = prefix;
+        if (firstSentenceAt === null) firstSentenceAt = since();
+        yield { type: "sentence", text: candidate, at: since() };
       }
-      released = prefix;
-      if (firstSentenceAt === null) firstSentenceAt = since();
-      yield { type: "sentence", text: pending.trim(), at: since() };
     }
 
     // Asking for a tool is the only condition that matters. Keying this

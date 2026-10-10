@@ -715,3 +715,33 @@ describe("the seeded voice-test car is not a seller", () => {
     expect(actions).toMatch(/if \(!admin\) throw/);
   });
 });
+
+describe("spoken replies", () => {
+  it("never release the model's between-tools preamble", () => {
+    // With thinking in between_tools mode the model writes "I'll record
+    // that figure first. Then I'll answer you." before calling a tool.
+    // Streaming it put that in the seller's ear.
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/if \(toolUses\.length > 0\) \{\s*turnText = "";\s*pending = "";/);
+  });
+
+  it("are capped shorter than typed ones", () => {
+    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    const cap = llm.match(/VOICE_MAX_TOKENS\s*=\s*(\d+)/);
+    expect(cap).not.toBeNull();
+    expect(Number((cap as RegExpMatchArray)[1])).toBeLessThanOrEqual(200);
+  });
+
+  it("are told to keep to two sentences and not to announce themselves", () => {
+    const prompt = readFileSync(join(ROOT_DIR, "agent/prompt.md"), "utf8");
+    expect(prompt).toMatch(/Two sentences\. One idea\./);
+    expect(prompt).toMatch(/Never announce what you are about to do/);
+    expect(prompt).toMatch(/Never open two turns running the same way/);
+  });
+
+  it("do not lead the deflection with the refusal", () => {
+    const guards = readFileSync(join(ROOT_DIR, "agent/guards.ts"), "utf8");
+    const deflection = guards.slice(guards.indexOf("export const PRICE_DEFLECTION"));
+    expect(deflection).toMatch(/^export const PRICE_DEFLECTION =\s*\n\s*`A person prices your car/m);
+  });
+});

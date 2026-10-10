@@ -33,8 +33,14 @@ export const dynamic = "force-dynamic";
 /** How long an admin test conversation may be served while Maya is off. */
 const ADMIN_TEST_WINDOW_MS = 30 * 60 * 1000;
 
-/** Spoken replies are shorter than typed ones. */
-const VOICE_MAX_TOKENS = 200;
+/**
+ * Spoken replies are shorter than typed ones.
+ *
+ * Two sentences is the target the prompt sets; this is the ceiling that
+ * stops a long one reaching the ear at all. It has to leave room for tool
+ * arguments, which come out of the same budget.
+ */
+const VOICE_MAX_TOKENS = 160;
 
 const bodySchema = z.object({
   messages: z

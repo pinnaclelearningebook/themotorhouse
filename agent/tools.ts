@@ -144,12 +144,30 @@ export interface ToolResult {
   error?: string;
 }
 
+/**
+ * A query that failed is not a query that found nothing.
+ *
+ * get_vehicle_context selected columns that did not exist. The error was
+ * discarded, the result read as null, and "no vehicle on file" was
+ * reported for every car for days. Nobody noticed because that is exactly
+ * what an empty lookup looks like.
+ *
+ * Every read here now checks the error, logs it, and returns {ok:false}.
+ * The model is told the lookup failed, which is true and which it can say
+ * honestly, instead of being told the car does not exist, which is not.
+ */
+function failed(where: string, error: { message: string } | null): ToolResult | null {
+  if (!error) return null;
+  console.error(`[agent] ${where} failed:`, error.message);
+  return { ok: false, error: `${where} is not available right now` };
+}
+
 export async function getVehicleContext(
   session: AgentSession,
 ): Promise<ToolResult> {
   if (!session.vehicleId) return { ok: true, data: { known: false } };
 
-  const { data } = await db()
+  const { data, error } = await db()
     .from("vehicles")
     // These are the column names as the migration defines them. An
     // earlier version asked for fuel_type and engine_capacity, which do
@@ -162,6 +180,10 @@ export async function getVehicleContext(
     .eq("id", session.vehicleId)
     .maybeSingle();
 
+  const broken = failed("the vehicle lookup", error);
+  if (broken) return broken;
+
+  // Only now does an empty result mean what it says.
   if (!data) return { ok: true, data: { known: false } };
   return { ok: true, data: { known: true, ...data } };
 }
@@ -173,11 +195,14 @@ export async function readFormState(
     return { ok: true, data: { leadExists: false, filled: [], empty: [] } };
   }
 
-  const { data } = await db()
+  const { data, error } = await db()
     .from("leads")
     .select(WRITABLE_FIELDS.join(", "))
     .eq("id", session.leadId)
     .maybeSingle();
+
+  const broken = failed("the form state", error);
+  if (broken) return broken;
 
   const row = (data ?? {}) as Record<string, unknown>;
   const filled = WRITABLE_FIELDS.filter(
@@ -232,11 +257,14 @@ export async function appendLeadNote(
 ): Promise<ToolResult> {
   if (!session.leadId) return { ok: false, error: "buffer" };
 
-  const { data: conversation } = await db()
+  const { data: conversation, error: readError } = await db()
     .from("conversations")
     .select("structured_notes")
     .eq("id", session.conversationId)
     .maybeSingle();
+
+  const brokenRead = failed("the note store", readError);
+  if (brokenRead) return brokenRead;
 
   const existing = Array.isArray(conversation?.structured_notes)
     ? (conversation.structured_notes as { topic?: string; note?: string }[])

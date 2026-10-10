@@ -23,21 +23,35 @@
 /**
  * The response time, qualified, in the one wording everything uses.
  *
- * The evening clause is published (FAQ 1, verbatim). The weekend clause is
- * the honest gap: PENDING-INFO still asks whether two hours is realistic
- * seven days a week. Until that is answered the promise is never stated
- * bare, and RESPONSE_TIME is the single place the wording lives so the
- * prompt, the deflection and the knowledge base cannot drift apart.
+ * Both sentences are published word for word: the first is the heading on
+ * /how-it-works and in three section components, the second is the second
+ * sentence of FAQ 1. Nothing else is added.
+ *
+ * An earlier version said "within two hours on a weekday". The word
+ * weekday appears nowhere on the site. It was a reasonable-sounding
+ * hedge for the open weekend question in PENDING-INFO, and inventing a
+ * restriction is the same offence as inventing a promise — it describes a
+ * service nobody has agreed to provide. Weekends are now handled by Maya
+ * saying she does not know, which is a statement about her, not about us.
+ *
+ * RESPONSE_TIME is the single place the wording lives, so the prompt, the
+ * deflection and the knowledge base cannot drift apart.
  */
 export const RESPONSE_TIME =
-  "within {{OFFER_HOURS}} hours on a weekday, and if you enquire late in " +
-  "the evening you'll hear first thing the next morning — I don't know yet " +
-  "how weekends are handled";
+  "a firm offer within two hours. If you enquire late in the evening, you " +
+  "will hear from us first thing the next morning";
 
+/**
+ * What the seller hears in place of a blocked turn.
+ *
+ * Deliberately does not open with the refusal. Hearing "I'd rather not
+ * guess" as the first thing, twice running, is what makes an assistant
+ * feel like a wall — so it leads with what does happen next.
+ */
 export const PRICE_DEFLECTION =
-  "I'm not the one who sets the number, and I'd rather not guess at it. " +
-  `A person prices your car once your details are in, ${RESPONSE_TIME}. ` +
-  "Photographs and your service history are what help them most.";
+  `A person prices your car once your details are in: ${RESPONSE_TIME}. ` +
+  "I can't put a number on it myself, but photographs and your service " +
+  "history are what help them most.";
 
 /** Used when a turn is blocked for anything other than a price. */
 export const GENERAL_DEFLECTION =
@@ -265,7 +279,7 @@ function detectServiceTime(text: string): string | null {
  */
 const RESPONSE_TIME_MENTION = /\b(?:two|2)\s*hours?\b/i;
 const RESPONSE_TIME_QUALIFIER =
-  /\b(?:weekday|weekdays|evening|next morning|weekend|weekends|saturday|sunday|don'?t know|do not know|can'?t say)\b/i;
+  /\b(?:evening|next morning|weekend|weekends|saturday|sunday|don'?t know|do not know|can'?t say|cannot say|won'?t promise)\b/i;
 
 function detectUnqualifiedPromise(text: string): string | null {
   const mention = RESPONSE_TIME_MENTION.exec(text);

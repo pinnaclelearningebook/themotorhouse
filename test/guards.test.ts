@@ -117,7 +117,7 @@ const CONTACT = [
 /** Turns that are correct, useful and must not be touched. */
 const LEGITIMATE = [
   "Put yes, and don't worry about the amount. We buy cars with finance still outstanding.",
-  "A person prices your car once your details are in, within 2 hours on a weekday, and if you enquire late in the evening you'll hear first thing the next morning — I don't know yet how weekends are handled.",
+  "A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.",
   "The offer stands for seven days, provided the mileage hasn't materially increased.",
   "No deductions. Not at collection, not ever.",
   "Payment reaches you before the transporter leaves with the car.",
@@ -173,7 +173,7 @@ describe("service-time guard", () => {
     // FAQ 1, verbatim. A guard that blocked her own correct answer would
     // be worse than no guard, because it would train us to loosen it.
     const published = [
-      "A person prices your car and your firm offer reaches you within 2 hours on a weekday.",
+      "A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.",
       "If you enquire late in the evening, you'll hear first thing the next morning.",
       "The offer stands for seven days, provided the mileage hasn't materially increased.",
       "I've noted that you'd prefer to be called at weekends.",
@@ -200,8 +200,8 @@ describe("unqualified response time", () => {
 
   it("allows it when the qualification travels with it", () => {
     const qualified = [
-      "A person prices your car once your details are in, within 2 hours on a weekday, and if you enquire late in the evening you'll hear first thing the next morning — I don't know yet how weekends are handled.",
-      "Within two hours on a weekday. I can't say how weekends are handled.",
+      "A firm offer within two hours. If you enquire late in the evening, you will hear from us first thing the next morning.",
+      "Within two hours. I can't say how weekends are handled.",
       "I don't know whether the 2 hours holds on a Saturday.",
     ];
     for (const text of qualified) {
