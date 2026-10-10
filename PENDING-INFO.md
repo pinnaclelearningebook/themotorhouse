@@ -93,6 +93,9 @@ Both government APIs are applied for separately and neither is instant. Apply be
 - [ ] **Voice choice** — which ElevenLabs voice. It is the first thing a seller hears, so it belongs with the brand decisions rather than the technical ones. Before Session 6.
 - [ ] **`ANTHROPIC_API_KEY`** — the model behind Maya. Needed from step 3 of Session 5 onward, not for the prompt itself. The model name is a settings row (`agent_model`, default `claude-sonnet-5-5`) so it can change without a deploy.
 - [ ] **Approval of `agent/prompt.md`** — you approve every line of what Maya is allowed to say, per SESSION-PROMPTS.md. Claude Code shows it before any integration code.
+- [ ] **Supabase CLI re-authentication** — `npx supabase db push` now fails with `AccessTokenRequiredError`, so `supabase/migrations/20261010000000_voice_transcript.sql` is written but **not applied**. The post-call webhook writes to `conversations.voice_transcript` and will fail until it is. Run `npx supabase login` (or set `SUPABASE_ACCESS_TOKEN`) then `npx supabase db push`.
+- [ ] **ElevenLabs post-call webhook** — create it in the dashboard, point it at `https://<production>/api/agent/webhook`, and put the generated signing secret in `.env.local` as `ELEVENLABS_WEBHOOK_SECRET`. Unsigned and unverified calls are rejected, so until this exists no voice transcript is stored.
+- [ ] **Voice consent wording** — `components/agent/VoiceConsent.tsx` carries placeholder copy, marked on screen as "Draft wording, pending legal review". It must be replaced by the solicitor's text before launch, and the same wording added to the privacy and cookie policies.
 - [ ] **Voice legal review** — AI disclosure wording, recording consent wording, and transcript retention, added to the privacy and cookie policies. Goes to the same solicitor as the Phase A review.
 
 ---
