@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runGuards, PRICE_DEFLECTION, type VehicleContext } from "@/agent/guards";
+import {
+  runGuards,
+  sentences,
+  PRICE_DEFLECTION,
+  type VehicleContext,
+} from "@/agent/guards";
 
 /**
  * The guards are the only thing standing between a chatty model and a
@@ -295,5 +300,37 @@ describe("the review log is legible", () => {
         "Honestly, a car like yours is worth about £28,500.".length + 2,
       );
     }
+  });
+});
+
+describe("sentence splitting for speech", () => {
+  it("splits a turn into speakable sentences", () => {
+    expect(
+      sentences(
+        "Put yes, and don't worry about the amount. We buy cars with finance still outstanding. Tell me the figure and I'll note it.",
+      ),
+    ).toEqual([
+      "Put yes, and don't worry about the amount.",
+      "We buy cars with finance still outstanding.",
+      "Tell me the figure and I'll note it.",
+    ]);
+  });
+
+  it("does not break on an abbreviation or a decimal", () => {
+    // A false split is an audible stumble in speech.
+    expect(sentences("The 2.0 engine is the one people mean.")).toHaveLength(1);
+    expect(sentences("Mr. Patel is the registered keeper.")).toHaveLength(1);
+  });
+
+  it("keeps a single sentence whole", () => {
+    expect(sentences("No cut-off, we buy any car.")).toEqual([
+      "No cut-off, we buy any car.",
+    ]);
+  });
+
+  it("reassembles to the original words", () => {
+    const turn =
+      "I can't give you a number. A person prices it once your details are in. Is there anything I can help you finish?";
+    expect(sentences(turn).join(" ")).toBe(turn);
   });
 });

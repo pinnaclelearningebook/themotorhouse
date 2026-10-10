@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AGENT } from "@/config/site";
+import { VoiceConsent } from "./VoiceConsent";
 import {
   dismissAgent,
   subscribeToDismissal,
@@ -53,6 +54,13 @@ export function AgentWidget({
   // Set only once the session cookie exists. Anything that needs the
   // session must wait for this, not for the widget being open.
   const [sessionReady, setSessionReady] = useState(false);
+  // Voice is off until the seller accepts the consent panel. Nothing
+  // connects, and no microphone permission is requested, before that.
+  const [voice, setVoice] = useState<"off" | "consent" | "live">("off");
+  const [voicePending, setVoicePending] = useState(false);
+  /** Shown in the panel when something fails in a way the seller should see. */
+  const [error, setError] = useState<string | null>(null);
+  const conversation = useRef<{ endSession: () => Promise<void> } | null>(null);
   const started = useRef(false);
   const buffered = useRef<string[]>([]);
   const linked = useRef(false);
@@ -160,6 +168,69 @@ export function AgentWidget({
     dismissAgent();
   }
 
+  /**
+   * Start talking, after consent.
+   *
+   * The signed URL is fetched only once the seller has accepted, because
+   * ElevenLabs speaks its configured opening line the instant a session
+   * opens — before our server is part of the exchange. Fetching the URL
+   * earlier would mean a seller could hear a voice they had not agreed
+   * to, and no amount of care in this component could prevent it.
+   */
+  async function startVoice() {
+    setVoicePending(true);
+    try {
+      const response = await fetch("/api/agent/voice-session", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        setError("Voice isn't available right now. Typing still works.");
+        setVoice("off");
+        return;
+      }
+
+      const { signedUrl, conversationId } = (await response.json()) as {
+        signedUrl: string;
+        conversationId: string;
+      };
+
+      const { Conversation } = await import("@elevenlabs/client");
+      conversation.current = await Conversation.startSession({
+        signedUrl,
+        // Echoed back on every custom-LLM call so the turn can be tied to
+        // this conversation on our side.
+        extraBody: { conversationId },
+        onMessage: ({ message, source }: { message: string; source: string }) => {
+          setTurns((prior) => [
+            ...prior,
+            { role: source === "user" ? "user" : "assistant", content: message },
+          ]);
+        },
+        onError: () => {
+          setError("The call dropped. Typing still works.");
+          setVoice("off");
+        },
+        onDisconnect: () => setVoice("off"),
+      });
+      setVoice("live");
+    } catch {
+      setError("Voice isn't available right now. Typing still works.");
+      setVoice("off");
+    } finally {
+      setVoicePending(false);
+    }
+  }
+
+  async function stopVoice() {
+    try {
+      await conversation.current?.endSession();
+    } catch {
+      // Already gone; nothing to do.
+    }
+    conversation.current = null;
+    setVoice("off");
+  }
+
   async function send(message: string, silentUser = false) {
     if (!message.trim() || pending) return;
     setPending(true);
@@ -239,14 +310,45 @@ export function AgentWidget({
             {AGENT.disclosure}
           </span>
         </p>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="text-caption text-structure underline hover:text-oxblood"
-        >
-          Just the form
-        </button>
+        <div className="flex items-center gap-4">
+          {voice === "live" ? (
+            <button
+              type="button"
+              onClick={() => void stopVoice()}
+              className="text-caption text-oxblood underline"
+            >
+              Stop talking
+            </button>
+          ) : (
+            voice === "off" && (
+              <button
+                type="button"
+                onClick={() => setVoice("consent")}
+                className="text-caption text-structure underline hover:text-oxblood"
+              >
+                Talk instead
+              </button>
+            )
+          )}
+          <button
+            type="button"
+            onClick={dismiss}
+            className="text-caption text-structure underline hover:text-oxblood"
+          >
+            Just the form
+          </button>
+        </div>
       </header>
+
+      {voice === "consent" && (
+        <div className="border-b border-line p-4">
+          <VoiceConsent
+            onAccept={() => void startVoice()}
+            onDecline={() => setVoice("off")}
+            pending={voicePending}
+          />
+        </div>
+      )}
 
       <div className="max-h-80 overflow-y-auto px-4 py-4">
         {unavailable ? (
@@ -280,6 +382,15 @@ export function AgentWidget({
           </ul>
         )}
       </div>
+
+      {error && (
+        <p
+          role="alert"
+          className="border-t border-line px-4 py-2 text-caption text-oxblood"
+        >
+          {error}
+        </p>
+      )}
 
       {!unavailable && (
         <form

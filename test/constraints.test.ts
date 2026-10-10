@@ -460,3 +460,106 @@ describe("the scripted-reply hook cannot run in production", () => {
     expect(guardAt).toBeLessThan(readAt);
   });
 });
+
+describe("the voice surfaces", () => {
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+  const webhook = readFileSync(
+    join(ROOT_DIR, "app/api/agent/webhook/route.ts"),
+    "utf8",
+  );
+  const voiceSession = readFileSync(
+    join(ROOT_DIR, "app/api/agent/voice-session/route.ts"),
+    "utf8",
+  );
+  const voice = readFileSync(join(ROOT_DIR, "lib/agent/voice.ts"), "utf8");
+
+  it("checks the shared secret before anything else", () => {
+    // An unauthenticated caller must not learn whether Maya is on, let
+    // alone spend a model call finding out.
+    const secretAt = llm.search(/hasLlmSecret\(/);
+    const settingsAt = llm.search(/await agentSettings\(\)/);
+    const modelAt = llm.search(/await runTurn\(/);
+    expect(secretAt).toBeGreaterThan(-1);
+    expect(secretAt).toBeLessThan(settingsAt);
+    expect(settingsAt).toBeLessThan(modelAt);
+  });
+
+  it("compares the secret in constant time", () => {
+    expect(voice).toMatch(/timingSafeEqual/);
+    expect(voice).not.toMatch(/presented === expected/);
+  });
+
+  it("applies the same kill switch, turn cap and guards as text", () => {
+    expect(llm).toMatch(/if \(!settings\.enabled\)/);
+    expect(llm).toMatch(/turnCount >= settings\.maxTurns/);
+    expect(llm).toMatch(/runGuards\(/);
+    expect(llm).toMatch(/agent_blocks/);
+  });
+
+  it("guards the whole turn before any sentence is emitted", () => {
+    // Sentences are split only after runGuards has passed the turn, so a
+    // price spread across a sentence boundary cannot slip between two
+    // separately guarded fragments.
+    const guardAt = llm.search(/const verdict = runGuards\(/);
+    const speakAt = llm.search(/return speak\(outgoing\)/);
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(guardAt).toBeLessThan(speakAt);
+    expect(llm).toMatch(/sentences\(text\)/);
+  });
+
+  it("caps voice replies shorter than text", () => {
+    expect(llm).toMatch(/Math\.min\(settings\.maxOutputTokens, \d+\)/);
+  });
+
+  it("rejects an unsigned or unverified webhook before writing", () => {
+    const unsignedAt = webhook.search(/if \(!signature\)/);
+    const verifyAt = webhook.search(/constructEvent\(/);
+    const writeAt = webhook.search(/\.update\(/);
+    expect(unsignedAt).toBeGreaterThan(-1);
+    expect(unsignedAt).toBeLessThan(verifyAt);
+    expect(verifyAt).toBeLessThan(writeAt);
+    // Verification uses the SDK, not a hand-rolled HMAC: the signature
+    // format is undocumented and this decides who may write to a lead.
+    expect(webhook).toMatch(/@elevenlabs\/elevenlabs-js/);
+  });
+
+  it("verifies against the raw body, not a parsed object", () => {
+    const rawAt = webhook.search(/await request\.text\(\)/);
+    expect(rawAt).toBeGreaterThan(-1);
+    expect(webhook).not.toMatch(/await request\.json\(\)/);
+  });
+
+  it("records consent before issuing a signed url", () => {
+    // ElevenLabs speaks its opening line the moment a session opens,
+    // before our server is in the exchange. Holding the URL back is the
+    // only point where an unconsented voice can be prevented.
+    const consentAt = voiceSession.search(/consent_recorded_at/);
+    const urlAt = voiceSession.search(/await signedConversationUrl\(\)/);
+    expect(consentAt).toBeGreaterThan(-1);
+    expect(consentAt).toBeLessThan(urlAt);
+  });
+
+  it("never sends the ElevenLabs key to the browser", () => {
+    expect(voiceSession).not.toMatch(/ELEVENLABS_API_KEY/);
+    const widget = readFileSync(
+      join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+      "utf8",
+    );
+    expect(widget).not.toMatch(/ELEVENLABS/);
+    expect(widget).toMatch(/signedUrl/);
+  });
+
+  it("asks for the microphone only after consent is accepted", () => {
+    const widget = readFileSync(
+      join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+      "utf8",
+    );
+    // startSession is what triggers the browser permission prompt and
+    // their opening line; it may only be reached from startVoice, which
+    // is only called by the consent panel's accept.
+    const startVoiceAt = widget.search(/async function startVoice\(\)/);
+    const startSessionAt = widget.search(/Conversation\.startSession\(/);
+    expect(startVoiceAt).toBeLessThan(startSessionAt);
+    expect(widget).toMatch(/onAccept=\{\(\) => void startVoice\(\)\}/);
+  });
+});

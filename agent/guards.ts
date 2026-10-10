@@ -392,3 +392,45 @@ export function runGuards(
 
   return { ok: true, text };
 }
+
+/* ─── voice ──────────────────────────────────────────────────────────── */
+
+/**
+ * Split a guarded turn into sentences for speech.
+ *
+ * Voice emits sentence by sentence so speech can begin before the whole
+ * turn has been read out, and the rule agreed for Session 6 is that
+ * nothing is spoken before its sentence is complete. Splitting here, after
+ * runGuards has passed the whole turn, means every sentence that reaches
+ * text-to-speech has already been through every guard — a stricter
+ * position than guarding each sentence as it streams, because a price
+ * split across two sentences cannot slip between them.
+ *
+ * Abbreviations are the usual trap. A naive split on ". " turns "No. 3"
+ * and "e.g." into sentence ends, which in speech becomes an audible
+ * stumble, so the lookbehind requires a lower-case or digit character
+ * before the stop and a capital or digit after it.
+ */
+const ABBREVIATIONS =
+  /\b(?:mr|mrs|ms|dr|prof|st|rd|ave|no|vs|etc|approx|dept|est|fig|incl|max|min|e\.g|i\.e)\.$/i;
+
+export function sentences(text: string): string[] {
+  const parts = text
+    .split(/(?<=[a-z0-9)"'\]][.!?])\s+(?=[A-Z0-9"'(])/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  // Re-join anything split on a title or abbreviation rather than a real
+  // sentence end. "Mr. Patel" is one sentence; splitting it is an audible
+  // stumble.
+  const joined: string[] = [];
+  for (const part of parts) {
+    const previous = joined[joined.length - 1];
+    if (previous && ABBREVIATIONS.test(previous)) {
+      joined[joined.length - 1] = `${previous} ${part}`;
+    } else {
+      joined.push(part);
+    }
+  }
+  return joined;
+}
