@@ -107,6 +107,26 @@ export type WireMessage = {
  */
 const MODEL_TIMEOUT_MS = 30_000;
 
+/**
+ * A scripted model reply, for proving the guard path end to end.
+ *
+ * The guards are tested against fixtures and the model has never tripped
+ * one in live use, so the path from a blocked turn to the review log had
+ * never actually run. This lets a test put a known-bad sentence where the
+ * model's output goes and watch the real endpoint block it, replace it
+ * and log it.
+ *
+ * Guarded by NODE_ENV like ADMIN_DEV_BYPASS and AGENT_DEV_FORCE_ON. Next
+ * sets NODE_ENV to "production" for every build, so this is dead code in
+ * any deployed environment and cannot be switched on from Vercel.
+ * test/constraints.test.ts asserts the guard stays.
+ */
+function scriptedReplyForTests(): string | null {
+  if (process.env.NODE_ENV === "production") return null;
+  const scripted = process.env.AGENT_TEST_SCRIPTED_REPLY;
+  return scripted && scripted.length > 0 ? scripted : null;
+}
+
 export async function complete(opts: {
   system: string;
   messages: WireMessage[];
@@ -116,6 +136,22 @@ export async function complete(opts: {
   /** Milliseconds this call may take. Defaults to MODEL_TIMEOUT_MS. */
   timeoutMs?: number;
 }): Promise<ModelReply> {
+  const scripted = scriptedReplyForTests();
+  if (scripted !== null) {
+    // Stands in for the model, nothing else. The reply still passes
+    // through the guards and the logging in the route exactly as a real
+    // one does — that is the whole point of injecting it here rather than
+    // stubbing further up.
+    return {
+      text: scripted,
+      content: [{ type: "text", text: scripted }],
+      toolUses: [],
+      stopReason: "end_turn",
+      inputTokens: 0,
+      outputTokens: 0,
+    };
+  }
+
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error(agentUnavailableReason() ?? "not configured");
 

@@ -234,8 +234,27 @@ export async function appendLeadNote(
     .maybeSingle();
 
   const existing = Array.isArray(conversation?.structured_notes)
-    ? (conversation.structured_notes as unknown[])
+    ? (conversation.structured_notes as { topic?: string; note?: string }[])
     : [];
+
+  /**
+   * Same topic, same words, already there — do nothing and say so.
+   *
+   * A model that retries a tool after an ambiguous result writes the note
+   * twice, which was observed in a live conversation. Two copies of a
+   * seller's reason for selling is noise in the one place an operator
+   * reads before ringing them, and deduping here is more reliable than
+   * asking the prompt to remember.
+   */
+  const normalise = (value: string) =>
+    value.trim().toLowerCase().replace(/\s+/g, " ");
+  const duplicate = existing.some(
+    (note) =>
+      note.topic === input.topic &&
+      typeof note.note === "string" &&
+      normalise(note.note) === normalise(input.note),
+  );
+  if (duplicate) return { ok: true, data: { duplicate: true } };
 
   const { error } = await db()
     .from("conversations")

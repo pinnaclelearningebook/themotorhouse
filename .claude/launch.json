@@ -21,6 +21,19 @@
         "3001"
       ],
       "port": 3001
+    },
+    {
+      "name": "dev-scripted",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "cross-env",
+        "AGENT_TEST_SCRIPTED_REPLY=Honestly, a car like yours is worth about \u00a328,500.",
+        "next",
+        "dev",
+        "--port",
+        "3000"
+      ],
+      "port": 3000
     }
   ]
 }

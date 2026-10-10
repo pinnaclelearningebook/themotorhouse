@@ -41,7 +41,7 @@ These block a public launch regardless of what gets built afterwards.
 
 - [ ] **Do we accept part-exchange, or purchase only?** The FAQ and form step 3 both need a definite answer.
 - [ ] **Do we buy non-runners and Category N/S cars?** The FAQ has `AwaitingInfo` slots for both.
-- [ ] **Is the two-hour response promise realistic seven days a week?** If not, change it to a promise we can always keep. Breaking it once undermines the entire positioning.
+- [ ] **Is the two-hour response promise realistic seven days a week?** If not, change it to a promise we can always keep. Breaking it once undermines the entire positioning. **Maya is affected:** asked directly whether the two hours holds on a Saturday she says she does not know and defers to a person, which is correct but is an obvious gap a seller can find in one question. `agent/guards.ts` blocks any weekend service claim until this is answered.
 - [ ] **Do we publish an indicative price range, or only firm offers by phone?** Recommendation remains firm offers only — it protects the no-deductions promise and keeps Maya's price refusal coherent.
 
 ---

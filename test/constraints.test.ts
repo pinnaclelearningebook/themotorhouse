@@ -414,3 +414,49 @@ describe("a turn is bounded end to end", () => {
     expect(run).toMatch(/timeoutMs: remaining/);
   });
 });
+
+describe("notes are not written twice", () => {
+  it("drops a repeat of the same topic and words", () => {
+    // Observed live: the model retried append_lead_note after an
+    // ambiguous result and the seller's reason for selling landed twice,
+    // in the one place an operator reads before ringing them.
+    const tools = readFileSync(join(ROOT_DIR, "agent/tools.ts"), "utf8");
+    expect(tools).toMatch(/const duplicate = existing\.some/);
+    expect(tools).toMatch(/if \(duplicate\) return/);
+    // Compared case- and whitespace-insensitively, since a retry rarely
+    // reproduces the original byte for byte.
+    expect(tools).toMatch(/toLowerCase\(\)\.replace\(/);
+  });
+});
+
+describe("the review page reports production, not the local override", () => {
+  it("shows the stored setting rather than the effective one", () => {
+    // A dashboard reading "on" because of a developer's local flag would
+    // tell an operator Maya was live when she was not — the dev-bypass
+    // mistake in CLAUDE.md section 17 wearing a different hat.
+    const page = readFileSync(
+      join(ROOT_DIR, "app/admin/(workspace)/review/page.tsx"),
+      "utf8",
+    );
+    expect(page).toMatch(/settings\.storedEnabled \? "on" : "off"/);
+    expect(page).not.toMatch(/settings\.enabled \? "on" : "off"/);
+    // And it says so when the two disagree.
+    expect(page).toMatch(/settings\.enabled && !settings\.storedEnabled/);
+  });
+});
+
+describe("the scripted-reply hook cannot run in production", () => {
+  it("is guarded by NODE_ENV, like the other development switches", () => {
+    const provider = readFileSync(join(ROOT_DIR, "agent/provider.ts"), "utf8");
+    const fn = provider.slice(provider.indexOf("function scriptedReplyForTests"));
+    // The check must come first and must be a hard return, so no value of
+    // the variable can reach a deployed environment.
+    expect(fn).toMatch(
+      /if \(process\.env\.NODE_ENV === "production"\) return null;/,
+    );
+    const guardAt = fn.indexOf('NODE_ENV === "production"');
+    const readAt = fn.indexOf("AGENT_TEST_SCRIPTED_REPLY");
+    expect(guardAt).toBeGreaterThan(-1);
+    expect(guardAt).toBeLessThan(readAt);
+  });
+});

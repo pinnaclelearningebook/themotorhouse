@@ -57,8 +57,10 @@ export default async function ReviewPage() {
         <h1 className="font-display text-display-3">Review</h1>
         <p className="text-caption text-structure">
           {AGENT.name} is{" "}
-          <span className={settings.enabled ? "" : "font-medium text-oxblood"}>
-            {settings.enabled ? "on" : "off"}
+          <span
+            className={settings.storedEnabled ? "" : "font-medium text-oxblood"}
+          >
+            {settings.storedEnabled ? "on" : "off"}
           </span>{" "}
           · model <span className="data-inline font-mono">{settings.model}</span>{" "}
           · <span className="data-inline font-mono">{settings.maxTurns}</span>{" "}
@@ -70,6 +72,14 @@ export default async function ReviewPage() {
         Turns a guard stopped before they reached a seller. The text below is
         what the model wrote, not what anyone was shown.
       </p>
+
+      {settings.enabled && !settings.storedEnabled && (
+        <p className="mt-6 rounded border border-oxblood p-4 text-sm">
+          This session is running {AGENT.name} through a local development
+          override. The stored setting is off, which is what production
+          acts on. Anything appearing below came from a local conversation.
+        </p>
+      )}
 
       {!settings.enabled && (
         <p className="mt-6 rounded border border-line bg-paper-warm p-4 text-sm">

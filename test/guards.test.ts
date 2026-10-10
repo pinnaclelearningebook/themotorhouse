@@ -55,6 +55,22 @@ const FREQUENCY = [
   "We do this all the time.",
 ];
 
+/** Response times nobody has published or agreed to keep. */
+const SERVICE_TIMES = [
+  "You'll hear back same-day, even on a Saturday.",
+  "Someone will call you within the hour.",
+  "We'll come back to you within 24 hours.",
+  "You'll get the offer within 3 working days.",
+  "A person will ring you straight away.",
+  "We'll be in touch immediately.",
+  "You'll have it by the weekend.",
+  "First thing Monday, someone will call.",
+  "The two hours still applies at weekends.",
+  "Enquire on Sunday and you'll still hear within 2 hours.",
+  // A disclaimer in one sentence must not excuse a promise in another.
+  "I can't say for certain. You'll definitely hear back same-day though.",
+];
+
 const URGENCY = [
   "These are selling fast at the moment.",
   "Values are dropping, so I wouldn't wait.",
@@ -125,6 +141,35 @@ describe("frequency and track-record guard", () => {
     const result = runGuards(text, DEFENDER);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.rule).toBe("frequency");
+  });
+});
+
+describe("service-time guard", () => {
+  it.each(SERVICE_TIMES)("blocks: %s", (text) => {
+    const result = runGuards(text, DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("service-time");
+  });
+
+  it("allows the two response times that are published", () => {
+    // FAQ 1, verbatim. A guard that blocked her own correct answer would
+    // be worse than no guard, because it would train us to loosen it.
+    const published = [
+      "A person prices your car and your firm offer reaches you within 2 hours.",
+      "If you enquire late in the evening, you'll hear first thing the next morning.",
+      "The offer stands for seven days, provided the mileage hasn't materially increased.",
+      "I've noted that you'd prefer to be called at weekends.",
+      // The correct answer to the weekend question, which an earlier
+      // version of the guard blocked — replacing an honest "I don't know"
+      // with a vaguer deflection.
+      "I don't know whether the 2 hours holds on a Saturday. A person will confirm that for you.",
+      "I can't say whether you'd hear within 2 hours on a Sunday.",
+      "I'm not sure the same-day thing applies, so a person will confirm.",
+    ];
+    for (const text of published) {
+      const result = runGuards(text, DEFENDER);
+      expect(result.ok, `wrongly blocked: ${text}`).toBe(true);
+    }
   });
 });
 
@@ -230,5 +275,25 @@ describe("the prompt and the guards agree", () => {
       );
 
     expect(blocked).toEqual([]);
+  });
+});
+
+describe("the review log is legible", () => {
+  it("records the phrase around the match, not the bare fragment", () => {
+    // A row reading `matched "£2"` is accurate and useless. The point of
+    // /admin/review is seeing how the model fails.
+    const result = runGuards(
+      "Honestly, a car like yours is worth about £28,500.",
+      DEFENDER,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.matched).toContain("28,500");
+      expect(result.matched.length).toBeGreaterThan(10);
+      // Still a fragment, not the whole turn.
+      expect(result.matched.length).toBeLessThanOrEqual(
+        "Honestly, a car like yours is worth about £28,500.".length + 2,
+      );
+    }
   });
 });

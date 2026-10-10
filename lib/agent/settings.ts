@@ -11,7 +11,16 @@ import { db } from "@/lib/db";
  */
 
 export interface AgentSettings {
+  /** What this process acts on, including any development override. */
   enabled: boolean;
+  /**
+   * What the settings table actually says, which is what production acts
+   * on. The review page reports this: a dashboard that showed "on"
+   * because of a local flag would tell an operator Maya was live when she
+   * was not, which is the dev-bypass mistake in CLAUDE.md section 17
+   * wearing a different hat.
+   */
+  storedEnabled: boolean;
   model: string;
   maxTurns: number;
   maxOutputTokens: number;
@@ -41,6 +50,7 @@ function forcedOnForDevelopment(): boolean {
 
 const FALLBACK: AgentSettings = {
   enabled: false,
+  storedEnabled: false,
   model: "claude-sonnet-5-5",
   maxTurns: 30,
   maxOutputTokens: 400,
@@ -58,11 +68,14 @@ export async function agentSettings(): Promise<AgentSettings> {
       "agent_max_output_tokens",
     ]);
 
-  if (error || !data) return { ...FALLBACK, enabled: forced };
+  if (error || !data) {
+    return { ...FALLBACK, enabled: forced, storedEnabled: false };
+  }
 
   const map = new Map(data.map((row) => [row.key as string, row.value]));
   return {
     enabled: forced || map.get("agent_enabled") === true,
+    storedEnabled: map.get("agent_enabled") === true,
     model:
       typeof map.get("agent_model") === "string"
         ? (map.get("agent_model") as string)

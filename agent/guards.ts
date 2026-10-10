@@ -32,6 +32,7 @@ export const GENERAL_DEFLECTION =
 
 export type GuardRule =
   | "price"
+  | "service-time"
   | "frequency"
   | "urgency"
   | "internal"
@@ -104,7 +105,7 @@ function looksLikeMoneyNumber(raw: string): boolean {
 function detectPrice(text: string): string | null {
   for (const pattern of PRICE_PATTERNS) {
     const match = pattern.exec(text);
-    if (match) return match[0];
+    if (match) return withContext(text, match[0], match.index);
   }
 
   // A bare number near a money word: "it'd get you 24000", "the figure is
@@ -112,7 +113,9 @@ function detectPrice(text: string): string | null {
   for (const sentence of text.split(/(?<=[.?!])\s+/)) {
     if (!MONEY_WORD.test(sentence)) continue;
     for (const candidate of sentence.match(/\d[\d,]*/g) ?? []) {
-      if (looksLikeMoneyNumber(candidate)) return candidate;
+      if (looksLikeMoneyNumber(candidate)) {
+        return withContext(text, candidate, text.indexOf(candidate));
+      }
     }
   }
   return null;
@@ -140,6 +143,68 @@ const FREQUENCY_PATTERNS: RegExp[] = [
   /\bday in,? day out\b/i,
   /\bmost of the cars we\b/i,
 ];
+
+/* ─── service times we have not published ────────────────────────────── */
+
+/**
+ * Only two response times are published: a firm offer within the hours
+ * named in config/site.ts, and "first thing the next morning" for an
+ * enquiry late in the evening (FAQ 1, verbatim). Anything else is a
+ * promise nobody has agreed to keep.
+ *
+ * Weekends matter most here. PENDING-INFO asks whether the two-hour
+ * promise is realistic seven days a week and that is still open, so a
+ * confident answer about Saturday is exactly the invention this guard
+ * exists to stop. Breaking the response promise once undermines the
+ * whole positioning, which is the one thing the site is built on.
+ */
+/**
+ * Words that turn a service-time sentence into a disclaimer.
+ *
+ * "I don't know whether the 2 hours holds on a Saturday" is the correct
+ * answer to the weekend question and was being blocked by the pattern
+ * below, which replaced an honest "I don't know" with a vaguer
+ * deflection. A guard that punishes the right answer teaches us to
+ * loosen it, so uncertainty is checked before a claim is called a claim.
+ */
+const NOT_A_CLAIM =
+  /\b(?:don'?t know|do not know|can'?t say|cannot say|couldn'?t say|not sure|unsure|no idea|won'?t guess|not able to say|can'?t promise|cannot promise|wouldn'?t want to guess|rather not (?:say|guess)|a person will confirm|someone will confirm)\b/i;
+
+const SERVICE_TIME_PATTERNS: RegExp[] = [
+  /\bsame[- ]day\b/i,
+  /\bwithin (?:the hour|an hour|one hour|minutes|a few minutes|24 hours|48 hours|a day)\b/i,
+  /\bwithin \d+ (?:working |business )?days?\b/i,
+  /\bovernight\b/i,
+  /\b(?:straight|right) away\b/i,
+  /\bimmediately\b/i,
+  /\bby (?:tomorrow|tonight|the weekend|end of (?:the )?(?:day|week))\b/i,
+  /\bfirst thing (?:on )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow)\b/i,
+  // Weekend service claims, in either order. A seller's preferred
+  // contact window ("you said weekends") is not a claim and does not
+  // match, because none of the service words below appear with it.
+  /\b(?:saturdays?|sundays?|weekends?)\b[^.]{0,70}\b(?:two hours|2 hours|same|still hear|still get|offer (?:will|would|comes)|we(?:'ll| will) (?:call|ring|price))\b/i,
+  /\b(?:two hours|2 hours)\b[^.]{0,50}\b(?:saturdays?|sundays?|weekends?)\b/i,
+];
+
+/**
+ * A service-time claim, sentence by sentence.
+ *
+ * Scoped to the sentence so a disclaimer in one clause does not excuse a
+ * promise in another, and so a promise elsewhere in the turn is still
+ * caught.
+ */
+function detectServiceTime(text: string): string | null {
+  for (const sentence of text.split(/(?<=[.?!])\s+/)) {
+    if (NOT_A_CLAIM.test(sentence)) continue;
+    for (const pattern of SERVICE_TIME_PATTERNS) {
+      const match = pattern.exec(sentence);
+      if (match) {
+        return withContext(text, match[0], text.indexOf(match[0]));
+      }
+    }
+  }
+  return null;
+}
 
 /* ─── pressure, urgency, flattery ────────────────────────────────────── */
 
@@ -259,10 +324,25 @@ function detectUnsupportedCarFact(
 
 /* ─── the guard ──────────────────────────────────────────────────────── */
 
+/**
+ * The matched fragment plus enough of its sentence to be legible.
+ *
+ * A review row reading `matched "£2"` is technically accurate and tells
+ * an operator nothing. The point of that page is seeing how the model
+ * fails, so the log keeps the phrase around the hit.
+ */
+function withContext(text: string, match: string, index: number): string {
+  const start = Math.max(0, index - 30);
+  const end = Math.min(text.length, index + match.length + 30);
+  return `${start > 0 ? "…" : ""}${text.slice(start, end).trim()}${
+    end < text.length ? "…" : ""
+  }`;
+}
+
 function firstMatch(text: string, patterns: RegExp[]): string | null {
   for (const pattern of patterns) {
     const match = pattern.exec(text);
-    if (match) return match[0];
+    if (match) return withContext(text, match[0], match.index);
   }
   return null;
 }
@@ -290,6 +370,7 @@ export function runGuards(
   }
 
   const checks: [GuardRule, string | null][] = [
+    ["service-time", detectServiceTime(text)],
     ["frequency", firstMatch(text, FREQUENCY_PATTERNS)],
     ["urgency", firstMatch(text, URGENCY_PATTERNS)],
     ["internal", firstMatch(text, INTERNAL_PATTERNS)],
