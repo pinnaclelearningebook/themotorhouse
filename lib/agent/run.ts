@@ -304,10 +304,16 @@ export async function* streamVoiceTurn(opts: {
       yield { type: "sentence", text: pending.trim(), at: since() };
     }
 
-    if (toolUses.length === 0 || stopReason !== "tool_use") {
+    // Asking for a tool is the only condition that matters. Keying this
+    // on stop_reason as well ended the turn after "I'll record that
+    // figure first. Then I'll answer you." — the tools were requested,
+    // the stop reason was not the expected one, and the answer never
+    // came. The seller heard the preamble and nothing else.
+    if (toolUses.length === 0) {
       yield { type: "finished", spoken: released, firstTokenAt, firstSentenceAt };
       return;
     }
+    void stopReason;
 
     messages.push({
       role: "assistant",
