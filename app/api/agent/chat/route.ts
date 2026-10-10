@@ -123,7 +123,9 @@ export async function POST(request: NextRequest) {
   // this list did not, so Maya was blocked for reading her own context.
   const guardContext: VehicleContext = vehicle ?? {};
 
-  const verdict = runGuards(reply.text, guardContext);
+  const verdict = runGuards(reply.text, guardContext, {
+    sellerMessage: parsed.data.message,
+  });
 
   let outgoing: string;
   if (verdict.ok) {

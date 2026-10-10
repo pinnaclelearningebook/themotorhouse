@@ -29,7 +29,7 @@ These block a public launch regardless of what gets built afterwards.
 ### Legal sign-off
 
 - [ ] **Solicitor review of the privacy policy, the terms of service, and the outstanding-finance blog post** — all three are drafted and all three make procedural claims. CLAUDE.md v2 section 16 adds the blog post to this list.
-- [ ] **Data retention period** — how long lead data is kept before deletion. The privacy policy has an `AwaitingInfo` slot for it, and it governs photo, transcript and provenance retention from Phase B onward.
+- [ ] **Data retention period** — how long lead data is kept before deletion. **Now also governs voice:** the privacy page says a written transcript is kept on the enquiry and the audio is not, but not for how long, so that sentence is incomplete until this is answered.  The privacy policy has an `AwaitingInfo` slot for it, and it governs photo, transcript and provenance retention from Phase B onward.
 
 ### Deployment
 
@@ -41,7 +41,7 @@ These block a public launch regardless of what gets built afterwards.
 
 - [ ] **Do we accept part-exchange, or purchase only?** The FAQ and form step 3 both need a definite answer.
 - [ ] **Do we buy non-runners and Category N/S cars?** The FAQ has `AwaitingInfo` slots for both.
-- [ ] **Is the two-hour response promise realistic seven days a week?** If not, change it to a promise we can always keep. Breaking it once undermines the entire positioning. **Maya is affected:** asked directly whether the two hours holds on a Saturday she says she does not know and defers to a person, which is correct but is an obvious gap a seller can find in one question. `agent/guards.ts` blocks any weekend service claim until this is answered.
+- [ ] **Is the two-hour response promise realistic seven days a week?** **The site states it unconditionally** — `/how-it-works`, the FAQ, the hero and three section components all promise two hours with no carve-out for weekends. Maya is the only place that admits the gap: asked directly about a Saturday she says she does not know and defers to a person, and `agent/guards.ts` blocks any weekend claim either way. That is an honest assistant in front of a promise the site has not qualified, which is the wrong way round. Either the promise holds seven days a week, or the copy needs the carve-out.  Breaking it once undermines the entire positioning.
 - [ ] **Do we publish an indicative price range, or only firm offers by phone?** Recommendation remains firm offers only — it protects the no-deductions promise and keeps Maya's price refusal coherent.
 
 ---
@@ -93,8 +93,10 @@ Both government APIs are applied for separately and neither is instant. Apply be
 - [ ] **Voice choice** — which ElevenLabs voice. It is the first thing a seller hears, so it belongs with the brand decisions rather than the technical ones. Before Session 6.
 - [ ] **`ANTHROPIC_API_KEY`** — the model behind Maya. Needed from step 3 of Session 5 onward, not for the prompt itself. The model name is a settings row (`agent_model`, default `claude-sonnet-5-5`) so it can change without a deploy.
 - [ ] **Approval of `agent/prompt.md`** — you approve every line of what Maya is allowed to say, per SESSION-PROMPTS.md. Claude Code shows it before any integration code.
+- [ ] **`ELEVENLABS_WEBHOOK_SECRET`** — created in the ElevenLabs dashboard, but not yet in `.env.local`; checked four times across two sessions and absent each time. Until it lands, `/api/agent/webhook` returns 503 and **no voice transcript is stored**, because an unsigned call is rejected rather than trusted. Put it in `.env.local` and Claude pushes it to all three Vercel environments.
+- [ ] **Mic test** — the one part of voice nobody has exercised. Claude has no microphone and cannot drive a WebRTC session, so ElevenLabs' speech-to-text, its text-to-speech and the consent-to-microphone sequence are untested end to end. Run it from `/admin/review` → "Test Maya (voice)". Everything behind it — the endpoint, the guards, the notes, the logging — has been tested on production through the admin path.
 - [ ] **Supabase CLI re-authentication** — `npx supabase db push` now fails with `AccessTokenRequiredError`, so `supabase/migrations/20261010000000_voice_transcript.sql` is written but **not applied**. The post-call webhook writes to `conversations.voice_transcript` and will fail until it is. Run `npx supabase login` (or set `SUPABASE_ACCESS_TOKEN`) then `npx supabase db push`.
-- [ ] **ElevenLabs post-call webhook** — create it in the dashboard, point it at `https://<production>/api/agent/webhook`, and put the generated signing secret in `.env.local` as `ELEVENLABS_WEBHOOK_SECRET`. Unsigned and unverified calls are rejected, so until this exists no voice transcript is stored.
+- [x] ~~ElevenLabs post-call webhook~~ — created in the dashboard, pointed at `/api/agent/webhook`. Only its signing secret is outstanding, above.
 - [ ] **Voice consent wording** — `components/agent/VoiceConsent.tsx` carries placeholder copy, marked on screen as "Draft wording, pending legal review". It must be replaced by the solicitor's text before launch, and the same wording added to the privacy and cookie policies.
 - [ ] **Voice legal review** — AI disclosure wording, recording consent wording, and transcript retention. The privacy and cookies pages now describe the assistant, the voice option, the processors (Anthropic and ElevenLabs) and the three cookies it sets; the consent panel copy in `components/agent/VoiceConsent.tsx` is marked on screen as draft. All of it goes to the same solicitor as the Phase A review, together, since the consent panel and the policy must say the same thing.
 

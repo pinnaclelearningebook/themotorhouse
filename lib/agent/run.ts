@@ -282,7 +282,9 @@ export async function* streamVoiceTurn(opts: {
       pending = pending.slice(consumed);
 
       const prefix = `${released}${released ? " " : ""}${candidate}`;
-      const verdict = runGuards(prefix, opts.guardContext);
+      const verdict = runGuards(prefix, opts.guardContext, {
+        sellerMessage: opts.message,
+      });
 
       // The response-time rule needs the whole turn; hold and decide later.
       if (holding || mentionsResponseTime(candidate)) {
@@ -316,7 +318,9 @@ export async function* streamVoiceTurn(opts: {
   const remainder = pending.trim();
   if (remainder && spokenCount + held.length < VOICE_SENTENCE_CAP) {
     const prefix = `${released}${released ? " " : ""}${remainder}`;
-    const verdict = runGuards(prefix, opts.guardContext);
+    const verdict = runGuards(prefix, opts.guardContext, {
+      sellerMessage: opts.message,
+    });
     if (!verdict.ok && !(holding && verdict.rule === "unqualified-promise")) {
       yield blockOn(verdict);
       return;
@@ -332,7 +336,9 @@ export async function* streamVoiceTurn(opts: {
 
   // Now the turn is complete, so the response time can be judged entire.
   if (held.length) {
-    const verdict = runGuards(released, opts.guardContext);
+    const verdict = runGuards(released, opts.guardContext, {
+      sellerMessage: opts.message,
+    });
     if (!verdict.ok) {
       yield blockOn(verdict);
       return;

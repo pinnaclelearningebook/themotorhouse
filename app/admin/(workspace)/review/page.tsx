@@ -30,7 +30,14 @@ interface BlockRow {
   conversation_id: string | null;
 }
 
+/** Rules where the turn reached the seller rather than being stopped. */
+const NOT_BLOCKED = new Set(["claim-without-write"]);
+
 const RULE_MEANING: Record<string, string> = {
+  "claim-without-write":
+    "Told the seller she had written something down, when nothing was written. The seller heard this.",
+  "self-correction":
+    "Revisited her own earlier answer without being asked.",
   price: "Tried to give a number. The one failure this brand cannot afford.",
   frequency: "Claimed a track record. No car has been bought yet.",
   urgency: "Pressure, flattery or a deadline.",
@@ -159,6 +166,11 @@ export default async function ReviewPage() {
                 <span className="rounded border border-oxblood px-2 py-0.5 text-caption text-oxblood">
                   {row.rule}
                 </span>
+                {NOT_BLOCKED.has(row.rule) && (
+                  <span className="rounded border border-line px-2 py-0.5 text-caption text-structure">
+                    spoken, not stopped
+                  </span>
+                )}
                 {isTest(row) && (
                   <span className="rounded border border-line px-2 py-0.5 text-caption text-structure">
                     admin test, not a seller
@@ -187,15 +199,19 @@ export default async function ReviewPage() {
               </p>
 
               <p className="mt-3 text-sm">
-                <span className="text-caption text-structure">She wrote</span>
+                <span className="text-caption text-structure">
+                  {NOT_BLOCKED.has(row.rule) ? "She said" : "She wrote"}
+                </span>
                 <br />
                 {row.original}
               </p>
-              <p className="mt-2 text-sm text-structure">
-                <span className="text-caption">They saw</span>
-                <br />
-                {row.replacement}
-              </p>
+              {!NOT_BLOCKED.has(row.rule) && (
+                <p className="mt-2 text-sm text-structure">
+                  <span className="text-caption">They saw</span>
+                  <br />
+                  {row.replacement}
+                </p>
+              )}
             </li>
           ))}
         </ul>

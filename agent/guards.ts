@@ -109,7 +109,8 @@ export type GuardRule =
   | "urgency"
   | "internal"
   | "contact-details"
-  | "unsupported-car-fact";
+  | "unsupported-car-fact"
+  | "self-correction";
 
 export interface GuardPass {
   ok: true;
@@ -573,6 +574,7 @@ function firstMatch(text: string, patterns: RegExp[]): string | null {
 export function runGuards(
   text: string,
   context: VehicleContext = {},
+  opts: { sellerMessage?: string } = {},
 ): GuardResult {
   const price = detectPrice(text);
   if (price) {
@@ -593,6 +595,7 @@ export function runGuards(
     ["internal", firstMatch(text, INTERNAL_PATTERNS)],
     ["contact-details", firstMatch(text, CONTACT_PATTERNS)],
     ["unsupported-car-fact", detectUnsupportedCarFact(text, context)],
+    ["self-correction", detectSelfCorrection(text, opts.sellerMessage)],
   ];
 
   for (const [rule, matched] of checks) {
@@ -608,6 +611,59 @@ export function runGuards(
   }
 
   return { ok: true, text };
+}
+
+/* ─── claims of having recorded something ───────────────────────────── */
+
+/**
+ * Did she just tell the seller she wrote something down?
+ *
+ * Voice writes notes in a step that runs beside the reply, so the model
+ * does not learn whether the write succeeded before it speaks. It says
+ * "I've put that on the record" either way. When nothing was written,
+ * that is a promise to a seller that an operator will not find — so the
+ * turn is logged for review rather than left to be discovered by someone
+ * ringing a lead with a missing figure.
+ *
+ * Matched narrowly, on the past tense only. "I'll put that down" is an
+ * intention, and the writer runs after the reply, so it is not a claim
+ * that anything has already happened.
+ */
+const RECORD_CLAIM =
+  /\b(?:i'?ve|i have)\s+(?:now\s+)?(?:noted|recorded|logged|saved|put (?:that|it|this|your|the)[^.]{0,30}?\b(?:down|on the record|on your enquiry)|written (?:that|it|this) down|added (?:that|it|this))\b|\b(?:noted|recorded) (?:that|it) (?:for|on)\b|\bthat'?s (?:noted|recorded|on the record)\b|\bit'?s (?:noted|recorded|on the record)\b/i;
+
+export function claimsARecord(text: string): string | null {
+  const match = RECORD_CLAIM.exec(text);
+  return match ? withContext(text, match[0], match.index) : null;
+}
+
+/* ─── correcting herself, unasked ───────────────────────────────────── */
+
+/**
+ * Revisiting her own earlier answer when nobody asked.
+ *
+ * She appended "My last answer was also worded as if I had checked the
+ * record when I had not" to an answer about MOT history. It was both
+ * unprompted and untrue — she had checked. Unsolicited self-correction
+ * reads as unreliability whether or not the correction is right, and the
+ * seller did not ask.
+ *
+ * Exempt when they did ask: a seller querying an earlier answer is
+ * entitled to one.
+ */
+const SELF_CORRECTION =
+  /\b(?:my (?:last|previous|earlier) (?:answer|reply|message)|earlier i said|a moment ago i said|i said (?:that )?[^.]{0,40}\bbut (?:that|it) (?:was|is) (?:wrong|not right)|i was wrong to say|correction(?=[,:])|to correct (?:myself|what i said))\b/i;
+
+const SELLER_ASKED_ABOUT_IT =
+  /\b(?:you (?:said|told me|mentioned)|earlier|before|a minute ago|that'?s not what|you were wrong|is that right|are you sure)\b/i;
+
+function detectSelfCorrection(
+  text: string,
+  sellerMessage: string | undefined,
+): string | null {
+  if (sellerMessage && SELLER_ASKED_ABOUT_IT.test(sellerMessage)) return null;
+  const match = SELF_CORRECTION.exec(text);
+  return match ? withContext(text, match[0], match.index) : null;
 }
 
 /* ─── voice ──────────────────────────────────────────────────────────── */

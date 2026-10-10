@@ -506,7 +506,7 @@ describe("the voice surfaces", () => {
     // a price.
     const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
     expect(run).toMatch(/const prefix = `\$\{released\}/);
-    expect(run).toMatch(/runGuards\(prefix, opts\.guardContext\)/);
+    expect(run).toMatch(/runGuards\(prefix, opts\.guardContext, \{/);
     // And releasing stops at the first failure.
     expect(run).toMatch(/yield blockOn\(verdict\);\s*return;/);
   });
@@ -804,5 +804,45 @@ describe("the guard context carries what the lookup knows", () => {
     const context = readFileSync(join(ROOT_DIR, "lib/agent/voice-context.ts"), "utf8");
     expect(context).toMatch(/engineCapacity:/);
     expect(context).toMatch(/mileage:/);
+  });
+});
+
+describe("a claim with nothing written", () => {
+  const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+
+  it("is logged for review when the notes step wrote nothing", () => {
+    // The notes step runs beside the reply, so the model never learns
+    // whether the write landed before it speaks. A claim that did not
+    // happen sends an operator looking for a figure that is not there.
+    expect(llm).toMatch(/const claimed = claimsARecord\(spoken\);/);
+    expect(llm).toMatch(
+      /notes\.written\.length === 0 && !notes\.note/,
+    );
+    expect(llm).toMatch(/rule: "claim-without-write"/);
+  });
+
+  it("is checked only after the notes step has resolved", () => {
+    const notesAt = llm.indexOf("const notes = await extraction;");
+    const claimAt = llm.indexOf("const claimed = claimsARecord");
+    expect(notesAt).toBeGreaterThan(-1);
+    expect(notesAt).toBeLessThan(claimAt);
+  });
+
+  it("is shown as spoken rather than stopped", () => {
+    const review = readFileSync(
+      join(ROOT_DIR, "app/admin/(workspace)/review/page.tsx"),
+      "utf8",
+    );
+    expect(review).toMatch(/NOT_BLOCKED = new Set\(\["claim-without-write"\]\)/);
+    expect(review).toMatch(/spoken, not stopped/);
+  });
+
+  it("gives the seller's message to the guards in both modes", () => {
+    // The self-correction rule is exempt when the seller asked about an
+    // earlier answer, which it can only know from their message.
+    const chat = readFileSync(join(ROOT_DIR, "app/api/agent/chat/route.ts"), "utf8");
+    expect(chat).toMatch(/sellerMessage: parsed\.data\.message/);
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/sellerMessage: opts\.message/);
   });
 });

@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { agentSettings } from "@/lib/agent/settings";
 import { hasLlmSecret } from "@/lib/agent/voice";
 import { streamVoiceTurn } from "@/lib/agent/run";
-import { sentences } from "@/agent/guards";
+import { sentences, claimsARecord } from "@/agent/guards";
 import { loadVoiceContext } from "@/lib/agent/voice-context";
 import { extractAndWriteNotes } from "@/lib/agent/notes";
 import { PROMISES } from "@/config/site";
@@ -294,6 +294,28 @@ export async function POST(request: NextRequest) {
           `blocked=${blocked?.rule ?? "no"} ` +
           `wrote=${notes.written.join("|") || "nothing"}`,
       );
+
+      /**
+       * She said she wrote it down, and nothing was written.
+       *
+       * The notes step runs beside the reply, so the model never learns
+       * whether the write landed before it speaks. When it claims one
+       * that did not happen, an operator rings a lead expecting a figure
+       * that is not there — so the turn goes to review rather than being
+       * found out loud later.
+       */
+      const claimed = claimsARecord(spoken);
+      if (!blocked && claimed && notes.written.length === 0 && !notes.note) {
+        await db().from("agent_blocks").insert({
+          lead_id: session.leadId,
+          conversation_id: session.conversationId,
+          rule: "claim-without-write",
+          matched: claimed,
+          original: spoken,
+          // Nothing was replaced: the seller heard this.
+          replacement: spoken,
+        });
+      }
 
       if (blocked) {
         await db().from("agent_blocks").insert({

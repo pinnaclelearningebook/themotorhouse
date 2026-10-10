@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   runGuards,
   sentences,
+  claimsARecord,
   PRICE_DEFLECTION,
   type VehicleContext,
 } from "@/agent/guards";
@@ -486,5 +487,71 @@ describe("a blend of the approved forms", () => {
     const bad =
       "A firm offer within four hours, and if you get in touch late in the evening, you'll hear from us first thing the next morning.";
     expect(runGuards(bad, DEFENDER).ok).toBe(false);
+  });
+});
+
+describe("claims of having recorded something", () => {
+  it("spots the past tense", () => {
+    for (const text of [
+      "I've put that on the record for the person who calls you.",
+      "I have noted your reason for selling.",
+      "I've written that down.",
+      "That's noted for the person pricing it.",
+      "I've added it to your enquiry.",
+    ]) {
+      expect(claimsARecord(text), `missed: ${text}`).not.toBeNull();
+    }
+  });
+
+  it("ignores an intention, because the writer runs after the reply", () => {
+    for (const text of [
+      "I'll put that figure down with who gave it.",
+      "I can note that for you if you'd like.",
+      "The person pricing it will see it.",
+      "What helps most is the service history.",
+    ]) {
+      expect(claimsARecord(text), `wrongly matched: ${text}`).toBeNull();
+    }
+  });
+});
+
+describe("correcting herself unasked", () => {
+  it("blocks the false self-correction from the live run", () => {
+    // Appended, unprompted, to an answer about MOT history — and wrong:
+    // she had checked the record.
+    const text =
+      "My last answer was also worded as if I had checked the record when I had not. The details I gave, diesel and 2996cc, are what the record says.";
+    const result = runGuards(text, DEFENDER, { sellerMessage: "What was that tyre advisory about?" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("self-correction");
+  });
+
+  it("blocks other unprompted revisions", () => {
+    for (const text of [
+      "Earlier I said the MOT expired in June, but that was wrong.",
+      "I was wrong to say the service history was full.",
+      "Correction: the engine is 2996cc.",
+    ]) {
+      const result = runGuards(text, DEFENDER, { sellerMessage: "What's next on the form?" });
+      expect(result.ok, `allowed: ${text}`).toBe(false);
+    }
+  });
+
+  it("allows a correction the seller asked for", () => {
+    const result = runGuards(
+      "You're right, I was wrong to say that. The record shows diesel.",
+      DEFENDER,
+      { sellerMessage: "You said petrol earlier, that's not what the logbook says." },
+    );
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("does not mistake a failed save for a self-correction", () => {
+    const result = runGuards(
+      "That didn't save. Could you type the mileage into the form yourself?",
+      DEFENDER,
+      { sellerMessage: "It's done 46,980." },
+    );
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
   });
 });
