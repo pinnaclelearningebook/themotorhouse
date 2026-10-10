@@ -69,10 +69,9 @@ Both government APIs are applied for separately and neither is instant. Apply be
 
 - [x] ~~Admin allow-list emails~~ — set 5 October 2026, two addresses, pushed to all three Vercel environments and reconciled into `admin_users` with `npm run sync-admins`.
 - [ ] **Inngest keys** — `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`, only if Inngest wins the job-runner decision below.
-- [ ] **Supabase Auth redirect allow-list** — blocks admin sign-in on every deployed environment. Supabase only redirects a magic link to its Site URL plus the URIs on the allow-list, and a new project ships with Site URL `http://localhost:3000` and an empty list, so a link clicked on production currently has nowhere valid to land. Needs, in Authentication → URL Configuration:
-  - Site URL: the production origin
-  - Redirect URLs: `https://<production-domain>/admin/auth/callback` and `https://*-themotorhouse.vercel.app/admin/auth/callback` for previews
-  There is no `supabase/config.toml` in the repo and no management access token on this machine, so this cannot be set or read from the CLI as things stand — it is a dashboard change, or a `supabase init` plus `supabase config push` if we want it version-controlled. Local sign-in on port 3000 works without it.
+- [ ] **`project_admin_write` on `SUPABASE_ACCESS_TOKEN`** — blocks admin sign-in on production, and it is the only thing blocking it. The token reads the hosted auth config fine (`GET /v1/projects/{ref}/config/auth` returns 200) but `PATCH` is refused: `{"missing_permissions":["project_admin_write"]}`. Until it is added, the hosted project keeps Site URL `http://localhost:3000` and an empty redirect allow-list, so a magic link clicked on production lands on localhost. Everything to fix it is written and tested against the read API — `npm run configure-auth https://themotorhouse.vercel.app` sets Site URL, the two exact callbacks and the magic-link template, then reads every value back. Add the permission and the script closes this item in one run.
+- [ ] **`analytics_logs_read` on `SUPABASE_ACCESS_TOKEN`** — not blocking, but it is the difference between diagnosing a failed auth email and guessing. Without it `GET /analytics/endpoints/logs.all` is refused and an auth email that Supabase accepted but the sender rejected looks exactly like an email that was never requested. Needed before custom SMTP is switched on.
+- [ ] **A verified Resend sending domain, and the `EMAIL_FROM` that goes with it** — `EMAIL_FROM` in `.env.local` is `themotorhouse.uk@gmail.com`, and Resend will not send from a domain it has not verified; `gmail.com` can never be one, because nobody can add DNS records to it. The SMTP credentials themselves are good — `smtp.resend.com:465`, user `resend`, the API key as the password, authenticated and accepted a sender and recipient in a probe that stopped before `DATA`. So custom SMTP for auth email is one verified domain away, and `scripts/configure-auth.mjs --smtp sender@domain` is waiting for it. Two things to confirm: what `EMAIL_FROM` is set to in Vercel production (it is marked sensitive, so it cannot be read back from the CLI), and whether any domain is verified in the Resend account — the current `RESEND_API_KEY` is send-only and cannot list them, so a key with `domains:read` would answer it. This also decides whether the seller auto-reply and operator alerts are landing at all. Until then auth email uses Supabase's own sender, capped at two an hour.
 
 ### Decisions
 
@@ -149,5 +148,5 @@ Kept briefly so nobody re-chases them.
 
 - ~~Trading name~~ — The Motor House, confirmed 29 August 2026
 - ~~Airtable base ID and API key~~ — live; superseded by Supabase from Phase B
-- ~~Resend API key and verified sending domain~~ — live
+- ~~Resend API key~~ — live. The *verified sending domain* half of this was closed too early: see the open item in Phase C.
 - ~~Seller photo upload flow~~ — now Phase B scope, not a later task

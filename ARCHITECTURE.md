@@ -214,6 +214,22 @@ Guards run on every assistant turn server-side before it reaches the seller. A b
 
 Inbox query: `leads` joined to latest `enrichments`, ordered by `score desc, created_at asc`, with `sla_breached = now() - created_at > sla_hours and status = 'new'`.
 
+### 7a. Hosted auth configuration
+
+Supabase auth has two sets of settings and they share no storage. `supabase/config.toml` configures a local `supabase start` stack; this repository has no such file and never needed one. The hosted project's Site URL, redirect allow-list and email templates live only in that project, so anything set once through the dashboard is invisible here and drifts the moment someone forgets.
+
+It did. On 11 October 2026 a production magic link redirected to `http://localhost:3000` because the hosted Site URL was still the development default and the redirect allow-list was empty, so Supabase refused the callback the login action asked for and fell back to Site URL. The same read found a custom magic-link template that carried only `{{ .ConfirmationURL }}` — no `{{ .Token }}` — while `/admin/login` was telling admins the email contains a sign-in code. The code path worked; the email had never carried a code to type into it.
+
+So hosted auth configuration is set from `scripts/configure-auth.mjs`, through the Management API, and that script is the record of what it should be:
+
+```
+node scripts/configure-auth.mjs https://themotorhouse.vercel.app
+```
+
+It sets Site URL, the redirect allow-list (exactly the production and localhost callbacks — a wildcard is a redirect any branch deployment can claim), and the magic-link subject and template, then reads every value back and exits non-zero if any did not save. Run it again after any dashboard change to put the configuration back.
+
+The access token needs `project_admin_write`; read alone is not enough. Custom SMTP is behind an explicit `--smtp sender@domain` flag rather than on by default, because Resend refuses to send from a domain it has not verified and the token cannot read the auth logs — a rejected sender would stop every sign-in email with nothing anywhere to show why.
+
 ## 8. Environment variables
 
 ```
@@ -283,3 +299,6 @@ Missing optional keys → adapter returns `null` and `/admin` shows the control 
 | 2026-10-05 | A margin with no logged costs is labelled "before costs", not shown as the margin | Zero recorded costs is not zero costs. Recon and shipping are usually the difference between a good car and a bad one, so an unqualified margin that ignores them flatters the export channel exactly where the decision is being made. |
 | 2026-10-05 | Pipeline cards move by select-and-submit, not drag-and-drop | Keyboard operable, works on a phone, needs no client JavaScript, and cannot drop a car into the wrong column on a bad swipe. A kanban board is a reading surface here; the precision matters more than the gesture. |
 | 2026-10-05 | The offer-entry action is `recordOffer`, and the offers constraint now tests for writes rather than any mention | Offer entry was missing, so purchase price could never be populated and the P&L was dead on arrival. Adding it hit two existing guards, both correctly: the banned-name regex rejects `makeOffer`/`createOffer`, so the function is named for what it does — a person typed the number, we write it down. The "writes to offers only from /admin" check matched any `from("offers")`, including the pipeline's read of the accepted offer; it now looks for `.insert`/`.update`/`.upsert`/`.delete` after the table, and was confirmed to still fail on an insert outside /admin while passing a read. |
+| 2026-10-11 | Hosted auth configuration is set from `scripts/configure-auth.mjs`, not the dashboard | The hosted project's Site URL, redirect allow-list and email templates share no storage with `supabase/config.toml`, so a dashboard change leaves no trace in the repository. It drifted: a production magic link redirected to `http://localhost:3000` because Site URL was still the dev default and the allow-list was empty, and the magic-link template promised a code it did not contain. A script that writes the configuration and reads it back is the only version of this that can be reviewed in a diff. |
+| 2026-10-11 | The redirect allow-list is the two exact callbacks, no preview wildcard | `https://*-themotorhouse.vercel.app/admin/auth/callback` would let any branch deployment receive an admin session. Previews lose magic-link sign-in as a result — `sendMagicLink` builds `emailRedirectTo` from the request host, so a preview's callback is refused and Supabase falls back to Site URL, landing the admin on production. That is the right failure: a preview is for looking at pages, and `/admin` under `ADMIN_DEV_BYPASS` is a render, not a verification (CLAUDE.md section 17). |
+| 2026-10-11 | Custom SMTP stays off until a sending domain is verified | Supabase's own sender works and is capped at two auth emails an hour, which is survivable. Resend will not send from an unverified domain and `gmail.com` can never be one, and the scoped access token cannot read `analytics_logs_read`, so pointing auth email at Resend with the current `EMAIL_FROM` would stop every sign-in email with no log to explain it. Worse than the rate limit. |
