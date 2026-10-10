@@ -16,7 +16,9 @@
  * Run:  node scripts/configure-auth.mjs https://themotorhouse.vercel.app
  *
  * Reads SUPABASE_URL (for the project ref) and SUPABASE_ACCESS_TOKEN
- * from .env.local. The token needs Auth read and write.
+ * from .env.local. The token needs both `auth_config_read` and
+ * `auth_config_write`: the write makes the change, the read proves it
+ * landed, and a token with only one of them fails halfway.
  *
  * Custom SMTP is deliberately opt-in:
  *
@@ -123,6 +125,31 @@ if (smtpSender) {
   });
 }
 
+/**
+ * A refusal names the permission it wanted. Print that and nothing else:
+ * the scoped token's permissions are granted one at a time, so the first
+ * missing one is the only useful thing in the response.
+ */
+async function refused(response, what) {
+  const detail = await response.text();
+  console.error(`Could not ${what}: ${response.status}`);
+  let missing = [];
+  try {
+    missing = JSON.parse(detail)?.error?.missing_permissions ?? [];
+  } catch {
+    // Not a permission error. The body is the explanation.
+  }
+  if (missing.length) {
+    console.error(`\nAdd this to SUPABASE_ACCESS_TOKEN: ${missing.join(", ")}`);
+    console.error("Reading and writing are separate permissions, and this");
+    console.error("script needs auth_config_read as well as auth_config_write —");
+    console.error("it reads every value back rather than trusting the write.");
+  } else {
+    console.error(detail.slice(0, 600));
+  }
+  process.exit(1);
+}
+
 async function main() {
   const response = await fetch(`${API}/projects/${ref}/config/auth`, {
     method: "PATCH",
@@ -130,18 +157,12 @@ async function main() {
     body: JSON.stringify(patch),
   });
 
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error(`Could not update auth config: ${response.status}`);
-    console.error(detail.slice(0, 600));
-    if (response.status === 403) {
-      console.error("\nThe access token is missing a permission. The message above names it.");
-    }
-    process.exit(1);
-  }
+  if (!response.ok) await refused(response, "update the auth config");
 
   // Read it back rather than trusting the write.
-  const after = await fetch(`${API}/projects/${ref}/config/auth`, { headers }).then((r) => r.json());
+  const readBack = await fetch(`${API}/projects/${ref}/config/auth`, { headers });
+  if (!readBack.ok) await refused(readBack, "read the auth config back");
+  const after = await readBack.json();
 
   const expected = {
     site_url: base,

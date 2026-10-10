@@ -228,7 +228,7 @@ node scripts/configure-auth.mjs https://themotorhouse.vercel.app
 
 It sets Site URL, the redirect allow-list (exactly the production and localhost callbacks — a wildcard is a redirect any branch deployment can claim), and the magic-link subject and template, then reads every value back and exits non-zero if any did not save. Run it again after any dashboard change to put the configuration back.
 
-The access token needs `project_admin_write`; read alone is not enough. Custom SMTP is behind an explicit `--smtp sender@domain` flag rather than on by default, because Resend refuses to send from a domain it has not verified and the token cannot read the auth logs — a rejected sender would stop every sign-in email with nothing anywhere to show why.
+The access token needs `auth_config_read` and `auth_config_write`, and they are granted separately. The write makes the change; the read is what proves it landed, so a token holding only one of them fails halfway. `project_admin_write` is not the permission — the API asks for it first and names the auth-specific one only once it is satisfied, which makes the first refusal look like the whole answer. Custom SMTP is behind an explicit `--smtp sender@domain` flag rather than on by default, because Resend refuses to send from a domain it has not verified and the token cannot read the auth logs — a rejected sender would stop every sign-in email with nothing anywhere to show why.
 
 ## 8. Environment variables
 
