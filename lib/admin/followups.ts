@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { TEST_SOURCE } from "@/lib/admin/voice-test";
 
 /**
  * Follow-ups, driven by next_contact_date.
@@ -53,6 +54,7 @@ export async function followUps(): Promise<FollowUps> {
       "id, reg, name, phone, status, timeline, next_contact_date, vehicle_id, created_at",
     )
     .in("status", [...OPEN])
+    .or(`source.is.null,source.neq.${TEST_SOURCE}`)
     .order("next_contact_date", { ascending: true, nullsFirst: false })
     .limit(400);
 

@@ -682,3 +682,36 @@ describe("the admin test path can start from nothing", () => {
     expect(route).toMatch(/if \(!session && adminTest\)/);
   });
 });
+
+describe("the seeded voice-test car is not a seller", () => {
+  it("is excluded from the inbox, the pipeline and follow-ups", () => {
+    // A test car in the queue of people waiting for a call is worse than
+    // no test car: someone rings it.
+    for (const file of [
+      "lib/admin/inbox.ts",
+      "lib/admin/pipeline.ts",
+      "lib/admin/followups.ts",
+    ]) {
+      const code = readFileSync(join(ROOT_DIR, file), "utf8");
+      expect(code, `${file} must exclude the test source`).toMatch(
+        /source\.neq\.\$\{TEST_SOURCE\}/,
+      );
+    }
+  });
+
+  it("marks what it seeds, rather than relying on the registration", () => {
+    const seeder = readFileSync(join(ROOT_DIR, "lib/admin/voice-test.ts"), "utf8");
+    expect(seeder).toMatch(/source: TEST_SOURCE/);
+    expect(seeder).toMatch(/Not a real seller/);
+  });
+
+  it("checks the admin again inside the server action", () => {
+    // A Server Action is an endpoint whatever page it appears on.
+    const actions = readFileSync(
+      join(ROOT_DIR, "app/admin/(workspace)/review/actions.ts"),
+      "utf8",
+    );
+    expect(actions).toMatch(/const admin = await currentAdmin\(\);/);
+    expect(actions).toMatch(/if \(!admin\) throw/);
+  });
+});

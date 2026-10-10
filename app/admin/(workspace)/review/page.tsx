@@ -3,6 +3,8 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { AGENT } from "@/config/site";
 import { agentSettings } from "@/lib/agent/settings";
+import { VoiceTest } from "./VoiceTest";
+import { TEST_REG } from "@/lib/admin/voice-test";
 
 export const metadata: Metadata = { title: "Review" };
 export const dynamic = "force-dynamic";
@@ -118,6 +120,8 @@ export default async function ReviewPage() {
           .
         </p>
       )}
+
+      <VoiceTest testReg={TEST_REG} />
 
       {testCount > 0 && (
         <p className="mt-6 text-caption text-structure">

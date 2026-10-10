@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { runEnrichment } from "@/lib/decision/enrich";
+import { TEST_SOURCE } from "@/lib/admin/voice-test";
 
 /**
  * The inbox query, plus the catch-up sweep.
@@ -70,6 +71,9 @@ export async function inboxRows(): Promise<{
     .select(
       "id, reg, name, phone, created_at, timeline, status, pending_enrichment, vehicle_id",
     )
+    // Cars seeded to test voice are not sellers and must not appear in
+    // the queue of people waiting for a call.
+    .or(`source.is.null,source.neq.${TEST_SOURCE}`)
     .order("created_at", { ascending: false })
     .limit(200);
 

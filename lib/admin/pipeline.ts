@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { carPnl, type CarPnl, type CostLine } from "@/lib/admin/pnl";
+import { TEST_SOURCE } from "@/lib/admin/voice-test";
 
 /**
  * The pipeline board.
@@ -85,6 +86,7 @@ export async function pipelineBoard(): Promise<PipelineBoard> {
       "id, reg, name, status, sold_price, vehicle_id, channel_decided, channel_recommended",
     )
     .in("status", boardStatuses)
+    .or(`source.is.null,source.neq.${TEST_SOURCE}`)
     .order("updated_at", { ascending: false })
     .limit(400);
 
