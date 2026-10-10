@@ -6,12 +6,8 @@ import { resolveSession } from "@/lib/agent/session";
 import { agentSettings } from "@/lib/agent/settings";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
 import { runGuards, type VehicleContext } from "@/agent/guards";
-import {
-  complete,
-  isAgentConfigured,
-  agentUnavailableReason,
-  systemPrompt,
-} from "@/agent/provider";
+import { isAgentConfigured, agentUnavailableReason } from "@/agent/provider";
+import { runTurn } from "@/lib/agent/run";
 import { getVehicleContext, readFormState } from "@/agent/tools";
 import { PROMISES } from "@/config/site";
 
@@ -99,24 +95,19 @@ export async function POST(request: NextRequest) {
     ? (conversation.transcript as { role: "user" | "assistant"; content: string }[])
     : [];
 
-  const messages = [
-    ...history.map((turn) => ({ role: turn.role, content: turn.content })),
-    { role: "user" as const, content: parsed.data.message },
-  ];
-
   let reply;
   try {
-    reply = await complete({
-      system: systemPrompt({
-        vehicle,
-        formState: JSON.stringify(formState.data ?? {}),
-      }),
-      messages,
+    reply = await runTurn({
+      session,
+      history,
+      message: parsed.data.message,
+      vehicle,
+      formState: JSON.stringify(formState.data ?? {}),
       model: settings.model,
       maxTokens: settings.maxOutputTokens,
     });
   } catch (error) {
-    console.error("[agent] model call failed:", error);
+    console.error("[agent] turn failed:", error);
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 
@@ -167,6 +158,9 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     reply: outgoing,
+    // Side effects the widget acts on: moving the form, opening the photo
+    // guide. Never anything about routing, scoring or price.
+    effects: reply.effects,
     turnsRemaining: Math.max(0, settings.maxTurns - (session.turnCount + 1)),
   });
 }

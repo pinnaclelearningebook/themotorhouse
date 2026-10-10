@@ -50,8 +50,12 @@ export function AgentWidget({
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  // Set only once the session cookie exists. Anything that needs the
+  // session must wait for this, not for the widget being open.
+  const [sessionReady, setSessionReady] = useState(false);
   const started = useRef(false);
   const buffered = useRef<string[]>([]);
+  const linked = useRef(false);
 
   // Stall detection. Listening at the document means the form needs no
   // knowledge of this component. Thirty seconds on one field, once per
@@ -86,19 +90,38 @@ export function AgentWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
 
-  // Flush anything said before the lead existed.
+  /**
+   * Attach the conversation to the lead, and flush anything said before
+   * the lead existed.
+   *
+   * This runs whenever a lead id is available and the conversation has
+   * not been linked yet — not only when there is something buffered. An
+   * earlier version only fired when the buffer had contents, so opening
+   * Maya *after* the phone field (the common case) left the conversation
+   * permanently unlinked and every append_lead_note failing.
+   */
   useEffect(() => {
-    if (!leadId || buffered.current.length === 0) return;
+    if (!leadId || !sessionReady || linked.current) return;
+    linked.current = true;
     const pendingNotes = buffered.current.splice(0);
     void fetch("/api/agent/notes", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ leadId, notes: pendingNotes }),
-    }).catch(() => {
-      // Losing a buffered note must not break the form. The transcript
-      // still holds it, and the operator reads that.
-    });
-  }, [leadId]);
+    })
+      .then((response) => {
+        // A 401 or 403 is not a thrown error. Without this check a failed
+        // link looked identical to a successful one and never retried.
+        if (!response.ok) throw new Error(String(response.status));
+      })
+      .catch(() => {
+        // Losing the link must not break the form. Put the notes back and
+        // allow another attempt. The transcript still holds the
+        // conversation and the operator reads that.
+        buffered.current.unshift(...pendingNotes);
+        linked.current = false;
+      });
+  }, [leadId, sessionReady]);
 
   async function open() {
     setOpened(true);
@@ -115,6 +138,9 @@ export function AgentWidget({
       setUnavailable(true);
       return;
     }
+
+    // The cookie is set by now, so anything needing the session may run.
+    setSessionReady(true);
 
     // Disclosure first, before anything else is said (section 10 legal).
     setTurns([

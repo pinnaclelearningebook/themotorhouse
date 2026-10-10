@@ -17,6 +17,28 @@ export interface AgentSettings {
   maxOutputTokens: number;
 }
 
+/**
+ * Local testing only.
+ *
+ * The settings table lives in one Supabase project shared by local and
+ * production, so flipping agent_enabled to true to test her locally would
+ * turn her on for production in the same instant. This allows a local
+ * session to run her while the stored setting — and therefore production
+ * — stays false.
+ *
+ * The NODE_ENV check is not a convention here. Next sets NODE_ENV to
+ * "production" for every build, so this branch is dead code in any
+ * deployed environment and cannot be switched on by setting the variable
+ * in Vercel. test/constraints.test.ts asserts the guard stays, exactly as
+ * it does for ADMIN_DEV_BYPASS.
+ */
+function forcedOnForDevelopment(): boolean {
+  return (
+    process.env.NODE_ENV === "development" &&
+    process.env.AGENT_DEV_FORCE_ON === "1"
+  );
+}
+
 const FALLBACK: AgentSettings = {
   enabled: false,
   model: "claude-sonnet-5-5",
@@ -25,6 +47,7 @@ const FALLBACK: AgentSettings = {
 };
 
 export async function agentSettings(): Promise<AgentSettings> {
+  const forced = forcedOnForDevelopment();
   const { data, error } = await db()
     .from("settings")
     .select("key, value")
@@ -35,11 +58,11 @@ export async function agentSettings(): Promise<AgentSettings> {
       "agent_max_output_tokens",
     ]);
 
-  if (error || !data) return FALLBACK;
+  if (error || !data) return { ...FALLBACK, enabled: forced };
 
   const map = new Map(data.map((row) => [row.key as string, row.value]));
   return {
-    enabled: map.get("agent_enabled") === true,
+    enabled: forced || map.get("agent_enabled") === true,
     model:
       typeof map.get("agent_model") === "string"
         ? (map.get("agent_model") as string)

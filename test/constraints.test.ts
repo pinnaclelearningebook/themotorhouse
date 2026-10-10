@@ -218,7 +218,7 @@ describe("the agent endpoint", () => {
     // check drifts below the model call, turning Maya off stops her
     // replying but not costing.
     const switchAt = chat.search(/if\s*\(!settings\.enabled\)/);
-    const modelAt = chat.search(/await complete\(/);
+    const modelAt = chat.search(/await runTurn\(/);
     expect(switchAt).toBeGreaterThan(-1);
     expect(modelAt).toBeGreaterThan(-1);
     expect(switchAt).toBeLessThan(modelAt);
@@ -234,7 +234,7 @@ describe("the agent endpoint", () => {
   });
 
   it("guards the model's turn before it reaches the seller", () => {
-    const modelAt = chat.search(/await complete\(/);
+    const modelAt = chat.search(/await runTurn\(/);
     const guardAt = chat.search(/runGuards\(/);
     const respondAt = chat.lastIndexOf("NextResponse.json({");
     expect(modelAt).toBeLessThan(guardAt);
@@ -261,6 +261,34 @@ describe("the agent endpoint", () => {
     expect(settings).toMatch(/=== true/);
   });
 
+  it("never sends an empty completion to the seller", () => {
+    // claude-sonnet-5-5 thinks by default and thinking tokens come out of
+    // max_tokens, so a long system prompt with a modest ceiling produced
+    // an empty text block and a blank chat bubble behind a 200. Thinking
+    // is off, and an empty completion is now an error rather than a
+    // message.
+    const provider = readFileSync(join(ROOT_DIR, "agent/provider.ts"), "utf8");
+    expect(provider).toMatch(/thinking:\s*\{\s*type:\s*"between_tools"\s*\}/);
+    // A turn that is only tool calls is legitimately textless, so the
+    // emptiness check must account for that rather than firing on it.
+    expect(provider).toMatch(/if \(!text && toolUses\.length === 0\)/);
+    expect(provider).toMatch(/throw new Error\(\s*`model returned no text/);
+  });
+
+  it("guards the development force-on behind NODE_ENV", () => {
+    // Same standard as ADMIN_DEV_BYPASS. Next sets NODE_ENV=production for
+    // every build, so this cannot be switched on in a deployed
+    // environment by setting the variable in Vercel.
+    const settings = readFileSync(
+      join(ROOT_DIR, "lib/agent/settings.ts"),
+      "utf8",
+    );
+    const guard = settings.match(
+      /process\.env\.NODE_ENV === "development"[\s\S]{0,120}?AGENT_DEV_FORCE_ON/,
+    );
+    expect(guard, "AGENT_DEV_FORCE_ON must be behind a NODE_ENV check").not.toBeNull();
+  });
+
   it("calls no paid adapter", () => {
     for (const file of ["app/api/agent/chat/route.ts", "agent/provider.ts", "agent/tools.ts"]) {
       const code = readFileSync(join(ROOT_DIR, file), "utf8");
@@ -283,5 +311,106 @@ describe("the agent endpoint", () => {
       ).toBe(false);
     }
     expect(tools).not.toMatch(/from\(["']offers["']\)/);
+  });
+});
+
+describe("the agent tool loop", () => {
+  const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+  const tools = readFileSync(join(ROOT_DIR, "agent/tools.ts"), "utf8");
+
+  it("bounds the number of tool rounds", () => {
+    // A model that keeps calling tools without answering spends money in a
+    // circle while the seller watches a typing indicator.
+    expect(run).toMatch(/MAX_TOOL_ROUNDS\s*=\s*\d+/);
+    expect(run).toMatch(/round <= MAX_TOOL_ROUNDS/);
+  });
+
+  it("validates every tool input with its Zod schema before running it", () => {
+    // The wire schemas are instructions to a model; the Zod schemas decide
+    // what is actually accepted. Each writing tool must parse first.
+    for (const tool of ["set_field", "append_lead_note", "go_to_step"]) {
+      expect(
+        run.includes(`toolSchemas.${tool}.safeParse`),
+        `${tool} must be validated before it runs`,
+      ).toBe(true);
+    }
+  });
+
+  it("exposes exactly the six tools from CLAUDE.md section 10", () => {
+    const declared = [...tools.matchAll(/^\s{4}name: "([a-z_]+)",$/gm)].map(
+      (m) => m[1],
+    );
+    expect(new Set(declared)).toEqual(
+      new Set([
+        "get_vehicle_context",
+        "read_form_state",
+        "set_field",
+        "go_to_step",
+        "trigger_photo_guide",
+        "append_lead_note",
+      ]),
+    );
+  });
+
+  it("keeps the wire schemas and the Zod schemas in step", () => {
+    // Two hand-written lists drift. This fails when one gains a tool the
+    // other does not have.
+    const wire = [...tools.matchAll(/^\s{4}name: "([a-z_]+)",$/gm)].map((m) => m[1]);
+    const zod = [...tools.matchAll(/^\s{2}([a-z_]+): z\.object\(/gm)].map((m) => m[1]);
+    expect(new Set(wire)).toEqual(new Set(zod));
+  });
+});
+
+describe("agent tool writes report honestly", () => {
+  const tools = readFileSync(join(ROOT_DIR, "agent/tools.ts"), "utf8");
+
+  it("confirms every write before reporting success", () => {
+    // Maya tells the seller what she has saved. A write that fails
+    // silently makes her a liar, which is the one thing this brand cannot
+    // afford. Both writing tools must destructure and check `error`.
+    const writes = tools.split("export async function").slice(1);
+    for (const fn of writes) {
+      const name = fn.slice(0, fn.indexOf("(")).trim();
+      if (!/setField|appendLeadNote/.test(name)) continue;
+      expect(fn, `${name} must capture the error`).toMatch(/const \{ error \}/);
+      expect(fn, `${name} must act on the error`).toMatch(/if \(error\)/);
+    }
+  });
+
+  it("rejects values a database enum would refuse", () => {
+    // "fairly soon" is a plausible answer that Postgres rejects. Without
+    // this it passed validation, failed the write, and was reported saved.
+    expect(tools).toMatch(/FIELD_ENUMS/);
+    for (const field of ["timeline", "service_history", "finance_outstanding"]) {
+      expect(tools.includes(`${field}:`), `${field} needs its enum`).toBe(true);
+    }
+  });
+});
+
+describe("the model call cannot hang", () => {
+  it("abandons a call that does not return promptly", () => {
+    // fetch has no default timeout. A hung call was observed holding a
+    // request open for sixty minutes before the socket gave up — on
+    // Vercel that spends the whole function budget while the seller
+    // watches a typing indicator.
+    const provider = readFileSync(join(ROOT_DIR, "agent/provider.ts"), "utf8");
+    expect(provider).toMatch(/MODEL_TIMEOUT_MS\s*=\s*[\d_]+/);
+    // The turn's remaining budget when the loop supplies one, falling
+    // back to the per-call ceiling.
+    expect(provider).toMatch(
+      /signal:\s*AbortSignal\.timeout\(opts\.timeoutMs \?\? MODEL_TIMEOUT_MS\)/,
+    );
+  });
+});
+
+describe("a turn is bounded end to end", () => {
+  it("budgets the whole turn, not just one model call", () => {
+    // Five tool rounds at thirty seconds each is two and a half minutes
+    // of a seller watching a typing indicator, and most of a Vercel
+    // function's budget. One deadline covers the turn.
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).toMatch(/TURN_BUDGET_MS\s*=\s*[\d_]+/);
+    expect(run).toMatch(/const deadline = Date\.now\(\) \+ TURN_BUDGET_MS/);
+    expect(run).toMatch(/timeoutMs: remaining/);
   });
 });

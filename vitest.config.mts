@@ -18,5 +18,20 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts", "lib/**/*.test.ts"],
+    /**
+     * The database tests each boot a Postgres compiled to WebAssembly and
+     * replay every migration against it. Several of those running in
+     * parallel worker threads contend badly enough to hang: the suite
+     * passed file by file and failed when run together, which is the
+     * worst way for a suite to behave, because it makes a green run mean
+     * nothing. Raising the timeout alone did not fix it — they were
+     * hanging, not merely slow — so the files run one at a time.
+     *
+     * The suite is small and this costs seconds. The timeouts below are a
+     * backstop against a genuinely stuck test, not a performance target.
+     */
+    fileParallelism: false,
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
