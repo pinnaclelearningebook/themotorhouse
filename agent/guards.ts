@@ -85,6 +85,27 @@ const FORBIDDEN_QUALIFIER =
   /\b(?:weekday|weekdays|working day|working days|business day|business days|business hours|office hours|mon(?:day)?[-\s]*(?:to|–|-)[-\s]*fri(?:day)?)\b/i;
 
 /** Does this turn mention the response-time promise at all? */
+/**
+ * The first `limit` sentences, sliced out of the original.
+ *
+ * Sliced rather than rejoined from the split parts: `sentences()` trims
+ * each one, and rejoining them lost the spacing at the boundaries —
+ * "within2 hours" reached a seller that way once. The same technique the
+ * voice path uses to walk its buffer.
+ */
+export function firstSentences(text: string, limit: number): string {
+  const parts = sentences(text);
+  if (parts.length <= limit) return text;
+
+  let consumed = 0;
+  for (const part of parts.slice(0, limit)) {
+    const at = text.indexOf(part, consumed);
+    if (at === -1) return text;
+    consumed = at + part.length;
+  }
+  return text.slice(0, consumed);
+}
+
 export function mentionsResponseTime(text: string): boolean {
   return /\b\d+\s*hours?\b|\b(?:one|two|three|four|five|six|twelve|24)\s*hours?\b/i.test(
     text,
@@ -110,7 +131,8 @@ export type GuardRule =
   | "internal"
   | "contact-details"
   | "unsupported-car-fact"
-  | "self-correction";
+  | "self-correction"
+  | "machinery";
 
 export interface GuardPass {
   ok: true;
@@ -448,6 +470,31 @@ const INTERNAL_PATTERNS: RegExp[] = [
   /\blanded cost\b/i,
 ];
 
+/* ─── narrating the machinery ─────────────────────────────────────────── */
+
+/**
+ * The seller does not know there is a form state to read.
+ *
+ * prompt.md has said "you never describe the machinery" since Session 5
+ * and she said "the form shows nothing filled in yet" anyway, on
+ * production, to the person who wrote the rule. A seller who hears that
+ * learns two things: that something is watching the fields, and that it
+ * has nothing useful to say about them.
+ *
+ * Narrow on purpose. Helping with one field by name is the job —
+ * "the mileage is the one it still needs" is fine. What is blocked is
+ * the form offered as a source of information about itself.
+ */
+const MACHINERY_PATTERNS: RegExp[] = [
+  /\b(?:the|your) form (?:shows|says|tells me|has|is showing|currently)\b/i,
+  /\baccording to (?:the|your) form\b/i,
+  /\bform state\b/i,
+  /\bnothing (?:is )?(?:filled|completed|entered)(?: in)?\b/i,
+  /\bno(?:ne of the)? fields? (?:are|is|have been) (?:filled|completed)\b/i,
+  /\bI (?:can see|see|checked|looked at) (?:the|your) form\b/i,
+  /\bwhat (?:the|your) form (?:shows|says|has)\b/i,
+];
+
 /* ─── contact and company details ────────────────────────────────────── */
 
 /**
@@ -596,6 +643,7 @@ export function runGuards(
     ["contact-details", firstMatch(text, CONTACT_PATTERNS)],
     ["unsupported-car-fact", detectUnsupportedCarFact(text, context)],
     ["self-correction", detectSelfCorrection(text, opts.sellerMessage)],
+    ["machinery", firstMatch(text, MACHINERY_PATTERNS)],
   ];
 
   for (const [rule, matched] of checks) {

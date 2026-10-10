@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { createSession } from "@/lib/agent/session";
+import { createSession, endSession } from "@/lib/agent/session";
 import { agentAccess } from "@/lib/agent/access";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
+import { openingLine } from "@/lib/agent/greeting";
+import { titleCaseVehicle } from "@/lib/format";
 
 /**
  * Open a conversation.
@@ -49,20 +51,54 @@ export async function POST(request: NextRequest) {
   // Resolve the vehicle ourselves. A missing row is fine — Maya works
   // with no vehicle context and says so rather than guessing.
   let vehicleId: string | null = null;
+  let vehicleName: string | null = null;
   if (parsed.data.reg) {
     const { data } = await db()
       .from("vehicles")
-      .select("id")
+      .select("id, make, model")
       .eq("reg", parsed.data.reg.toUpperCase().replace(/\s+/g, ""))
       .maybeSingle();
     vehicleId = (data?.id as string) ?? null;
+    const named = [data?.make, data?.model]
+      .filter((part): part is string => Boolean(part))
+      .map(titleCaseVehicle)
+      .join(" ");
+    vehicleName = named || null;
   }
 
-  const session = await createSession({ leadId: null, vehicleId, adminTest });
+  // Written into the transcript, not only returned, so the model's
+  // history starts where the seller's screen does.
+  const opening = openingLine(vehicleName);
+
+  const session = await createSession({
+    leadId: null,
+    vehicleId,
+    adminTest,
+    opening,
+  });
 
   if (!session) {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 
-  return NextResponse.json({ conversationId: session.conversationId });
+  return NextResponse.json({
+    conversationId: session.conversationId,
+    opening,
+  });
+}
+
+/**
+ * End the conversation.
+ *
+ * The panel's close control, as opposed to its minimise control. Clearing
+ * the screen alone would leave the cookie pointing at a live row, so the
+ * next conversation would continue the last one's transcript and the
+ * model would answer with a history the seller thinks they threw away.
+ *
+ * Needs no access check: it can only end the conversation this browser's
+ * own cookie names, and ending one is not something to protect.
+ */
+export async function DELETE() {
+  await endSession();
+  return NextResponse.json({ ok: true });
 }

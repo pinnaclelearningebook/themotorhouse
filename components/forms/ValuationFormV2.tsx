@@ -15,7 +15,6 @@ import { StepYou, type ContactDetails } from "./StepYou";
 import { PhoneStep } from "./PhoneStep";
 import type { PendingPhoto } from "./PhotoUpload";
 import { AgentWidget } from "@/components/agent/AgentWidget";
-import { titleCaseVehicle } from "@/lib/format";
 
 /**
  * The four-step form (CLAUDE.md section 9).
@@ -257,23 +256,24 @@ export function ValuationFormV2({
   }
 
   /**
-   * The assistant sits below whichever step is showing, from the moment
-   * the car is identified (CLAUDE.md section 10) — never on the
-   * registration step, where the only thing asked for is one field.
+   * The assistant is a floating launcher, from the moment the car is
+   * identified (CLAUDE.md section 10) — never on the registration step,
+   * where the only thing asked for is one field. It is rendered beside
+   * the step rather than inside it so remounting a step cannot restart
+   * the conversation, and positions itself.
+   *
+   * The car's name is not passed: the server resolves it from the
+   * registration when it writes the opening line, so there is one place
+   * that decides what she says first.
    */
   function withAgent(node: React.ReactNode) {
     if (!agentEnabled || !identified) return node;
-    const name = [identified.vehicle?.make, identified.vehicle?.model]
-      .filter(Boolean)
-      .map((part) => titleCaseVehicle(part as string))
-      .join(" ");
     return (
       <>
         {node}
         <AgentWidget
           leadId={leadId}
           reg={identified.reg}
-          vehicleName={name || null}
           preview={agentPreview}
         />
       </>

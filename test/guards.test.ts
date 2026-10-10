@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   runGuards,
   sentences,
+  firstSentences,
   claimsARecord,
   PRICE_DEFLECTION,
+  GENERAL_DEFLECTION,
   type VehicleContext,
 } from "@/agent/guards";
 
@@ -553,5 +555,86 @@ describe("correcting herself unasked", () => {
       { sellerMessage: "It's done 46,980." },
     );
     expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+});
+
+describe("narrating the machinery", () => {
+  /**
+   * prompt.md has forbidden this since Session 5 and she did it anyway,
+   * on production, to the person who wrote the rule: "the form shows
+   * nothing filled in yet". A seller who hears that learns that
+   * something is watching the fields and has nothing useful to say
+   * about them.
+   */
+  const BLOCKED = [
+    "The form shows nothing filled in yet, so let's start at the top.",
+    "Nothing is filled in yet.",
+    "According to the form, you still need the mileage.",
+    "I can see your form and the mileage is empty.",
+    "Your form says the service history is missing.",
+    "The form state has no mileage.",
+  ];
+
+  for (const text of BLOCKED) {
+    it(`blocks ${JSON.stringify(text.slice(0, 40))}`, () => {
+      const verdict = runGuards(text);
+      expect(verdict.ok).toBe(false);
+      if (!verdict.ok) expect(verdict.rule).toBe("machinery");
+    });
+  }
+
+  /**
+   * Narrow on purpose. Helping with one field by name is the job, and a
+   * rule that swallowed that would have taken the useful half with the
+   * useless half.
+   */
+  const ALLOWED = [
+    "The mileage is the one it still needs — the number on the dash will do.",
+    "Put the mileage in next. A rough figure off the dash is fine.",
+    "Service history means any stamps or invoices you have.",
+    "I couldn't get that saved, could you type it in?",
+    "Photographs and your service history are what help them most.",
+  ];
+
+  for (const text of ALLOWED) {
+    it(`allows ${JSON.stringify(text.slice(0, 40))}`, () => {
+      expect(runGuards(text).ok).toBe(true);
+    });
+  }
+
+  it("does not block its own deflections", () => {
+    // A replacement that trips a guard would be a turn with no way out.
+    for (const deflection of [GENERAL_DEFLECTION, PRICE_DEFLECTION]) {
+      expect(runGuards(deflection).ok, deflection).toBe(true);
+    }
+  });
+});
+
+describe("the text sentence cap", () => {
+  it("slices the original rather than rejoining the parts", () => {
+    // Rejoining trimmed parts lost the spacing at the boundaries once —
+    // "within2 hours" reached a seller that way.
+    const text =
+      "A person prices your car once your details are in. " +
+      "I can't put a number on it myself. " +
+      "Photographs help them most. " +
+      "Service history matters too.";
+    const capped = firstSentences(text, 3);
+    expect(capped).toBe(
+      "A person prices your car once your details are in. " +
+        "I can't put a number on it myself. " +
+        "Photographs help them most.",
+    );
+    expect(text.startsWith(capped)).toBe(true);
+  });
+
+  it("leaves a shorter turn exactly as it was", () => {
+    const text = "Put the mileage in next. A rough figure is fine.";
+    expect(firstSentences(text, 3)).toBe(text);
+  });
+
+  it("does not cut an abbreviation in half", () => {
+    const text = "It is a 2.0 litre, approx. 12,000 miles, one owner.";
+    expect(firstSentences(text, 3)).toBe(text);
   });
 });

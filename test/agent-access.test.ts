@@ -119,10 +119,12 @@ describe("nothing decides for itself whether Maya is on", () => {
     expect(widget).toMatch(/preview\?: boolean/);
     expect(widget).toMatch(/Admin preview — \{AGENT\.name\} is off for the public/);
     expect(widget).not.toMatch(/admin_test|adminTest/);
-    // The label renders in both states, so neither can be mistaken for
-    // what a seller is being shown.
-    expect(widget).toMatch(/\{preview && previewLabel\}/);
-    expect(widget).toMatch(/\{preview && <div className="px-4 pt-4">\{previewLabel\}<\/div>\}/);
+    // Rendered in both states — the closed launcher and the open panel —
+    // so neither can be mistaken for what a seller is being shown.
+    const launcherAt = widget.search(/view === "launcher"/);
+    const labels = [...widget.matchAll(/\{preview && /g)].map((m) => m.index ?? -1);
+    expect(labels.length, "the preview label renders in one place only").toBe(2);
+    expect(labels[0]).toBeGreaterThan(launcherAt);
   });
 
   it("keeps plate yellow off the preview label", () => {

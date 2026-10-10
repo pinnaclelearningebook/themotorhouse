@@ -53,7 +53,10 @@ export function VoiceTest({ testReg }: { testReg: string }) {
       const { Conversation } = await import("@elevenlabs/client");
       const session = await Conversation.startSession({
         signedUrl,
-        extraBody: { conversationId },
+        // customLlmExtraBody, not extraBody: the SDK ignores an unknown
+        // key in silence and startSession is generic over its options,
+        // so the wrong name typechecks and every spoken turn fails.
+        customLlmExtraBody: { conversationId },
         onError: () => setStage("failed"),
         onDisconnect: () => setStage("idle"),
       });

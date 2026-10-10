@@ -26,6 +26,12 @@ export async function createSession(opts: {
    * conversation until then, and /admin/review would count its turns.
    */
   adminTest?: boolean;
+  /**
+   * The opening assistant turn. Stored, not just shown: the model reads
+   * the transcript as its history, and a greeting it cannot see is a
+   * greeting it will give again.
+   */
+  opening?: string;
 }): Promise<{ conversationId: string } | null> {
   const token = randomBytes(32).toString("hex");
 
@@ -38,6 +44,9 @@ export async function createSession(opts: {
       provider: "anthropic",
       session_token: token,
       admin_test: opts.adminTest === true,
+      transcript: opts.opening
+        ? [{ role: "assistant", content: opts.opening }]
+        : [],
     })
     .select("id")
     .maybeSingle();
@@ -86,6 +95,24 @@ export async function resolveSession(): Promise<
     vehicleId: (data.vehicle_id as string) ?? null,
     turnCount: (data.turn_count as number) ?? 0,
   };
+}
+
+/**
+ * Close the conversation this browser owns, and drop the cookie.
+ *
+ * resolveSession already refuses a row with ended_at, so this is the one
+ * write that makes the close control mean something. Silent if there is
+ * nothing to end.
+ */
+export async function endSession(): Promise<void> {
+  const session = await resolveSession();
+  const store = await cookies();
+  store.delete(COOKIE);
+  if (!session) return;
+  await db()
+    .from("conversations")
+    .update({ ended_at: new Date().toISOString() })
+    .eq("id", session.conversationId);
 }
 
 /* ─── which leads this browser actually created ──────────────────────── */

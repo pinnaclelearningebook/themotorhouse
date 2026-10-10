@@ -328,7 +328,7 @@ describe("the agent tool loop", () => {
   it("validates every tool input with its Zod schema before running it", () => {
     // The wire schemas are instructions to a model; the Zod schemas decide
     // what is actually accepted. Each writing tool must parse first.
-    for (const tool of ["set_field", "append_lead_note", "go_to_step"]) {
+    for (const tool of ["set_field", "append_lead_note"]) {
       expect(
         run.includes(`toolSchemas.${tool}.safeParse`),
         `${tool} must be validated before it runs`,
@@ -336,7 +336,18 @@ describe("the agent tool loop", () => {
     }
   });
 
-  it("exposes exactly the six tools from CLAUDE.md section 10", () => {
+  it("exposes only tools that do something", () => {
+    /**
+     * CLAUDE.md section 10 lists six. Two of them — go_to_step and
+     * trigger_photo_guide — set an effect that the chat endpoint returned
+     * and no component ever read, so calling them moved nothing and
+     * returned ok. She could then tell a seller she had taken them to a
+     * step they were not on, and nothing could catch it, because the tool
+     * really did succeed.
+     *
+     * They are out until the form consumes the effect. This list is the
+     * record of that, so putting one back means coming through here.
+     */
     const declared = [...tools.matchAll(/^\s{4}name: "([a-z_]+)",$/gm)].map(
       (m) => m[1],
     );
@@ -345,11 +356,15 @@ describe("the agent tool loop", () => {
         "get_vehicle_context",
         "read_form_state",
         "set_field",
-        "go_to_step",
-        "trigger_photo_guide",
         "append_lead_note",
       ]),
     );
+
+    // And nothing claims the capability anywhere else.
+    const prompt = readFileSync(join(ROOT_DIR, "agent/prompt.md"), "utf8");
+    expect(prompt).not.toMatch(/go_to_step|trigger_photo_guide/);
+    const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
+    expect(run).not.toMatch(/goToStep|photoGuide/);
   });
 
   it("keeps the wire schemas and the Zod schemas in step", () => {
@@ -864,5 +879,166 @@ describe("a claim with nothing written", () => {
     expect(chat).toMatch(/sellerMessage: parsed\.data\.message/);
     const run = readFileSync(join(ROOT_DIR, "lib/agent/run.ts"), "utf8");
     expect(run).toMatch(/sellerMessage: opts\.message/);
+  });
+});
+
+describe("the floating launcher", () => {
+  const widget = readFileSync(
+    join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+    "utf8",
+  );
+
+  it("starts closed and is only opened by a click", () => {
+    // CLAUDE.md section 10: silent by default, opt-in. A panel that
+    // opens itself is the thing that rule exists to prevent.
+    expect(widget).toMatch(
+      /useState<"launcher" \| "panel">\("launcher"\)/,
+    );
+    // setView("panel") happens in open(), which is wired to the button
+    // and to nothing else — no effect, no timer.
+    const opens = [...widget.matchAll(/setView\("panel"\)/g)];
+    expect(opens.length, 'only open() may set the panel open').toBe(1);
+    const openAt = widget.search(/async function open\(\)/);
+    expect(opens[0].index).toBeGreaterThan(openAt);
+    expect(widget).toMatch(/onClick=\{\(\) => void open\(\)\}/);
+  });
+
+  it("names itself for a screen reader", () => {
+    expect(widget).toMatch(
+      /aria-label=\{`Chat with \$\{AGENT\.name\} \(AI assistant\)`\}/,
+    );
+    expect(widget).toMatch(/role="dialog"/);
+    expect(widget).toMatch(/aria-label="Minimise the chat"/);
+    expect(widget).toMatch(/aria-label=\{`End the chat with \$\{AGENT\.name\}`\}/);
+  });
+
+  it("keeps the conversation while minimised and drops it on close", () => {
+    // Minimising is a seller getting the panel out of the way. Ending is
+    // a seller throwing the conversation away, and it has to reach the
+    // server: a reset that only cleared the screen would leave the
+    // cookie pointing at a live row, so the next conversation would
+    // continue the last one's transcript.
+    const minimise = widget.slice(
+      widget.search(/function minimise\(\)/),
+      widget.search(/async function end\(\)/),
+    );
+    expect(minimise).toMatch(/setView\("launcher"\)/);
+    expect(minimise).not.toMatch(/setTurns/);
+
+    const end = widget.slice(
+      widget.search(/async function end\(\)/),
+      widget.search(/function dismiss\(\)/),
+    );
+    expect(end).toMatch(/setTurns\(\[\]\)/);
+    expect(end).toMatch(/method: "DELETE"/);
+
+    const route = readFileSync(
+      join(ROOT_DIR, "app/api/agent/session/route.ts"),
+      "utf8",
+    );
+    expect(route).toMatch(/export async function DELETE\(\)/);
+    const session = readFileSync(join(ROOT_DIR, "lib/agent/session.ts"), "utf8");
+    expect(session).toMatch(/ended_at: new Date\(\)\.toISOString\(\)/);
+  });
+
+  it("floats, and goes full width on a phone", () => {
+    // The panel is a bottom sheet below the sm breakpoint and a card
+    // above it. Checked at 375px in the browser, not only here.
+    expect(widget).toMatch(/fixed inset-x-0 bottom-0/);
+    expect(widget).toMatch(/sm:inset-x-auto sm:right-6 sm:bottom-6/);
+    expect(widget).toMatch(/fixed right-4 bottom-4/);
+  });
+
+  it("uses oxblood and no plate yellow", () => {
+    // CLAUDE.md section 5: plate yellow is the registration input and
+    // nowhere else, the widget included.
+    expect(widget).toMatch(/bg-oxblood/);
+    expect(widget).not.toMatch(/plate/);
+  });
+
+  it("still offers the session-long dismissal", () => {
+    expect(widget).toMatch(/Just the form/);
+    expect(widget).toMatch(/dismissAgent\(\)/);
+  });
+});
+
+describe("the opening line", () => {
+  it("is written by the server into the transcript", () => {
+    /**
+     * It used to be composed in the widget and shown only there, so the
+     * conversation on our side began with the seller's first message.
+     * prompt.md tells her to disclose in her own first sentence, so with
+     * no history she introduced herself again and the same greeting
+     * appeared above and below the seller's question.
+     */
+    const route = readFileSync(
+      join(ROOT_DIR, "app/api/agent/session/route.ts"),
+      "utf8",
+    );
+    expect(route).toMatch(/openingLine\(vehicleName\)/);
+    expect(route).toMatch(/opening,/);
+
+    const session = readFileSync(join(ROOT_DIR, "lib/agent/session.ts"), "utf8");
+    expect(session).toMatch(
+      /transcript: opts\.opening\s*\?\s*\[\{ role: "assistant", content: opts\.opening \}\]/,
+    );
+
+    // And the widget renders what came back rather than composing one.
+    const widget = readFileSync(
+      join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+      "utf8",
+    );
+    expect(widget).toMatch(/const \{ opening \}/);
+    expect(widget).toMatch(/setTurns\(\[\{ role: "assistant", content: opening \}\]\)/);
+    expect(widget).not.toMatch(/AGENT\.disclosure\}\./);
+  });
+
+  it("appears once per conversation", () => {
+    const widget = readFileSync(
+      join(ROOT_DIR, "components/agent/AgentWidget.tsx"),
+      "utf8",
+    );
+    // open() is guarded by started.current, so a second click adds
+    // nothing, and setTurns([...]) with the opening happens only there.
+    expect(widget).toMatch(/if \(started\.current\) return;/);
+    expect([...widget.matchAll(/content: opening/g)].length).toBe(1);
+  });
+});
+
+describe("the voice session hands over the conversation id", () => {
+  /**
+   * The option is customLlmExtraBody. It was extraBody at both call
+   * sites, which the SDK drops in silence — and Conversation.startSession
+   * is generic over its options, so TypeScript raises no
+   * excess-property error on the wrong name.
+   *
+   * The cost was every spoken turn: ElevenLabs called /api/agent/llm
+   * with no conversation id, our endpoint refused, and the call ended
+   * "custom_llm generation failed" with conversation_initiation_client_data
+   * showing custom_llm_extra_body as {}. Nothing in the repository could
+   * have caught it, because every voice turn tested before then was an
+   * HTTP call made by hand with the id set.
+   */
+  for (const file of [
+    "components/agent/AgentWidget.tsx",
+    "app/admin/(workspace)/review/VoiceTest.tsx",
+  ]) {
+    it(`${file} passes customLlmExtraBody`, () => {
+      // Comments stripped first: both call sites explain the old name in
+      // a comment, and matching that is how a test passes or fails on
+      // prose instead of code.
+      const source = stripComments(readFileSync(join(ROOT_DIR, file), "utf8"));
+      expect(source).toMatch(/customLlmExtraBody: \{ conversationId \}/);
+      expect(source).not.toMatch(/\bextraBody:/);
+    });
+  }
+
+  it("authorises the LLM endpoint by secret and conversation, never a cookie", () => {
+    // ElevenLabs' servers call it. They carry no browser cookie, so a
+    // cookie check there would refuse every real voice turn.
+    const llm = readFileSync(join(ROOT_DIR, "app/api/agent/llm/route.ts"), "utf8");
+    expect(llm).toMatch(/hasLlmSecret\(request\.headers\.get\("authorization"\)\)/);
+    expect(llm).toMatch(/conversation\?\.admin_test === true/);
+    expect(llm).not.toMatch(/agentAccess|currentAdmin|cookies\(/);
   });
 });

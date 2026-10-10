@@ -5,7 +5,11 @@ import { db } from "@/lib/db";
 import { resolveSession } from "@/lib/agent/session";
 import { agentAccess } from "@/lib/agent/access";
 import { checkRateLimit, AGENT_WINDOWS } from "@/lib/rate-limit";
-import { runGuards, type VehicleContext } from "@/agent/guards";
+import {
+  runGuards,
+  firstSentences,
+  type VehicleContext,
+} from "@/agent/guards";
 import { isAgentConfigured, agentUnavailableReason } from "@/agent/provider";
 import { runTurn } from "@/lib/agent/run";
 import { getVehicleContext, readFormState } from "@/agent/tools";
@@ -29,6 +33,20 @@ import { PROMISES } from "@/config/site";
  * (ARCHITECTURE.md section 9). A blocked turn is stored with what the
  * model actually wrote and the seller receives the deflection instead.
  */
+
+/**
+ * At most this many sentences reach the seller.
+ *
+ * The prompt asks for two and used to allow four as a ceiling, and a
+ * ceiling in a prompt is a suggestion. Three in code is the ceiling: a
+ * person reading on a phone in the evening does not want a paragraph,
+ * and anything she cut can be asked for.
+ *
+ * Applied after the guards, not before. The guards read the whole turn,
+ * so a price in a fourth sentence is still caught — trimming first would
+ * hand them a shorter turn to approve and throw the rest away unseen.
+ */
+const TEXT_SENTENCE_CAP = 3;
 
 const bodySchema = z.object({
   message: z.string().trim().min(1).max(2000),
@@ -133,7 +151,7 @@ export async function POST(request: NextRequest) {
 
   let outgoing: string;
   if (verdict.ok) {
-    outgoing = verdict.text;
+    outgoing = firstSentences(verdict.text, TEXT_SENTENCE_CAP);
   } else {
     outgoing = verdict.replacement.replace(
       /\{\{OFFER_HOURS\}\}/g,
@@ -166,9 +184,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     reply: outgoing,
-    // Side effects the widget acts on: moving the form, opening the photo
-    // guide. Never anything about routing, scoring or price.
-    effects: reply.effects,
     turnsRemaining: Math.max(0, settings.maxTurns - (session.turnCount + 1)),
   });
 }

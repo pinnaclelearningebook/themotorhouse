@@ -61,8 +61,6 @@ export const toolSchemas = {
     field: z.enum(WRITABLE_FIELDS),
     value: z.union([z.string().max(2000), z.number(), z.boolean()]),
   }),
-  go_to_step: z.object({ step: z.number().int().min(1).max(4) }),
-  trigger_photo_guide: z.object({}),
   append_lead_note: z.object({
     note: z.string().trim().min(1).max(2000),
     topic: z
@@ -105,20 +103,6 @@ export const TOOL_DEFINITIONS = [
       },
       required: ["field", "value"],
     },
-  },
-  {
-    name: "go_to_step",
-    description: "Move the form, when the seller asks.",
-    input_schema: {
-      type: "object",
-      properties: { step: { type: "integer", minimum: 1, maximum: 4 } },
-      required: ["step"],
-    },
-  },
-  {
-    name: "trigger_photo_guide",
-    description: "Show the photo prompts, when the seller asks what to take.",
-    input_schema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "append_lead_note",

@@ -38,17 +38,27 @@ const TURN_BUDGET_MS = 45_000;
 
 export interface TurnResult {
   text: string;
-  /** Side effects worth telling the widget about. */
-  effects: { goToStep?: number; photoGuide?: boolean };
   inputTokens: number;
   outputTokens: number;
 }
 
+/**
+ * No go_to_step and no trigger_photo_guide.
+ *
+ * Both existed and neither did anything: they set an effect, the chat
+ * endpoint returned it, and no component read it. So she could call
+ * "move the form", be told it worked, and tell the seller she had moved
+ * them to a step that had not moved — the same failure as a claim of
+ * having recorded something with nothing written, except nothing could
+ * catch it because the tool really did return ok.
+ *
+ * They come back when the form consumes the effect, not before. CLAUDE.md
+ * section 10 still lists them; see PENDING-INFO.
+ */
 async function runTool(
   session: AgentSession,
   name: string,
   input: Record<string, unknown>,
-  effects: TurnResult["effects"],
 ): Promise<ToolResult> {
   switch (name as ToolName) {
     case "get_vehicle_context":
@@ -68,17 +78,6 @@ async function runTool(
       if (!parsed.success) return { ok: false, error: "invalid note" };
       return appendLeadNote(session, parsed.data);
     }
-
-    case "go_to_step": {
-      const parsed = toolSchemas.go_to_step.safeParse(input);
-      if (!parsed.success) return { ok: false, error: "invalid step" };
-      effects.goToStep = parsed.data.step;
-      return { ok: true };
-    }
-
-    case "trigger_photo_guide":
-      effects.photoGuide = true;
-      return { ok: true };
 
     default:
       return { ok: false, error: "unknown tool" };
@@ -104,7 +103,6 @@ export async function runTurn(opts: {
     { role: "user" as const, content: opts.message },
   ];
 
-  const effects: TurnResult["effects"] = {};
   let inputTokens = 0;
   let outputTokens = 0;
   const deadline = Date.now() + TURN_BUDGET_MS;
@@ -128,14 +126,14 @@ export async function runTurn(opts: {
     outputTokens += reply.outputTokens;
 
     if (reply.toolUses.length === 0) {
-      return { text: reply.text, effects, inputTokens, outputTokens };
+      return { text: reply.text, inputTokens, outputTokens };
     }
 
     messages.push({ role: "assistant", content: reply.content });
 
     const results = [];
     for (const use of reply.toolUses) {
-      const result = await runTool(opts.session, use.name, use.input, effects);
+      const result = await runTool(opts.session, use.name, use.input);
       results.push({
         type: "tool_result",
         tool_use_id: use.id,
