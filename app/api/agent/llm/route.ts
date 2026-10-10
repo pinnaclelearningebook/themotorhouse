@@ -213,6 +213,13 @@ export async function POST(request: NextRequest) {
           year: vehicleData.year_of_manufacture as number | null,
           colour: vehicleData.colour as string | null,
           fuel: vehicleData.fuel as string | null,
+          // Passed to the guards as well as the prompt: without the
+          // engine size, Maya reading "2996cc" off her own context was
+          // blocked as a fact she had invented.
+          engineCapacity: vehicleData.engine_cc as number | null,
+          // So quoting the mileage off the MOT record is not treated as
+          // a figure she invented.
+          mileage: vehicleData.lastRecordedMileage as number | null,
         }
       : null;
 

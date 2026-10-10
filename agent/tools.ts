@@ -185,7 +185,36 @@ export async function getVehicleContext(
 
   // Only now does an empty result mean what it says.
   if (!data) return { ok: true, data: { known: false } };
-  return { ok: true, data: { known: true, ...data } };
+
+  /**
+   * The MOT history, which is half of what the record actually knows.
+   *
+   * Without it Maya could read the expiry date off the vehicle row and
+   * had to say she had no test history — while three tests, the mileage
+   * at each one and an advisory about a tyre sat in the next table. A
+   * seller asking "has it ever failed" got "I can't tell you" from an
+   * assistant that could have.
+   */
+  const { data: mot, error: motError } = await db()
+    .from("mot_tests")
+    .select("test_date, result, expiry_date, odometer, odometer_unit, defects")
+    .eq("vehicle_id", session.vehicleId)
+    .order("test_date", { ascending: false });
+
+  const brokenMot = failed("the MOT history", motError);
+  if (brokenMot) return brokenMot;
+
+  return {
+    ok: true,
+    data: {
+      known: true,
+      ...data,
+      motTests: mot ?? [],
+      lastRecordedMileage: (mot ?? []).find(
+        (test) => typeof test.odometer === "number",
+      )?.odometer ?? null,
+    },
+  };
 }
 
 export async function readFormState(

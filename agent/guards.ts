@@ -115,7 +115,7 @@ const PRICE_PATTERNS: RegExp[] = [
   // Spelled-out money, including compounds. "Twenty eight thousand" has a
   // unit word between the ten and the thousand, which an adjacent-only
   // pattern misses — and spoken numbers are nearly always said that way.
-  /\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)(?:[-\s]+(?:one|two|three|four|five|six|seven|eight|nine|hundred))*[-\s]+(?:thousand|grand|k)\b/i,
+  /\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)(?:[-\s]+(?:one|two|three|four|five|six|seven|eight|nine|hundred))*[-\s]+(?:grand|k)\b/i,
   // A bare "thirty grand" with nothing before it.
   /\b(?:one|two|three|four|five|six|seven|eight|nine)?[-\s]*(?:thousand|grand)\b(?=[^.]*$)/i,
   // Vague bands, which are prices with deniability.
@@ -154,10 +154,43 @@ function detectGroupedFigure(text: string): { match: string; index: number } | n
   return null;
 }
 
+/**
+ * Words that make a figure a distance rather than an amount.
+ *
+ * "You said about twelve thousand, so put the figure from the dashboard
+ * in" was blocked as a price. She was repeating the seller's mileage
+ * back to them. Currency markers still win: "£28,000 with 40,000 miles"
+ * is a price whatever else is in the sentence.
+ */
+const MILEAGE_CONTEXT =
+  /\b(?:mileage|miles|mile|odometer|dashboard|clocked|on the clock|km)\b/i;
+const CURRENCY_MARKER = /£|\bgbp\b|\bpounds?\b|\bgrand\b|\bquid\b/i;
+
 function detectPrice(text: string): string | null {
+  // Currency beats everything; otherwise a mileage sentence is exempt
+  // from the heuristics that infer money from a bare number.
+  const aboutDistance =
+    MILEAGE_CONTEXT.test(text) && !CURRENCY_MARKER.test(text);
+
   for (const pattern of PRICE_PATTERNS) {
     const match = pattern.exec(text);
     if (match) return withContext(text, match[0], match.index);
+  }
+
+  if (aboutDistance) return null;
+
+  /**
+   * Spelled-out thousands, but only where the sentence is about money.
+   *
+   * "Twelve thousand" is a mileage as often as an amount. "Grand" and
+   * "quid" carry their own meaning and are matched unconditionally above;
+   * "thousand" does not, so it needs a money word to count.
+   */
+  const SPELLED_THOUSAND =
+    /\b(?:ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)(?:[-\s]+(?:one|two|three|four|five|six|seven|eight|nine|hundred))*[-\s]+thousand\b/i;
+  const spelled = SPELLED_THOUSAND.exec(text);
+  if (spelled && MONEY_WORD.test(text)) {
+    return withContext(text, spelled[0], spelled.index);
   }
 
   const grouped = detectGroupedFigure(text);
@@ -363,6 +396,11 @@ const MAKES = [
 const SPEC_UNIT =
   /\b\d[\d.,]*\s?(?:bhp|hp|ps|kw|nm|lb[- ]ft|litre|liter|cc|mpg|mph|kwh|seconds?|secs?)\b/i;
 
+/** Digits only, so "2,996" and "2996" are the same engine. */
+function digitsOf(value: string): string {
+  return value.replace(/[^\d]/g, "");
+}
+
 function contextHas(context: VehicleContext, needle: string): boolean {
   const haystack = [
     context.make,
@@ -377,7 +415,15 @@ function contextHas(context: VehicleContext, needle: string): boolean {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-  return haystack.includes(needle.toLowerCase());
+  if (haystack.includes(needle.toLowerCase())) return true;
+
+  // A figure written "2,996cc" is the same as a stored 2996. Comparing
+  // the rendered string blocked Maya for correctly reading the engine
+  // size off the record she had been given.
+  const digits = digitsOf(needle);
+  if (digits.length >= 3 && digitsOf(haystack).includes(digits)) return true;
+
+  return false;
 }
 
 function detectUnsupportedCarFact(

@@ -745,3 +745,26 @@ describe("spoken replies", () => {
     expect(deflection).toMatch(/^export const PRICE_DEFLECTION =\s*\n\s*`A person prices your car/m);
   });
 });
+
+describe("the guard context carries what the lookup knows", () => {
+  it("passes the engine size, not just the obvious fields", () => {
+    // The guards check claimed figures against the context. The routes
+    // built it from make, model, year, colour and fuel only, so Maya
+    // reading "2996cc" off her own vehicle record was blocked as an
+    // invented fact — correct rule, incomplete context.
+    for (const route of [
+      "app/api/agent/chat/route.ts",
+      "app/api/agent/llm/route.ts",
+    ]) {
+      const code = readFileSync(join(ROOT_DIR, route), "utf8");
+      expect(code, `${route} must pass the engine size`).toMatch(
+        /engineCapacity: vehicleData\.engine_cc/,
+      );
+      // And the guard context must be the vehicle itself, not a
+      // hand-copied subset that silently misses new fields.
+      expect(code, `${route} must not rebuild the guard context`).toMatch(
+        /guardContext: VehicleContext = vehicle \?\?? \{\}|guardContext: VehicleContext = vehicle \?\? \{\}/,
+      );
+    }
+  });
+});

@@ -80,6 +80,13 @@ export async function POST(request: NextRequest) {
         year: vehicleData.year_of_manufacture as number | null,
         colour: vehicleData.colour as string | null,
         fuel: vehicleData.fuel as string | null,
+        // Passed to the guards as well as the prompt: without the engine
+        // size, Maya reading "2996cc" off her own context was blocked as
+        // a fact she had invented.
+        engineCapacity: vehicleData.engine_cc as number | null,
+        // So quoting the mileage off the MOT record is not treated as a
+        // figure she invented.
+        mileage: vehicleData.lastRecordedMileage as number | null,
       }
     : null;
 
@@ -111,15 +118,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
 
-  const guardContext: VehicleContext = vehicle
-    ? {
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year,
-        colour: vehicle.colour,
-        fuel: vehicle.fuel,
-      }
-    : {};
+  // The same object, not a copy of selected fields. Rebuilding it by hand
+  // is how the engine size went missing: the vehicle gained a field and
+  // this list did not, so Maya was blocked for reading her own context.
+  const guardContext: VehicleContext = vehicle ?? {};
 
   const verdict = runGuards(reply.text, guardContext);
 

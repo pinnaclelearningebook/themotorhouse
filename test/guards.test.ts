@@ -388,3 +388,47 @@ describe("the prompt forbids narrating the machinery", () => {
     expect(prompt).toMatch(/never report what a lookup returned/i);
   });
 });
+
+describe("figures that are not prices", () => {
+  /**
+   * Both of these were blocked in a live text conversation, once real
+   * vehicle context existed for the first time. Neither is a price.
+   */
+  it("allows the engine size read off the record, however it is written", () => {
+    // Context holds 2996; she wrote "2,996cc". Comparing the rendered
+    // string blocked her for correctly reading her own context.
+    const result = runGuards(
+      "The record shows it as diesel, a 2,996cc 2021 car in Santorini Black, not petrol.",
+      { ...DEFENDER, engineCapacity: 2996 },
+    );
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("allows a mileage repeated back to the seller", () => {
+    const result = runGuards(
+      "The mileage didn't save. You said about twelve thousand, so put the figure from the dashboard in.",
+      DEFENDER,
+    );
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("allows a six-figure mileage", () => {
+    expect(runGuards("It has 124,000 miles on it.", DEFENDER).ok).toBe(true);
+  });
+
+  it("still blocks a price in a sentence that also mentions mileage", () => {
+    // Currency beats the mileage exemption.
+    const result = runGuards(
+      "At 40,000 miles it's worth about £28,000.",
+      DEFENDER,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("price");
+  });
+
+  it("still blocks spelled-out money when the sentence is about money", () => {
+    const result = runGuards("It's worth about twenty eight thousand.", DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("price");
+  });
+});
