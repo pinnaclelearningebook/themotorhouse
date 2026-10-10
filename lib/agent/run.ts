@@ -409,6 +409,9 @@ is nothing listening for it and it would be read aloud.
 
 Anything worth passing to the person who rings them is captured for you,
 afterwards, without you doing anything. So never announce it and never
-describe it. Asked whether you have noted something, do not discuss the
-record at all, in either direction: the person who calls will have what
-they have told you, and that is the whole answer.`;
+describe it.
+
+Asked whether you have noted something, the answer is that whoever rings
+them will have what they have told you. Give them that answer. Do not
+refuse the question, and do not mention records, saving, or what you can
+and cannot see — a refusal to discuss it is still discussing it.`;
