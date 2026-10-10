@@ -30,6 +30,13 @@
  * at a free-mail address would silently stop every sign-in email —
  * silently because the access token cannot read the auth logs. Pass the
  * flag only with an address on a domain verified in Resend.
+ *
+ * SMTP also decides whether the email template can be set at all. A free
+ * project on Supabase's own sender is refused template writes outright,
+ * which is why the URL configuration and the template go in two separate
+ * requests: the URLs are what fix the magic link, and they should land
+ * whether or not the template can. Exit codes say which happened —
+ * 0 everything, 2 the URLs with the template held, 1 anything else.
  */
 import { readFileSync } from "node:fs";
 
@@ -100,12 +107,21 @@ const MAGIC_LINK_TEMPLATE = `<h2>Your sign-in link</h2>
 // a wildcard here is a redirect any branch deployment can claim.
 const REDIRECTS = [`${base}/admin/auth/callback`, "http://localhost:3000/admin/auth/callback"];
 
-const patch = {
+// Two requests, not one. Supabase refuses the whole PATCH if any field
+// in it is a template field and the project is not allowed template
+// writes, so sending them together means a plan restriction silently
+// takes the Site URL fix down with it.
+const urlPatch = {
   site_url: base,
   uri_allow_list: REDIRECTS.join(","),
+};
+
+const templatePatch = {
   mailer_subjects_magic_link: MAGIC_LINK_SUBJECT,
   mailer_templates_magic_link_content: MAGIC_LINK_TEMPLATE,
 };
+
+const patch = urlPatch;
 
 if (smtpSender) {
   if (!vars.RESEND_API_KEY) {
@@ -157,7 +173,27 @@ async function main() {
     body: JSON.stringify(patch),
   });
 
-  if (!response.ok) await refused(response, "update the auth config");
+  if (!response.ok) await refused(response, "set the URL configuration");
+
+  // The template, separately, because this is the request a plan
+  // restriction refuses.
+  const templateResponse = await fetch(`${API}/projects/${ref}/config/auth`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(templatePatch),
+  });
+
+  let templateHeld = null;
+  if (!templateResponse.ok) {
+    const detail = await templateResponse.text();
+    const planned = /not available for free tier|upgrade your plan|custom SMTP/i.test(detail);
+    if (!templateResponse.ok && !planned) {
+      console.error(`Could not set the email template: ${templateResponse.status}`);
+      console.error(detail.slice(0, 600));
+      process.exit(1);
+    }
+    templateHeld = JSON.parse(detail)?.message ?? detail.slice(0, 300);
+  }
 
   // Read it back rather than trusting the write.
   const readBack = await fetch(`${API}/projects/${ref}/config/auth`, { headers });
@@ -167,8 +203,12 @@ async function main() {
   const expected = {
     site_url: base,
     uri_allow_list: REDIRECTS.join(","),
-    mailer_subjects_magic_link: MAGIC_LINK_SUBJECT,
-    mailer_templates_magic_link_content: MAGIC_LINK_TEMPLATE,
+    ...(templateHeld
+      ? {}
+      : {
+          mailer_subjects_magic_link: MAGIC_LINK_SUBJECT,
+          mailer_templates_magic_link_content: MAGIC_LINK_TEMPLATE,
+        }),
     ...(smtpSender
       ? {
           smtp_host: "smtp.resend.com",
@@ -199,6 +239,20 @@ async function main() {
   console.log(`     code length is ${after.mailer_otp_length} digits, valid ${after.mailer_otp_exp}s`);
   console.log(`     auth emails per hour: ${after.rate_limit_email_sent}`);
   console.log(`     custom SMTP: ${after.smtp_host ? `${after.smtp_host} as ${after.smtp_admin_email}` : "none — Supabase's own sender"}`);
+
+  if (templateHeld) {
+    console.log("");
+    console.log("HELD the email template. Supabase said:");
+    console.log(`  ${templateHeld}`);
+    console.log("");
+    console.log("  The magic link is fixed and works. The emailed code is not:");
+    console.log("  the template cannot be given {{ .Token }} while this project");
+    console.log("  is on the free tier using Supabase's own sender, so no code");
+    console.log("  reaches the inbox and the code box on /admin/login has");
+    console.log("  nothing to accept. Fix it with a verified Resend domain and");
+    console.log("  --smtp, which lifts the restriction, or a paid plan.");
+    process.exit(2);
+  }
 
   if (!ok || !hasCode || !hasLink) process.exit(1);
 }
