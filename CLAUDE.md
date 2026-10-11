@@ -261,3 +261,13 @@ UK GDPR: privacy policy, lawful basis, retention, deletion. Explicit unticked ma
 **A page rendered through `ADMIN_DEV_BYPASS` has been rendered, not verified.** The bypass skips the auth gate, so it also skips everything the gate depends on: session cookies, the PKCE exchange, the `admin_users` lookup and the RLS policies that read `auth.jwt()`. A dashboard that renders perfectly under the bypass can be unreachable in production — that is exactly what happened on 5 October 2026, when the gate redirected the login page to itself and three seeded leads rendered cleanly anyway. An admin page is verified when it has been reached through a real magic-link sign-in. Say which of the two was done; never report the first as the second.
 
 Renders at 375/768/1440 · keyboard navigable with visible focus · reduced motion respected · WCAG AA contrast · mobile Lighthouse ≥ 90 performance, ≥ 95 accessibility, ≥ 95 best practices, 100 SEO, with LCP < 2.0s and CLS < 0.05 (section 14 — these are the bar, and they are stricter than the 2.5s/0.1 a brief will usually ask for) · unique title and description · no fabricated data, every unknown an `AWAITING_RESPONSE` with a `PENDING-INFO.md` line · no exclamation marks, "up to", "free quote", urgency mechanics · plate yellow only on the plate · no auto-offer path · every number in the dashboard shows its source · and the question that matters: would a seller believe a person who actually buys cars built this?
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

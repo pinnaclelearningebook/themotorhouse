@@ -18,7 +18,15 @@ import { PROMISES } from "@/config/site";
  * painted and the animation library is not on its critical path: the
  * reveal is CSS, so the type is moving before the bundle has arrived.
  *
- * It is behind a heavy ink scrim on purpose. The image is texture and
+ * The scrim and the brightening are a pair, and both are tuned rather
+ * than chosen. The photograph is of a black car at night, so at its
+ * native exposure behind a heavy scrim it reads as murk rather than as
+ * a car: `brightness-[1.6]` lifts the bonnet contour and the beaded
+ * water into legibility, and the scrim then comes back down only as
+ * far as the headline needs. Dropping the filter and taking the scrim
+ * to `via-ink/70 to-ink/25` is the quieter alternative.
+ *
+ * It is behind an ink scrim on purpose. The image is texture and
  * depth, not a subject: it is a licensed photograph of somebody else's
  * car, so it must never read as "here is a car we bought". Legibility of
  * the headline comes first and the picture earns whatever is left.
@@ -36,13 +44,13 @@ export function Hero() {
         // sees it. A phone is served roughly half the pixels it would
         // ask for at face value, because at this opacity nobody can
         // tell and it is the largest-contentful element on the site.
-        quality={40}
+        quality={55}
         sizes="(max-width: 768px) 480px, 100vw"
-        className="absolute inset-0 z-0 h-full w-full object-cover"
+        className="absolute inset-0 z-0 h-full w-full object-cover brightness-[1.6] contrast-[1.08]"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 z-[1] bg-gradient-to-t from-ink via-ink/85 to-ink/45"
+        className="absolute inset-0 z-[1] bg-gradient-to-t from-ink via-ink/75 to-ink/35"
       />
 
       <Container className="relative z-10">
