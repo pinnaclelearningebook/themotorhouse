@@ -38,7 +38,7 @@ export function FormProgress({ current }: { current: number }) {
                 }`}
               />
               <span
-                className={`text-caption tracking-wide uppercase ${
+                className={`block text-caption tracking-wide whitespace-nowrap uppercase ${
                   here ? "font-semibold text-oxblood" : "text-structure"
                 }`}
               >
