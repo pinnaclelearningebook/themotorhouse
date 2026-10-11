@@ -15,10 +15,20 @@ import { PROMISES } from "@/config/site";
  * belongs to us, carries no badge and no licence, and sits on paper
  * where the type can breathe.
  *
- * Nothing here is a client component and nothing animates from opacity
- * zero. The headline rises 24px without fading (CLAUDE.md section 6 —
- * never animate the LCP element from opacity 0) and the illustration is
- * inline SVG, so there is no image request on the critical path at all.
+ * Nothing here is a client component and **nothing in the first
+ * viewport animates from opacity zero**. Everything uses
+ * `rise-in-solid`, which moves without fading.
+ *
+ * That is CLAUDE.md section 6 and it has now caught this project
+ * twice. The sub-paragraph was on `rise-in`, which does fade, and
+ * Lighthouse named `p.rise-in` as the largest-contentful element with
+ * an element render delay of 999ms — the 220ms delay plus the 700ms
+ * fade, almost exactly. The rule is not about the headline. It is
+ * about whichever element turns out to be the largest, and on a light
+ * hero that can be a paragraph.
+ *
+ * The illustration is inline SVG, so there is no image request on the
+ * critical path at all.
  */
 export function Hero() {
   return (
@@ -42,14 +52,14 @@ export function Hero() {
               className="mt-5 font-display text-[2rem] leading-[1.06] tracking-[-0.02em] sm:text-[2.75rem] lg:text-display-2"
             />
             <p
-              className="rise-in mt-6 max-w-xl text-lg leading-relaxed text-ink/80"
+              className="rise-in-solid mt-6 max-w-xl text-lg leading-relaxed text-ink/80"
               style={{ animationDelay: "220ms" }}
             >
               Tell us the registration. A firm number within{" "}
               {PROMISES.offerWithinHours} hours, free collection anywhere in
               mainland UK, and payment before the transporter leaves.
             </p>
-            <div className="rise-in mt-9" style={{ animationDelay: "340ms" }}>
+            <div className="rise-in-solid mt-9" style={{ animationDelay: "340ms" }}>
               <PlateForm id="hero-reg" />
             </div>
           </div>
