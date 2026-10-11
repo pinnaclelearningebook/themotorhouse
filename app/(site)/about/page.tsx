@@ -97,7 +97,10 @@ export default function AboutPage() {
             </p>
             <ul className="mt-5 flex flex-col gap-2">
               {MODELS.map((model) => (
-                <li key={model.slug} className="font-mono text-sm text-paper/85">
+                // Model names are product names, not vehicle data, so
+                // they take the body face. Mono is for the registration,
+                // the mileage, the price (CLAUDE.md section 5).
+                <li key={model.slug} className="text-paper/85">
                   {model.name}
                 </li>
               ))}
