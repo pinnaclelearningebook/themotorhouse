@@ -8,7 +8,7 @@ import { Comparison } from "@/components/sections/Comparison";
 import { RecentlyPurchased } from "@/components/sections/RecentlyPurchased";
 import { FaqTeaser } from "@/components/sections/FaqTeaser";
 import { FromTheBlog } from "@/components/sections/FromTheBlog";
-import { FinalCta } from "@/components/sections/FinalCta";
+import { CtaBand } from "@/components/sections/CtaBand";
 import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 
 /**
@@ -46,7 +46,7 @@ export default function HomePage() {
       <RecentlyPurchased />
       <FaqTeaser />
       <FromTheBlog />
-      <FinalCta />
+      <CtaBand />
     </main>
   );
 }

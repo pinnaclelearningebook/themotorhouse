@@ -246,13 +246,32 @@ Kept here so nobody re-adds them believing they were an oversight.
 
 ## Photography
 
-**Pages:** home
+**Pages:** home, how it works, why we pay more, about, FAQ, guides index, blog posts, the closing band on every page
 
-Licensed imagery, used for mood and context only. None of it shows a car we bought, our premises or our people, and nothing on the site says or implies otherwise — see CLAUDE.md section 5.
+**Every image on the site is AI-generated (ChatGPT), illustrative only.** Supplied by the owner on 11 October 2026. None of them is a car we bought, our premises, our transporter or our people, and no alt text, caption or heading may say or imply otherwise. Alt text describes the scene and nothing else — "a dark estate car on a gravel driveway", never "a Range Rover we bought". The moment there are photographs of real cars we have bought, these come out; see PENDING-INFO.md for the shot list.
 
-A note on what is *not* here. Free-licence car photography is, almost without exception, badge-bearing: of the strong candidates reviewed on 11 October 2026, one carried `LAND ROVER` and `DEFENDER` lettering and a Dutch plate, one carried `DEFENDER` on the spare wheel and Land Rover mudflaps in an American car park, and one carried an `RS` badge and an Audi four-rings sticker. None of them could be used. What survives the no-badge rule is abstract — paintwork, water, light — so that is what the site uses, and the slots for real cars stay empty until there are real cars. See PENDING-INFO.md for the shot list.
+All thirteen were inspected individually at full size before use and checked against four rules: no manufacturer badge or lettering, no readable registration plate, no readable text of any kind, no identifiable face. All thirteen passed; none was rejected. Hands and sleeves appear in three of them, no faces.
 
-| File | Photographer | Source | Licence | Used for |
-|---|---|---|---|---|
-| `public/photography/hero-wet-bodywork.jpg` | [Ashton Christiansen](https://unsplash.com/@anatharax) | [Raindrops on the hood and windshield of a black car at night](https://unsplash.com/photos/raindrops-on-black-car-at-night-xfdDe3IwObE) | Unsplash License | Home hero, behind an ink scrim |
-| `public/photography/detail-water-on-paint.jpg` | [Ben Wicks](https://unsplash.com/@profwicks) | [Close up of water droplets on a dark surface](https://unsplash.com/photos/close-up-of-water-droplets-on-a-dark-surface-7EMYjpQ4IG4) | Unsplash License | Home, the export band |
+| File | Slot | Scene |
+|---|---|---|
+| `hero-home.jpg` | Home hero | Dark estate car on a wet gravel drive, brick house, overcast |
+| `cta-dusk.jpg` | The closing band, every page | Dark estate car on a drive at dusk, lit windows behind |
+| `handover.jpg` | How it works, the promise | A key passing between two hands over a bonnet |
+| `paperwork.jpg` | How it works, the paperwork step | Folder, two keys, a pen and a document wallet on a desk |
+| `collection.jpg` | Home, why our offers differ | A car loading onto an enclosed transporter at dusk |
+| `export-coast.jpg` | /export page hero | A dark estate car on a coastal road above the sea |
+| `about-road.jpg` | /about page hero | One car on a country road above a lake |
+| `faq-interior.jpg` | /faq page hero | Right-hand drive interior looking out to countryside |
+| `guide-valuations.jpg` | Guides, valuations category | Instrument dials, countryside through the windscreen |
+| `guide-selling.jpg` | Guides, selling guides category | A key and a wallet of papers on a desk, two sets of hands |
+| `guide-models.jpg` | Guides, model guides category | Three estate cars from above in marked bays |
+| `guide-market.jpg` | Guides, market insight category | A row of parked cars outside a modern building |
+| `guide-ownership.jpg` | Guides, ownership category | A hand drying the wing of a dark car |
+
+Three notes recorded at inspection, none of them disqualifying but all worth a decision:
+
+- `export-coast.jpg` shows the car on the **right-hand side of the road**. The /export page's whole argument is that Cyprus drives on the left and UK right-hand-drive stock is the local standard. The image is used at the top of that page behind a heavy scrim, where the road position is not legible at any size the page renders it. If it ever appears larger, it has to be replaced.
+- `guide-market.jpg` reads as a **dealer forecourt**. It is used on a blog category card and nowhere that could be read as our premises.
+- `cta-dusk.jpg` has a **warm orange sky**, which CLAUDE.md section 5 tells the site to avoid. It sits under an ink scrim at 45% quality, where it reads as dusk rather than as colour. Flagged so the choice is a choice.
+
+Two Unsplash images used until 11 October 2026 — `hero-wet-bodywork.jpg` and `detail-water-on-paint.jpg` — were removed when this set landed. The note that replaced them is still worth keeping: free-licence car photography is almost without exception badge-bearing, and of the strong candidates reviewed that day one carried `LAND ROVER` and `DEFENDER` lettering and a Dutch plate, one carried `DEFENDER` on the spare wheel, and one carried an `RS` badge. That is why the site is not using stock.

@@ -5,26 +5,29 @@ import type { PhotoSlot } from "@/config/photography";
  * One image slot.
  *
  * Renders nothing at all when the slot is empty. That is deliberate: a
- * grey placeholder is a promise of a photograph, and a stock car stood
- * in for a real one is a lie about whose car it is. A section built on
- * this has to look finished without the image, and every section here
- * does.
+ * grey placeholder is a promise of a photograph, and a picture stood
+ * in for a real one is a claim about whose car it is. A section built
+ * on this has to look finished without the image, and every section
+ * here does.
+ *
+ * Blur placeholders come from config/blur — twelve pixels inlined in
+ * the HTML, so a slow connection gets the tone of the page rather
+ * than a hole in it.
  */
 export function Photo({
   slot,
   className = "",
   sizes,
-  quality = 72,
+  quality = 70,
   priority = false,
   children,
 }: {
   slot: PhotoSlot;
   className?: string;
   sizes: string;
-  /** Lower for anything behind a scrim, where detail is thrown away. */
   quality?: number;
   /**
-   * Set on the hero only. It is the LCP element, so it is fetched
+   * Set on a page's hero only. It is the LCP element, so it is fetched
    * eagerly and never animated from opacity 0 (CLAUDE.md section 6).
    */
   priority?: boolean;
@@ -37,12 +40,14 @@ export function Photo({
     <Image
       src={slot.src}
       alt={slot.alt}
-      width={slot.width ?? 1600}
-      height={slot.height ?? 1067}
+      width={slot.width}
+      height={slot.height}
       sizes={sizes}
       priority={priority}
       fetchPriority={priority ? "high" : "auto"}
       quality={quality}
+      placeholder={slot.blur ? "blur" : "empty"}
+      blurDataURL={slot.blur}
       className={className}
       style={slot.focal ? { objectPosition: slot.focal } : undefined}
     />

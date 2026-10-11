@@ -4,7 +4,6 @@ import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { Reveal } from "@/components/motion/Reveal";
-import { Suv } from "@/components/illustration/Suv";
 import { MODELS } from "@/config/models";
 
 /**
@@ -30,7 +29,7 @@ export function WhatWeBuy() {
 
       <Reveal className="mt-10">
         <Card tone="paper" className="overflow-hidden">
-          <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)]">
+          <div>
             <div>
               <h3 className="font-display text-2xl">
                 Start with the registration
@@ -49,7 +48,6 @@ export function WhatWeBuy() {
                 </Link>
               </p>
             </div>
-            <Suv className="hidden h-auto w-full text-ink/70 md:block" />
           </div>
         </Card>
       </Reveal>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { Logo } from "@/components/ui/Logo";
+import { ArrowRight } from "lucide-react";
 import { MODELS } from "@/config/models";
 
 /**
@@ -123,39 +124,103 @@ export function Header() {
 
 /* ─── the mega-menu ──────────────────────────────────────────────────── */
 
+/**
+ * "What we buy", as a panel the width of the header.
+ *
+ * It used to be `absolute left-1/2 -translate-x-1/2 w-[46rem]`, anchored
+ * to the trigger. The trigger sits near the left of a wide header, so a
+ * 736px panel centred on it hung off the left edge of the viewport and
+ * clipped four of the seven models. Anchoring to the trigger is the
+ * mistake: the panel belongs to the header, which is already the full
+ * width of the window, so it is positioned against that and its
+ * contents sit in the same Container as everything else. There is no
+ * width at which it can leave the viewport.
+ *
+ * Keyboard: the trigger is a button, so Enter and Space come free. Down
+ * and Up move through the links, Home and End jump, Escape closes and
+ * puts focus back on the trigger. It also closes on an outside click
+ * and on a route change.
+ *
+ * The descriptors are the first sentence of each model page's own
+ * published meta description. Nothing new is written here — a menu is
+ * exactly the kind of surface where a fresh claim appears without
+ * anyone reviewing it.
+ */
+function firstSentence(text: string): string {
+  const stop = text.indexOf(". ");
+  return stop === -1 ? text : text.slice(0, stop + 1);
+}
+
 function ModelsMenu() {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  const close = useCallback(
+    (returnFocus = false) => {
+      setOpen(false);
+      if (returnFocus) trigger.current?.focus();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
+
     const onPointerDown = (event: PointerEvent) => {
       if (!wrapper.current?.contains(event.target as Node)) setOpen(false);
     };
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        close(true);
+        return;
+      }
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const links = Array.from(
+        panel.current?.querySelectorAll<HTMLAnchorElement>("a[href]") ?? [],
+      );
+      if (links.length === 0) return;
+      event.preventDefault();
+      const at = links.indexOf(document.activeElement as HTMLAnchorElement);
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? links.length - 1
+            : event.key === "ArrowDown"
+              ? at + 1
+              : at - 1;
+      links[(next + links.length) % links.length].focus();
     };
+
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, close]);
+
+  // A route change closes it, including a link to the page you are on.
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    setOpen(false);
+  }, [pathname]);
 
   return (
-    <div
-      ref={wrapper}
-      className="relative"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-          setOpen(false);
-        }
-      }}
-    >
+    <div ref={wrapper}>
       <button
+        ref={trigger}
         type="button"
         aria-expanded={open}
+        aria-haspopup="true"
         onClick={() => setOpen((value) => !value)}
         className="link-draw text-sm"
       >
@@ -163,32 +228,46 @@ function ModelsMenu() {
       </button>
 
       {open && (
-        <div className="menu-drop absolute top-full left-1/2 z-50 mt-4 w-[46rem] -translate-x-1/2 rounded border border-line bg-paper p-2 text-ink shadow-[0_12px_40px_rgba(18,20,15,0.14)]">
-          <p className="px-4 pt-3 pb-2 text-caption font-medium tracking-[0.14em] text-structure uppercase">
-            Where we pay more
-          </p>
-          <ul className="grid grid-cols-2 gap-px bg-line">
-            {MODELS.map((model) => (
-              <li key={model.slug}>
+        <div
+          ref={panel}
+          data-mega-menu
+          className="menu-drop absolute inset-x-0 top-full z-50 border-y border-line bg-paper text-ink shadow-[0_18px_40px_rgba(18,20,15,0.10)]"
+        >
+          <Container>
+            <div className="grid gap-x-10 gap-y-1 py-7 md:grid-cols-2">
+              {MODELS.map((model) => (
                 <Link
+                  key={model.slug}
                   href={`/${model.slug}` as never}
-                  onClick={() => setOpen(false)}
-                  className="block bg-paper px-4 py-3 text-sm transition-colors duration-200 hover:bg-paper-warm"
+                  onClick={() => close()}
+                  className="group rounded px-3 py-3 transition-colors duration-200 hover:bg-paper-warm focus-visible:bg-paper-warm"
                 >
-                  {model.name}
+                  <span className="block font-display text-lg">
+                    {model.name}
+                  </span>
+                  <span className="mt-1 block text-sm leading-snug text-ink/70">
+                    {firstSentence(model.metaDescription)}
+                  </span>
                 </Link>
-              </li>
-            ))}
-            <li>
+              ))}
               <Link
                 href="/valuation"
-                onClick={() => setOpen(false)}
-                className="block bg-paper px-4 py-3 text-sm font-medium text-oxblood transition-colors duration-200 hover:bg-paper-warm"
+                onClick={() => close()}
+                className="group mt-2 flex items-center justify-between gap-4 rounded bg-oxblood px-5 py-4 text-paper transition-colors duration-200 hover:bg-oxblood-lt md:col-span-2"
               >
-                Any other car
+                <span>
+                  <span className="block font-display text-lg">
+                    Any other car
+                  </span>
+                  <span className="mt-1 block text-sm text-paper/80">
+                    Most of what we buy is not on this list. Same offer, same
+                    collection, same payment.
+                  </span>
+                </span>
+                <ArrowRight aria-hidden="true" size={18} className="shrink-0" />
               </Link>
-            </li>
-          </ul>
+            </div>
+          </Container>
         </div>
       )}
     </div>

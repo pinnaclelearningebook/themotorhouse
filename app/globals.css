@@ -173,14 +173,25 @@ body {
   animation: step-in 400ms var(--ease-standard) both;
 }
 
+/*
+ * The mega-menu's entrance. Y only.
+ *
+ * This used to carry translate(-50%, …) because the panel it was
+ * written for was centred on its trigger with -translate-x-1/2. When
+ * the panel was re-anchored to the header, the class came off the
+ * element but the offset stayed here, in the animation's `both` fill —
+ * so the panel kept landing half its own width to the left, 720px
+ * off-screen at 1440. A keyframe that hard-codes layout is a second,
+ * invisible copy of the layout. Move only what is being animated.
+ */
 @keyframes menu-drop {
   from {
     opacity: 0;
-    transform: translate(-50%, -6px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 }
 

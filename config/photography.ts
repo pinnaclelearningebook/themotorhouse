@@ -1,73 +1,141 @@
+import { BLUR } from "@/config/blur";
+
 /**
  * Every image slot on the site, in one place.
  *
- * A slot with `src: null` renders nothing — no grey box, no placeholder
- * car, no "image coming soon". Dropping a real photograph in means
- * adding the file and changing one line here, which is the whole point:
- * when Alex photographs a car we actually bought, nobody has to go
- * hunting through components for where it goes.
+ * A slot with `src: null` renders nothing — no grey box, no
+ * placeholder car, no "image coming soon". Dropping a real photograph
+ * in means adding the file, running `npm run blur` and changing one
+ * line here.
  *
- * Licensed imagery is logged in SOURCES.md as it lands, per CLAUDE.md
- * section 15. Nothing in here shows a car we bought, our premises or our
- * people, and nothing on the site says or implies otherwise.
+ * **Everything here is AI-generated and illustrative.** None of these
+ * is a car we bought, our premises or our people, and no alt text may
+ * say or imply otherwise — see SOURCES.md and CLAUDE.md section 5. Alt
+ * text describes the scene and nothing else: "a dark estate car on a
+ * gravel driveway", never "a Range Rover we bought".
  */
 
 export interface PhotoSlot {
   /** Public path, or null while the slot is empty. */
   src: string | null;
   /**
-   * What the image is, for a reader who cannot see it. Never a claim —
-   * "a dark car bodywork in the rain", not "a Range Rover we bought".
+   * What the image is, for a reader who cannot see it. Never a claim.
    */
   alt: string;
   /** CSS object-position, when the subject is off-centre. */
   focal?: string;
-  /** Intrinsic size, so next/image can reserve the space. */
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
+  /** Inline preview, from config/blur. */
+  blur?: string;
 }
 
-const empty = (alt: string): PhotoSlot => ({ src: null, alt });
+const LANDSCAPE = { width: 1536, height: 1024 } as const;
+const WIDE = { width: 1672, height: 941 } as const;
+const SQUARE = { width: 1254, height: 1254 } as const;
 
 export const PHOTOGRAPHY = {
-  /** Home hero. Sits behind an ink scrim; it is texture, not a subject. */
+  /** Home hero. Behind a scrim; the headline has to stay legible. */
   homeHero: {
-    src: "/photography/hero-wet-bodywork.jpg",
-    alt: "Rain beaded on the dark bodywork of a car at night",
-    focal: "60% 45%",
-    width: 1600,
-    height: 1067,
+    src: "/photography/hero-home.jpg",
+    alt: "A dark estate car parked on a wet gravel driveway in front of a brick country house, under an overcast sky",
+    focal: "60% 55%",
+    blur: BLUR["hero-home"],
+    ...LANDSCAPE,
   },
-  /** The export band. */
-  exportBand: {
-    src: "/photography/detail-water-on-paint.jpg",
-    alt: "Water on dark paintwork, caught in low light",
-    focal: "35% 50%",
-    width: 1600,
-    height: 1067,
+  /** The final call to action. */
+  ctaDusk: {
+    src: "/photography/cta-dusk.jpg",
+    alt: "A dark estate car on a gravel drive at dusk, with lit windows behind it",
+    focal: "60% 50%",
+    blur: BLUR["cta-dusk"],
+    ...WIDE,
+  },
+  /** How it works, and the promise. */
+  handover: {
+    src: "/photography/handover.jpg",
+    alt: "A car key passing from one hand to another over the bonnet of a dark car",
+    blur: BLUR["handover"],
+    ...LANDSCAPE,
+  },
+  paperwork: {
+    src: "/photography/paperwork.jpg",
+    alt: "A leather folder, two car keys, a pen and a wallet of documents on a dark desk",
+    blur: BLUR["paperwork"],
+    ...LANDSCAPE,
+  },
+  collection: {
+    src: "/photography/collection.jpg",
+    alt: "A dark estate car being loaded onto an enclosed transporter on a residential street at dusk",
+    blur: BLUR["collection"],
+    ...LANDSCAPE,
+  },
+  /** Page heroes. */
+  exportCoast: {
+    src: "/photography/export-coast.jpg",
+    alt: "A dark estate car on a coastal road above the sea",
+    focal: "55% 55%",
+    blur: BLUR["export-coast"],
+    ...LANDSCAPE,
+  },
+  aboutRoad: {
+    src: "/photography/about-road.jpg",
+    alt: "A single car on a country road above a lake, with dry stone walls and hills beyond",
+    focal: "60% 60%",
+    blur: BLUR["about-road"],
+    ...WIDE,
+  },
+  faqInterior: {
+    src: "/photography/faq-interior.jpg",
+    alt: "The interior of a right-hand drive car, looking across the steering wheel to open countryside",
+    focal: "55% 50%",
+    blur: BLUR["faq-interior"],
+    ...LANDSCAPE,
   },
 
-  /* ─── waiting on real photography ─────────────────────────────────── */
-
-  /** Four steps, four photographs. See PENDING-INFO.md for the shot list. */
-  howItWorks: [
-    empty("A registration being entered on a phone"),
-    empty("A car being looked over on a driveway"),
-    empty("Keys and a V5C changing hands"),
-    empty("A car being loaded onto a transporter"),
-  ],
-  /** One per model card. Typography carries them until these exist. */
-  models: {
-    "sell-my-range-rover": empty("A Range Rover we bought"),
-    "sell-my-range-rover-evoque": empty("A Range Rover Evoque we bought"),
-    "sell-my-range-rover-velar": empty("A Range Rover Velar we bought"),
-    "sell-my-discovery-sport": empty("A Discovery Sport we bought"),
-    "sell-my-land-rover-defender": empty("A Land Rover Defender we bought"),
-    "sell-my-lexus": empty("A Lexus we bought"),
-    "sell-my-mercedes-gle": empty("A Mercedes GLE we bought"),
+  /** One per blog category, for cards and post headers. */
+  guides: {
+    valuations: {
+      src: "/photography/guide-valuations.jpg",
+      alt: "A car's instrument dials, close up, with countryside through the windscreen",
+      blur: BLUR["guide-valuations"],
+      ...SQUARE,
+    },
+    "selling-guides": {
+      src: "/photography/guide-selling.jpg",
+      alt: "A car key and a wallet of papers on a desk, between two people's hands",
+      blur: BLUR["guide-selling"],
+      ...SQUARE,
+    },
+    "model-guides": {
+      src: "/photography/guide-models.jpg",
+      alt: "Three estate cars seen from above in marked parking bays",
+      blur: BLUR["guide-models"],
+      ...SQUARE,
+    },
+    "market-insight": {
+      src: "/photography/guide-market.jpg",
+      alt: "A row of parked estate cars outside a modern building, under a grey sky",
+      blur: BLUR["guide-market"],
+      ...SQUARE,
+    },
+    ownership: {
+      src: "/photography/guide-ownership.jpg",
+      alt: "A hand drying the wing of a dark car with a cloth",
+      blur: BLUR["guide-ownership"],
+      ...SQUARE,
+    },
   },
+
+  /* ─── deliberately empty ──────────────────────────────────────────── */
+
+  /**
+   * Model cards and the mega-menu stay typographic. A photograph of
+   * somebody else's Velar under the word "Velar" is a claim about
+   * whose car it is, and these are generated images of cars that do
+   * not exist.
+   */
+  models: null,
   /** Alex, once there is a photograph and permission to use it. */
-  about: empty("Alex, who prices the cars"),
+  about: { src: null, alt: "Alex, who prices the cars", width: 1, height: 1 },
 } as const;
-
-export type ModelSlug = keyof typeof PHOTOGRAPHY.models;

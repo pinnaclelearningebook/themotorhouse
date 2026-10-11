@@ -3,7 +3,8 @@ import { ArrowRight } from "lucide-react";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Reveal } from "@/components/motion/Reveal";
-import { Paperwork } from "@/components/illustration/Paperwork";
+import { Photo } from "@/components/ui/Photo";
+import { PHOTOGRAPHY } from "@/config/photography";
 
 /**
  * The reason why — the argument that makes a strong offer believable.
@@ -49,7 +50,11 @@ export function WhyOffersDiffer() {
           </Reveal>
         </div>
         <Reveal delay={0.15} className="hidden self-center lg:block">
-          <Paperwork className="mx-auto h-auto w-4/5 text-paper/55" />
+          <Photo
+            slot={PHOTOGRAPHY.collection}
+            sizes="(min-width: 1024px) 36vw, 100vw"
+            className="aspect-4/3 w-full rounded object-cover"
+          />
         </Reveal>
       </div>
     </Section>
