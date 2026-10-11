@@ -10,6 +10,12 @@ import { PROMISES } from "@/config/site";
  * the other three from config/site PROMISES, which the hero and the
  * auto-reply both read. Nothing here is new, because a strip of
  * assurances is exactly where a new claim would slip in unnoticed.
+ *
+ * One already had. This strip used to say "Same-day payment" while
+ * every other surface said payment happens before the transporter
+ * leaves — a deadline nobody agreed to, typed in as a literal, on the
+ * first page a seller sees. That is why no line here is a string.
+ * test/promises.test.ts fails if one becomes one again.
  */
 const ASSURANCES: { label: React.ReactNode; detail: string }[] = [
   {
