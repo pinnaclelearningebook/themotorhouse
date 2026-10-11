@@ -4,27 +4,26 @@ import { SITE, siteUrl } from "@/config/site";
 import "./globals.css";
 
 /**
- * No font is preloaded, and that is a measurement rather than a
- * preference.
+ * The display face is preloaded. The other two are not.
  *
- * Preloading the two text faces puts 101KB at the front of the queue,
- * where it competes with the thing the browser is actually waiting
- * for: on the home page the largest-contentful element is the hero
- * photograph, 18KB, and with the fonts preloaded it landed at 3.2s
- * against a 1.0s first paint.
+ * Which font to preload is a question about what the largest element
+ * on the page is, and the answer changed. While the hero was a
+ * photograph, preloading 101KB of type put it in front of the 18KB
+ * image the browser was actually waiting for, and LCP went to 3.2s.
+ * The hero is now a headline and a drawing: the largest element is
+ * the type itself, so the display face goes first and the body faces
+ * wait, which is the same reasoning producing the opposite setting.
  *
- * Nothing is lost by waiting. `display: swap` paints every word
- * immediately in a fallback, and next/font's size-adjusted fallback
- * metrics mean the swap moves nothing — which is why CLS is 0.000
- * throughout. The text is readable from the first frame either way;
- * the only difference is which file gets the bandwidth first.
+ * `display: swap` and next/font's size-adjusted fallback mean every
+ * word is readable from the first frame either way, and nothing moves
+ * when the real face lands — CLS is 0.000 throughout.
  */
 const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-newsreader",
   display: "swap",
-  preload: false,
+  preload: true,
   adjustFontFallback: true,
 });
 
