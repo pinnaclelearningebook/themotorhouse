@@ -22,7 +22,7 @@ export function LegalArticle({
           <h1 id={labelledBy} className="font-display text-display-2">
             {title}
           </h1>
-          <p className="mt-3 text-sm text-structure">
+          <p className="mt-3 text-sm text-ink/75">
             Last updated <span className="font-mono">{updated}</span>
           </p>
           <div className="legal-prose mt-10">{children}</div>

@@ -1,78 +1,65 @@
 import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Reveal } from "@/components/motion/Reveal";
+import {
+  ComparisonCard,
+  type ComparisonPoint,
+} from "@/components/sections/ComparisonCard";
 import { SITE } from "@/config/site";
 
 /**
  * The three ways to sell, described honestly. Competitors are unnamed —
  * the experience is described and recognition does the work.
+ *
+ * The marks are not a scoreboard. The private sale keeps its tick for
+ * the highest headline price and we do not get one for it, because
+ * that is true and a reader selling a rare car knows it. CLAUDE.md
+ * section 4, lever 7.
  */
-const columns = [
+const COLUMNS: { title: string; ours?: boolean; points: ComparisonPoint[] }[] = [
   {
     title: "Private sale",
     points: [
-      "Usually the highest headline price",
-      "Weeks of listings, messages and timewasters",
-      "Strangers and test drives at your house",
-      "Payment fraud risk on handover",
+      { verdict: "good", text: "Usually the highest headline price" },
+      { verdict: "bad", text: "Weeks of listings, messages and timewasters" },
+      { verdict: "bad", text: "Strangers and test drives at your house" },
+      { verdict: "bad", text: "Payment fraud risk on handover" },
     ],
   },
   {
     title: "Part-exchange",
     points: [
-      "The easiest route by far",
-      "One visit, everything handled",
-      "The trade-in figure carries the dealer's margin",
-      "Works best when you're buying from them anyway",
+      { verdict: "good", text: "The easiest route by far" },
+      { verdict: "good", text: "One visit, everything handled" },
+      { verdict: "bad", text: "The trade-in figure carries the dealer's margin" },
+      { verdict: "neutral", text: "Works best when you're buying from them anyway" },
     ],
   },
   {
     title: SITE.name,
+    ours: true,
     points: [
-      "A firm offer within two hours",
-      "The number doesn't change on collection",
-      "Free collection anywhere in mainland UK",
-      "Paid in full before the car leaves your drive",
+      { verdict: "good", text: "A firm offer within two hours" },
+      { verdict: "good", text: "The number doesn't change on collection" },
+      { verdict: "good", text: "Free collection anywhere in mainland UK" },
+      { verdict: "good", text: "Paid in full before the car leaves your drive" },
     ],
-    highlight: true,
   },
 ];
 
 export function Comparison() {
   return (
     <Section ground="paper" labelledBy="comparison-heading">
-      <Reveal>
-        <p className="text-caption font-medium tracking-[0.14em] text-structure uppercase">
-          Honestly
-        </p>
-        <h2 id="comparison-heading" className="mt-4 font-display text-display-3">
-          Your three ways to sell
-        </h2>
-        <p className="mt-5 max-w-prose text-lg">
-          Each has its place, and one of them beats us for some sellers.
-          Here is the honest version of all three.
-        </p>
-      </Reveal>
-      <div className="mt-14 grid gap-px bg-line lg:grid-cols-3">
-        {columns.map((column, index) => (
-          <Reveal
-            key={column.title}
-            delay={index * 0.08}
-            className={`p-8 ${column.highlight ? "bg-paper-warm" : "bg-paper"}`}
-          >
-            <h3 className="font-display text-2xl">{column.title}</h3>
-            {column.highlight && (
-              <span
-                aria-hidden="true"
-                className="mt-3 block h-0.5 w-10 bg-oxblood"
-              />
-            )}
-            <ul className="mt-6 space-y-4 text-sm leading-relaxed text-structure">
-              {column.points.map((point) => (
-                <li key={point} className="border-t border-line pt-4">
-                  {point}
-                </li>
-              ))}
-            </ul>
+      <SectionHeader
+        eyebrow="Honestly"
+        id="comparison-heading"
+        heading="Your three ways to sell"
+        intro="Each has its place, and one of them beats us for some sellers. Here is the honest version of all three."
+      />
+      <div className="mt-12 grid gap-6 lg:grid-cols-3">
+        {COLUMNS.map((column, index) => (
+          <Reveal key={column.title} delay={index * 0.08}>
+            <ComparisonCard {...column} />
           </Reveal>
         ))}
       </div>

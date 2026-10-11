@@ -1,16 +1,20 @@
 import { ImageResponse } from "next/og";
-import { OgArch } from "@/components/og/OgArch";
+import { displayFont } from "@/components/og/OgImage";
+import { logoDataUri } from "@/lib/brand-logo";
 
 /**
- * The favicon, generated from the mark rather than shipped as a file.
+ * The favicon.
  *
- * Replaces the 26KB .ico that was here: it was a quarter of the page's
- * image budget for a 16px square, and it was not the mark.
+ * The designed logo when there is one; until then the initials in the
+ * display face, oxblood on paper. Neutral on purpose — a favicon that
+ * commits to a mark we have not chosen yet is a thing to undo later.
  */
 export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
 
-export default function Icon() {
+export default async function Icon() {
+  const [logo, font] = await Promise.all([logoDataUri(), displayFont()]);
+
   return new ImageResponse(
     (
       <div
@@ -20,12 +24,24 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#5C1A1F",
+          backgroundColor: "#F5F4F0",
+          fontFamily: font ? "Newsreader" : "serif",
         }}
       >
-        <OgArch size={40} stroke="#F5F4F0" threshold="#F5F4F0" />
+        {logo ? (
+          <img src={logo} alt="" width={48} height={48} />
+        ) : (
+          <div style={{ fontSize: 34, color: "#5C1A1F", letterSpacing: "-0.02em" }}>
+            MH
+          </div>
+        )}
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: font
+        ? [{ name: "Newsreader", data: font, style: "normal", weight: 400 }]
+        : undefined,
+    },
   );
 }

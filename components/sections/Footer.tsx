@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Wordmark } from "@/components/ui/Wordmark";
+import { Logo } from "@/components/ui/Logo";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 import { CONTACT, COMPANY, isAwaiting } from "@/config/site";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
@@ -34,7 +34,7 @@ export function Footer() {
       <Container>
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           <div>
-            <Wordmark />
+            <Logo />
             <p className="mt-5 max-w-xs text-sm text-paper/60">
               Any car, any age, anywhere in mainland UK, for a firm offer
               that doesn&apos;t change.

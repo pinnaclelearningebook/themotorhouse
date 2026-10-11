@@ -5,17 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { Wordmark } from "@/components/ui/Wordmark";
+import { Logo } from "@/components/ui/Logo";
 import { MODELS } from "@/config/models";
 
 /**
  * The header.
  *
- * Opaque at the top of the page and translucent with a backdrop blur
- * once you leave the hero, so the hero photograph reads full-bleed and
- * everything after it reads as paper. On a phone it gets out of the way
- * on the way down and comes straight back on the way up — the one place
- * a seller wants it is the moment they have decided.
+ * Paper throughout, picking up a hairline and a backdrop blur once you
+ * scroll. It used to go transparent over the home hero, which worked
+ * while that hero was a dark photograph and broke the moment it became
+ * light: paper-coloured text on paper, so the navigation vanished and
+ * only the button was left. One state is also one fewer thing to get
+ * wrong on a page nobody thought to check.
+ *
+ * On a phone it gets out of the way on the way down and comes straight
+ * back on the way up — the one place a seller wants it is the moment
+ * they have decided.
  *
  * `Get my offer` is visible at every width and inside the open menu.
  * That is the header's job; the rest of the navigation is secondary to
@@ -44,13 +49,6 @@ const LINKS = [
 ] as const;
 
 export function Header() {
-  /**
-   * Only the home page has a dark hero for the header to sit over. On
-   * every other page it is paper from the first pixel, so the
-   * transparent state would be paper-coloured text on paper — invisible
-   * navigation, which is how a header like this usually goes wrong.
-   */
-  const overHero = usePathname() === "/";
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -74,20 +72,18 @@ export function Header() {
     <>
       <header
         className={`fixed inset-x-0 top-0 z-40 border-b transition-[transform,background-color,border-color,backdrop-filter] duration-300 ease-(--ease-standard) motion-reduce:transition-none ${
-          scrolled || !overHero
-            ? "border-line bg-paper/85 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-paper"
-            : "border-transparent bg-transparent"
+          scrolled
+            ? "border-line bg-paper/90 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-paper"
+            : "border-transparent bg-paper"
         } ${hidden && !menu ? "-translate-y-full" : "translate-y-0"}`}
       >
         <Container>
           <div
-            className={`flex h-16 items-center justify-between gap-6 ${
-              scrolled || !overHero ? "text-ink" : "text-paper"
-            }`}
+            className="flex h-16 items-center justify-between gap-6 text-ink"
           >
             <Link href="/" aria-label="The Motor House, home" className="shrink-0">
-              <Wordmark className="hidden sm:block" />
-              <Wordmark compact className="block sm:hidden" />
+              <Logo className="hidden sm:block" />
+              <Logo compact className="block sm:hidden" />
             </Link>
 
             <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
@@ -283,7 +279,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     >
       <Container>
         <div className="flex h-16 items-center justify-between">
-          <Wordmark compact />
+          <Logo compact />
           <button
             type="button"
             data-first

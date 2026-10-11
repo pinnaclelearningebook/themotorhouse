@@ -1,42 +1,36 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Section";
-import { PostCard } from "@/components/blog/PostCard";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { GuideCard } from "@/components/blog/GuideCard";
 import { Reveal } from "@/components/motion/Reveal";
 import { getAllPosts } from "@/lib/blog";
 
 /**
- * The three latest posts. Renders nothing while no posts exist, same
+ * The three latest guides. Renders nothing while no posts exist, same
  * honesty rule as the recently-purchased section.
  */
 export function FromTheBlog() {
   const posts = getAllPosts().slice(0, 3);
-  if (posts.length === 0) {
-    return null;
-  }
+  if (posts.length === 0) return null;
 
   return (
     <Section ground="paper" labelledBy="blog-heading">
-      <Reveal>
-        <p className="text-caption font-medium tracking-[0.14em] text-structure uppercase">
-          Guides
-        </p>
-        <h2 id="blog-heading" className="mt-4 font-display text-display-3">
-          Worth reading first
-        </h2>
-        <p className="mt-5 max-w-prose text-lg">
-          Written to be useful whether or not you sell us anything.
-        </p>
-      </Reveal>
+      <SectionHeader
+        eyebrow="Guides"
+        id="blog-heading"
+        heading="Worth reading first"
+        intro="Written to be useful whether or not you sell us anything."
+      />
       <ul className="mt-12 grid gap-6 lg:grid-cols-3">
         {posts.map((post, index) => (
           <Reveal as="li" key={post.slug} delay={index * 0.08}>
-            <PostCard post={post} />
+            <GuideCard post={post} />
           </Reveal>
         ))}
       </ul>
-      <p className="mt-12">
+      <p className="mt-10">
         <Link href="/blog" className="link-draw font-medium text-oxblood">
-          All articles
+          All guides
         </Link>
       </p>
     </Section>

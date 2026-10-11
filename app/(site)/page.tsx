@@ -12,6 +12,13 @@ import { FinalCta } from "@/components/sections/FinalCta";
 import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 
 /**
+ * The order is the argument, and the grounds carry it.
+ *
+ * paper · ink · oxblood · paper · paper-warm · ink · paper · paper-warm ·
+ * paper · ink. No two touching sections share a ground, and oxblood is
+ * spent once, on the promise, because a colour used twice stops being
+ * a signal.
+ *
  * The order is the argument.
  *
  * Certainty first and twice — the hero states it, the strip evidences it,
