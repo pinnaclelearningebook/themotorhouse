@@ -9,7 +9,6 @@ export function FinalCta() {
     <Section ground="ink" labelledBy="cta-heading">
       <div className="max-w-3xl">
         <MaskReveal
-          onView
           as="h2"
           id="cta-heading"
           lines={["Ready when you are."]}

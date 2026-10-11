@@ -1,19 +1,24 @@
 "use client";
 
-import { m, useReducedMotion } from "motion/react";
+import { useInView } from "./useInView";
 
 /**
  * A 24px rise and a fade, once, when the section reaches 20% of the
  * viewport — CLAUDE.md section 6, to the pixel.
  *
- * Transform and opacity only, so it never touches layout. Under reduced
- * motion the element is simply there: not a shorter animation, none.
+ * Transform and opacity only, so it never touches layout, and both in
+ * CSS so nothing has to be downloaded before the page can be read.
+ *
+ * The hidden state is scoped to `[data-js]`, set by an inline script in
+ * the root layout. Without scripting the content is simply there:
+ * a reveal that depends on JavaScript must never be the reason a
+ * paragraph is invisible.
  */
 export function Reveal({
   children,
   delay = 0,
   className = "",
-  as = "div",
+  as: Tag = "div",
 }: {
   children: React.ReactNode;
   /** Seconds. Used to stagger siblings; keep the whole set under ~0.3s. */
@@ -21,18 +26,13 @@ export function Reveal({
   className?: string;
   as?: "div" | "li" | "section";
 }) {
-  const calm = useReducedMotion();
-  const Tag = m[as];
-
-  if (calm) return <div className={className}>{children}</div>;
+  const [ref, seen] = useInView<HTMLDivElement>(0.2);
 
   return (
     <Tag
-      className={className}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      ref={ref as React.Ref<HTMLDivElement & HTMLLIElement>}
+      className={`reveal${seen ? " reveal-in" : ""} ${className}`}
+      style={delay ? { transitionDelay: `${Math.round(delay * 1000)}ms` } : undefined}
     >
       {children}
     </Tag>

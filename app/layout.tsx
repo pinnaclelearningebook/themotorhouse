@@ -3,11 +3,29 @@ import { Newsreader, Inter_Tight, Geist_Mono } from "next/font/google";
 import { SITE, siteUrl } from "@/config/site";
 import "./globals.css";
 
+/**
+ * No font is preloaded, and that is a measurement rather than a
+ * preference.
+ *
+ * Preloading the two text faces puts 101KB at the front of the queue,
+ * where it competes with the thing the browser is actually waiting
+ * for: on the home page the largest-contentful element is the hero
+ * photograph, 18KB, and with the fonts preloaded it landed at 3.2s
+ * against a 1.0s first paint.
+ *
+ * Nothing is lost by waiting. `display: swap` paints every word
+ * immediately in a fallback, and next/font's size-adjusted fallback
+ * metrics mean the swap moves nothing — which is why CLS is 0.000
+ * throughout. The text is readable from the first frame either way;
+ * the only difference is which file gets the bandwidth first.
+ */
 const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-newsreader",
   display: "swap",
+  preload: false,
+  adjustFontFallback: true,
 });
 
 /**
@@ -22,6 +40,8 @@ const interTight = Inter_Tight({
   weight: ["400", "500", "600"],
   variable: "--font-inter-tight",
   display: "swap",
+  preload: false,
+  adjustFontFallback: true,
 });
 
 /**
@@ -64,7 +84,23 @@ export default function RootLayout({
       lang="en-GB"
       className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {/*
+         * Marks the document as scripted, before first paint.
+         *
+         * The scroll reveals hide their content until an observer says
+         * otherwise, and that hidden state is scoped to [data-js]. With
+         * scripting off or broken the attribute is never set, no
+         * element is ever hidden, and the page reads normally — which
+         * is the only acceptable failure mode for decoration.
+         */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: 'document.documentElement.setAttribute("data-js","")',
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

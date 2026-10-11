@@ -1,94 +1,52 @@
 "use client";
 
-import { m, useReducedMotion } from "motion/react";
+import { useInView } from "./useInView";
 
 /**
- * A headline revealed line by line from behind its own edge.
+ * A headline revealed line by line from behind its own edge, below the
+ * fold.
  *
- * Each line is a clipping box with the text inside it, so the type rises
- * into view rather than fading in — the difference between a page that
- * feels made and one that feels assembled.
+ * The hero has its own copy of this in globals.css with no JavaScript
+ * at all, because it is over the largest-contentful element. This one
+ * waits for the viewport, so it can afford an observer.
  *
- * The viewport trigger is on the clipping box, never on the text inside
- * it. Putting it on the text deadlocks: the text starts translated
- * outside its own `overflow: hidden` parent, so its intersection with
- * the viewport is zero, so it never comes into view, so it never
- * animates, so it stays outside. The headline simply never appears, and
- * it looks like a missing element rather than a stuck animation.
+ * The trigger is on the clipping box, never on the text inside it.
+ * Putting it on the text deadlocks: the text starts translated outside
+ * its own `overflow: hidden` parent, so its intersection with the
+ * viewport is zero, so it never comes into view, so it never animates.
+ * The headline simply never appears.
  *
  * Lines are passed in rather than measured, because measuring means
- * rendering the headline, reading its line boxes and re-rendering, which
- * is a layout shift on the largest element on the page. Writing the
- * breaks by hand costs a prop and keeps CLS at zero.
- *
- * Never used on the hero image. The hero image is the LCP element and
- * CLAUDE.md section 6 forbids animating it from opacity 0; the headline
- * over it is fair game.
+ * rendering the headline, reading its line boxes and re-rendering,
+ * which is a layout shift on a large element. Writing the breaks by
+ * hand costs a prop and keeps CLS at zero.
  */
-
-const LINE = {
-  hidden: { y: "110%" },
-  shown: { y: "0%" },
-};
-
 export function MaskReveal({
   lines,
   className = "",
   id,
-  as: Tag = "h1",
+  as: Tag = "h2",
   delay = 0,
-  onView = false,
 }: {
   lines: string[];
   className?: string;
   id?: string;
   as?: "h1" | "h2" | "p";
   delay?: number;
-  /**
-   * Play when the headline reaches the viewport rather than on mount.
-   * Everything below the fold wants this; the hero does not, because by
-   * the time a reader scrolls to it the reveal would already be over.
-   */
-  onView?: boolean;
 }) {
-  const calm = useReducedMotion();
-
-  if (calm) {
-    return (
-      <Tag id={id} className={className}>
-        {lines.map((line, index) => (
-          <span key={index} className="block">
-            {line}
-          </span>
-        ))}
-      </Tag>
-    );
-  }
+  const [ref, seen] = useInView<HTMLHeadingElement>(0.35);
 
   return (
-    <Tag id={id} className={className}>
+    <Tag id={id} className={className} ref={ref as React.Ref<HTMLHeadingElement>}>
       {lines.map((line, index) => (
-        <m.span
-          key={index}
-          // Room for an ascender above and a descender below at
-          // display sizes, pulled back out again so the leading is
-          // untouched. Without the top padding, Newsreader's caps were
-          // shaved off at the tight end of the scale.
-          className="block overflow-hidden pt-[0.08em] pb-[0.14em] [margin-block:-0.08em_-0.14em]"
-          initial="hidden"
-          {...(onView
-            ? { whileInView: "shown", viewport: { once: true, amount: 0.35 } }
-            : { animate: "shown" })}
-          transition={{
-            duration: 0.8,
-            delay: delay + index * 0.08,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
-          <m.span className="block" variants={LINE}>
+        <span key={index} className="mask-line">
+          <span
+            className={seen ? "mask-line-in" : undefined}
+            style={{ animationDelay: `${Math.round(delay * 1000) + index * 80}ms` }}
+          >
             {line}
-          </m.span>
-        </m.span>
+          </span>
+        </span>
       ))}
     </Tag>
   );

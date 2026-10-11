@@ -2,13 +2,15 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE } from "@/config/site";
+import { OgArch } from "@/components/og/OgArch";
 
 /**
  * Shared Open Graph image renderer. Every route's opengraph-image.tsx
  * calls ogImage() with its own title so the card is unique per page.
  *
- * Ink ground, oxblood rule, Newsreader for the title — the same
- * restraint as the site itself. No photography, since none exists yet.
+ * Ink ground, the arch and the ruled wordmark in the corner, Newsreader
+ * for the title — the same restraint as the site itself. No
+ * photography, since none of ours exists yet.
  */
 export const ogSize = { width: 1200, height: 630 };
 export const ogContentType = "image/png";
@@ -76,9 +78,23 @@ export async function ogImage({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ width: 64, height: 4, backgroundColor: "#5C1A1F" }} />
-          <div style={{ marginLeft: 24, fontSize: 30, color: "#F5F4F0" }}>
-            {SITE.name}
+          <OgArch size={46} />
+          <div
+            style={{
+              marginLeft: 20,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ fontSize: 30, color: "#F5F4F0" }}>{SITE.name}</div>
+            <div
+              style={{
+                marginTop: 8,
+                width: 200,
+                height: 1,
+                backgroundColor: "#2C302A",
+              }}
+            />
           </div>
         </div>
       </div>

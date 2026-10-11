@@ -16,7 +16,6 @@ export function OfferPromise() {
           </p>
         </Reveal>
         <MaskReveal
-          onView
           as="h2"
           id="promise-heading"
           delay={0.05}

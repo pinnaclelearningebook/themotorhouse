@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { m, useReducedMotion } from "motion/react";
 import { Photo } from "@/components/ui/Photo";
 import { PHOTOGRAPHY, type ModelSlug } from "@/config/photography";
 
@@ -16,8 +13,11 @@ import { PHOTOGRAPHY, type ModelSlug } from "@/config/photography";
  * the rest of the page.
  *
  * The hover is a 2px lift and a rule drawing left to right, per
- * CLAUDE.md section 6. Under reduced motion neither happens and the
- * border simply changes colour.
+ * CLAUDE.md section 6, both in CSS. Under reduced motion neither
+ * happens and only the background changes.
+ *
+ * A server component again: a card in a grid of eight has no business
+ * shipping an animation runtime for a hover state.
  */
 export function ModelCard({
   slug,
@@ -28,15 +28,10 @@ export function ModelCard({
   name: string;
   href?: string;
 }) {
-  const calm = useReducedMotion();
   const slot = PHOTOGRAPHY.models[slug as ModelSlug];
 
   return (
-    <m.div
-      whileHover={calm ? undefined : { y: -2 }}
-      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="group h-full bg-paper"
-    >
+    <div className="group h-full bg-paper transition-transform duration-200 ease-(--ease-standard) hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <Link
         href={(href ?? `/${slug}`) as never}
         className="flex h-full flex-col justify-between gap-10 p-7 transition-colors duration-200 hover:bg-paper-warm"
@@ -59,6 +54,6 @@ export function ModelCard({
           />
         </span>
       </Link>
-    </m.div>
+    </div>
   );
 }

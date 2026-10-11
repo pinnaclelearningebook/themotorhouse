@@ -37,7 +37,6 @@ export function WhyOffersDiffer() {
             </p>
           </Reveal>
           <MaskReveal
-            onView
             as="h2"
             id="why-heading"
             delay={0.05}
