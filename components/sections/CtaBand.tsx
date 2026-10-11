@@ -11,15 +11,19 @@ import { PROMISES } from "@/config/site";
  * sees is the same on all of them and the registration input is never
  * more than a scroll away. The photograph sits behind a scrim heavy
  * enough that the heading and the plate both stay legible.
+ *
+ * The line under the heading is fixed. It briefly took an override, so
+ * that /export could keep a closing sentence promising to tell the
+ * seller whether their car was an export car or a UK trade car — which
+ * is exactly what section 11 says a seller is never told. The sentence
+ * went, and the override with it: a page-level override on the one
+ * paragraph that states the promise is how the promise drifts.
  */
 export function CtaBand({
   heading = "Ready when you are.",
-  intro,
   id = "cta-heading",
 }: {
   heading?: string;
-  /** Replaces the standard line, for a page that closes on its own. */
-  intro?: React.ReactNode;
   id?: string;
 }) {
   return (
@@ -43,12 +47,8 @@ export function CtaBand({
             {heading}
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-paper/85">
-            {intro ?? (
-              <>
-                One registration, {PROMISES.offerWithinHours} hours, one firm
-                number. No obligation to accept it.
-              </>
-            )}
+            One registration, {PROMISES.offerWithinHours} hours, one firm
+            number. No obligation to accept it.
           </p>
           <div className="mt-9">
             <PlateForm id={`${id}-reg`} />

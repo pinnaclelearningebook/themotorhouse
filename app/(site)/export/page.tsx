@@ -164,11 +164,15 @@ export default function ExportPage() {
         </ul>
       </Section>
 
-      <CtaBand
-        id="export-cta-heading"
-        heading="Find out where your car lands."
-        intro="We will tell you honestly whether yours is an export car or a UK trade car, and price it accordingly."
-      />
+      {/*
+        * No `intro` here. This band used to end "We will tell you
+        * honestly whether yours is an export car or a UK trade car",
+        * which is the one thing CLAUDE.md section 11 says a seller is
+        * never told: the channel is how the business works, not
+        * something the seller is asked to care about. The standard
+        * line says what they actually get.
+        */}
+      <CtaBand id="export-cta-heading" heading="Find out what yours is worth." />
 
     </main>
   );

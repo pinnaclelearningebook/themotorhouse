@@ -73,8 +73,14 @@ export const PHOTOGRAPHY = {
   /** Page heroes. */
   exportCoast: {
     src: "/photography/export-coast.jpg",
-    alt: "A dark estate car on a coastal road above the sea",
-    focal: "55% 55%",
+    alt: "A dark estate car on a coastal road above the sea, driving on the left-hand side",
+    /*
+     * High in the frame. A page banner is a wide, shallow crop, and at
+     * 55% this image gave it a band of black bonnet and black tarmac —
+     * a hero that looked like a rendering failure. 22% catches the
+     * car's upper body, the hillside and the water behind it.
+     */
+    focal: "60% 22%",
     blur: BLUR["export-coast"],
     ...LANDSCAPE,
   },

@@ -259,7 +259,7 @@ All thirteen were inspected individually at full size before use and checked aga
 | `handover.jpg` | How it works, the promise | A key passing between two hands over a bonnet |
 | `paperwork.jpg` | How it works, the paperwork step | Folder, two keys, a pen and a document wallet on a desk |
 | `collection.jpg` | Home, why our offers differ | A car loading onto an enclosed transporter at dusk |
-| `export-coast.jpg` | /export page hero | A dark estate car on a coastal road above the sea |
+| `export-coast.jpg` | /export page hero | A dark estate car on a coastal road above the sea, driving on the left |
 | `about-road.jpg` | /about page hero | One car on a country road above a lake |
 | `faq-interior.jpg` | /faq page hero | Right-hand drive interior looking out to countryside |
 | `guide-valuations.jpg` | Guides, valuations category | Instrument dials, countryside through the windscreen |
@@ -268,9 +268,12 @@ All thirteen were inspected individually at full size before use and checked aga
 | `guide-market.jpg` | Guides, market insight category | A row of parked cars outside a modern building |
 | `guide-ownership.jpg` | Guides, ownership category | A hand drying the wing of a dark car |
 
-Three notes recorded at inspection, none of them disqualifying but all worth a decision:
+`export-coast.jpg` was replaced on 12 October 2026. The first version had the car on the **right-hand side of the road**, which is the opposite of what the page argues — Cyprus drives on the left, and UK right-hand-drive stock being the local standard is the entire reason the page exists. The replacement has the car correctly on the left, with the centre line to its right and the sea wall to its left, and the cabin visibly right-hand drive.
 
-- `export-coast.jpg` shows the car on the **right-hand side of the road**. The /export page's whole argument is that Cyprus drives on the left and UK right-hand-drive stock is the local standard. The image is used at the top of that page behind a heavy scrim, where the road position is not legible at any size the page renders it. If it ever appears larger, it has to be replaced.
+The replacement arrived with **a small emblem on the grille** — illegible, no readable mark, but a badge in the place a badge goes, which the no-badge rule names explicitly. It was painted out before the image was used: a 44×46px patch of the grille mesh beside it, feathered, composited over it. CLAUDE.md section 5 permits exactly this ("no visible badges or foreign plates where they can be cropped out"). The before and after were compared at 6× and the patch leaves no visible seam at 1:1. Nothing else about the image was altered.
+
+Two notes remain from inspection, neither disqualifying but both worth a decision:
+
 - `guide-market.jpg` reads as a **dealer forecourt**. It is used on a blog category card and nowhere that could be read as our premises.
 - `cta-dusk.jpg` has a **warm orange sky**, which CLAUDE.md section 5 tells the site to avoid. It sits under an ink scrim at 45% quality, where it reads as dusk rather than as colour. Flagged so the choice is a choice.
 
