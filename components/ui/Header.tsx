@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { m, useReducedMotion } from "motion/react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { Wordmark } from "@/components/ui/Wordmark";
@@ -25,6 +24,12 @@ import { MODELS } from "@/config/models";
  * Scroll state is read in a passive listener and written to a ref before
  * it reaches React, so a scrolling page does not re-render on every
  * frame — only when a threshold is actually crossed.
+ *
+ * **No Motion in here.** The header is on every page and in the first
+ * bundle, and the animation library behind it cost about 1.2s of LCP
+ * on a throttled phone. The menus open with CSS transitions instead,
+ * which look the same and weigh nothing. Motion is for below the fold,
+ * where the cost is paid after the page is usable.
  */
 
 const SOLID_AFTER_PX = 24;
@@ -125,7 +130,6 @@ export function Header() {
 function ModelsMenu() {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
-  const calm = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -163,12 +167,7 @@ function ModelsMenu() {
       </button>
 
       {open && (
-        <m.div
-          initial={calm ? false : { opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute top-full left-1/2 z-50 mt-4 w-[46rem] -translate-x-1/2 rounded border border-line bg-paper p-2 text-ink shadow-[0_12px_40px_rgba(18,20,15,0.14)]"
-        >
+        <div className="menu-drop absolute top-full left-1/2 z-50 mt-4 w-[46rem] -translate-x-1/2 rounded border border-line bg-paper p-2 text-ink shadow-[0_12px_40px_rgba(18,20,15,0.14)]">
           <p className="px-4 pt-3 pb-2 text-caption font-medium tracking-[0.14em] text-structure uppercase">
             Where we pay more
           </p>
@@ -194,7 +193,7 @@ function ModelsMenu() {
               </Link>
             </li>
           </ul>
-        </m.div>
+        </div>
       )}
     </div>
   );
@@ -211,7 +210,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
   const pathname = usePathname();
-  const calm = useReducedMotion();
 
   const close = useCallback(() => {
     onClose();
@@ -301,16 +299,10 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       <Container className="flex-1 overflow-y-auto pt-6 pb-14">
         <ul>
           {items.map((item, index) => (
-            <m.li
+            <li
               key={item.href}
-              initial={calm ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: calm ? 0 : 0.04 + index * 0.045,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              className="border-b border-line-dark"
+              className="rise-in border-b border-line-dark"
+              style={{ animationDelay: `${40 + index * 45}ms` }}
             >
               <Link
                 href={item.href}
@@ -321,7 +313,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               >
                 {item.label}
               </Link>
-            </m.li>
+            </li>
           ))}
         </ul>
 
@@ -330,15 +322,10 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
         </p>
         <ul className="mt-4 grid grid-cols-2 gap-x-6">
           {MODELS.map((model, index) => (
-            <m.li
+            <li
               key={model.slug}
-              initial={calm ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                delay: calm ? 0 : 0.3 + index * 0.03,
-                ease: [0.16, 1, 0.3, 1],
-              }}
+              className="rise-in"
+              style={{ animationDelay: `${300 + index * 30}ms` }}
             >
               <Link
                 href={`/${model.slug}` as never}
@@ -347,7 +334,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               >
                 {model.name}
               </Link>
-            </m.li>
+            </li>
           ))}
         </ul>
       </Container>

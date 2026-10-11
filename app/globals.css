@@ -173,6 +173,54 @@ body {
   animation: step-in 400ms var(--ease-standard) both;
 }
 
+@keyframes menu-drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.menu-drop {
+  animation: menu-drop 220ms var(--ease-standard) both;
+}
+
+/*
+ * The hero's mask reveal, in CSS rather than JavaScript.
+ *
+ * The headline over the hero photograph is on the critical path, and
+ * the animation library is not: a reveal that waits for hydration
+ * defers first paint of the largest thing on the screen by however long
+ * the bundle takes. Below the fold, components/motion does this with
+ * Motion, where the cost is paid after the page is usable.
+ *
+ * Movement only, never opacity — the same rule as .rise-in-solid, for
+ * the same reason.
+ */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.08em 0.14em;
+  margin-block: -0.08em -0.14em;
+}
+
+@keyframes mask-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.mask-line > span {
+  display: block;
+  animation: mask-rise 800ms var(--ease-standard) both;
+}
+
 @keyframes header-drop {
   from {
     transform: translateY(-100%);
@@ -190,7 +238,9 @@ body {
   .rise-in,
   .rise-in-solid,
   .step-in,
-  .header-drop {
+  .header-drop,
+  .menu-drop,
+  .mask-line > span {
     animation: none;
   }
 

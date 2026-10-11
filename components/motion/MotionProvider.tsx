@@ -1,54 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
 import { LazyMotion, domAnimation } from "motion/react";
 
 /**
  * The motion runtime, loaded once and lazily.
  *
  * `domAnimation` through LazyMotion keeps the animation engine out of
- * the first bundle — the `m` components in components/motion/* are tiny
- * on their own, and the engine arrives after the page is interactive.
- * CLAUDE.md section 6 is explicit that mobile performance wins any
- * conflict with motion, and this is the cheapest way to honour it.
+ * the first bundle: the `m` components in components/motion are small
+ * on their own and the engine arrives after the page is interactive.
  *
- * Lenis is deliberately narrow:
+ * **Lenis is not here, and that is the second time it has been cut.**
+ * Measured on a throttled mobile Lighthouse run, the smooth-scroll
+ * runtime plus the animation library cost about 1.2s of LCP against a
+ * baseline of 2.41s — and CLAUDE.md section 6 says mobile performance
+ * wins any conflict with motion. Smooth scroll was the cheapest thing
+ * to give up: it does nothing for a phone, where it was already
+ * disabled, and the page it improves is the one with a mouse wheel and
+ * the fastest connection.
  *
- *   - never under prefers-reduced-motion
- *   - never on a coarse pointer
- *
- * Smooth-scroll hijacking on a phone costs more than it gives: it fights
- * the platform's own scrolling, it delays the first interaction, and for
- * anyone who has asked their system to calm down it is precisely the
- * thing they asked not to have. On a desktop with a mouse wheel it is
- * the difference between a page that feels built and one that does not.
+ * If it comes back it comes back behind an idle callback, after the
+ * page is interactive, and only on a pointer-fine device.
  */
 export function MotionProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const fine = window.matchMedia("(pointer: fine)");
-    if (calm.matches || !fine.matches) return;
-
-    let lenis: { raf: (t: number) => void; destroy: () => void } | null = null;
-    let frame = 0;
-    let cancelled = false;
-
-    void import("lenis").then(({ default: Lenis }) => {
-      if (cancelled) return;
-      lenis = new Lenis({ duration: 0.9, smoothWheel: true });
-      const tick = (time: number) => {
-        lenis?.raf(time);
-        frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-    });
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(frame);
-      lenis?.destroy();
-    };
-  }, []);
-
   return <LazyMotion features={domAnimation}>{children}</LazyMotion>;
 }

@@ -14,12 +14,15 @@ export function Photo({
   slot,
   className = "",
   sizes,
+  quality = 72,
   priority = false,
   children,
 }: {
   slot: PhotoSlot;
   className?: string;
   sizes: string;
+  /** Lower for anything behind a scrim, where detail is thrown away. */
+  quality?: number;
   /**
    * Set on the hero only. It is the LCP element, so it is fetched
    * eagerly and never animated from opacity 0 (CLAUDE.md section 6).
@@ -39,7 +42,7 @@ export function Photo({
       sizes={sizes}
       priority={priority}
       fetchPriority={priority ? "high" : "auto"}
-      quality={72}
+      quality={quality}
       className={className}
       style={slot.focal ? { objectPosition: slot.focal } : undefined}
     />

@@ -10,16 +10,32 @@ const newsreader = Newsreader({
   display: "swap",
 });
 
+/**
+ * Weights are named rather than left to the variable default.
+ *
+ * Without them next/font ships the whole variable range, and the three
+ * families together were 124KB queued ahead of the first paint. The
+ * body face uses three weights and no more.
+ */
 const interTight = Inter_Tight({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-inter-tight",
   display: "swap",
 });
 
+/**
+ * Not preloaded. Geist Mono is for registrations, mileages and dates —
+ * none of which are in the first viewport of any page — so preloading
+ * it only takes bandwidth from the display face, which *is* the
+ * largest-contentful element and whose arrival is what LCP waits for.
+ */
 const geistMono = Geist_Mono({
   subsets: ["latin"],
+  weight: ["400", "500"],
   variable: "--font-geist-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
