@@ -68,7 +68,7 @@ function scopePage(): KnowledgePage {
     id: "what-we-buy",
     title: "What we buy",
     body: [
-      `${SITE.name} buys any car, of any age, anywhere in mainland UK.`,
+      `${SITE.name} buys cars of any age, anywhere in mainland UK.`,
       "There is no cut-off on age, mileage or condition. Age and condition change what a car is worth, which is a person's judgement, not whether we are interested.",
       "",
       `Some cars are in demand in ${EXPORT_MARKET}, which drives on the left like the UK. That demand is why offers on certain young premium SUVs can beat a general buyer's.`,

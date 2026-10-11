@@ -8,7 +8,7 @@ Version 2 — 5 October 2026. Supersedes the v1 milestone list. Everything built
 
 ## 1. What this is
 
-**The Motor House** is a UK car buying service. Sellers submit their car, we come back with a firm offer, we collect and pay. We buy any car.
+**The Motor House** is a UK car buying service. Sellers submit their car, we come back with a firm offer, we collect and pay. Any car, any age.
 
 Behind the site are two channels the seller never needs to understand:
 

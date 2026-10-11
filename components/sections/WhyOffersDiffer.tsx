@@ -14,7 +14,7 @@ export function WhyOffersDiffer() {
           Why our offers on certain cars are stronger
         </h2>
         <p className="mt-6 text-paper/80">
-          We buy any car. On a minority of them — young, well-specified
+          We buy cars of every kind. On a minority of them — young, well-specified
           models — we also sell to exporters we work with, supplying a
           market where right-hand drive is the local standard rather than
           an oddity.

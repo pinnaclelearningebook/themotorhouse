@@ -129,7 +129,7 @@ describe("reassembly across delta boundaries", () => {
 
   it("keeps a space that falls on a delta boundary", () => {
     const spoken = releaseStreamed([
-      "No cut-off, we buy any car.",
+      "No cut-off, any car and any age.",
       " A person prices it within ",
       "2 hours on a weekday.",
     ]);

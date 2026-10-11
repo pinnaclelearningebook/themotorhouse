@@ -45,7 +45,7 @@ describe("knowledge base", () => {
   it("says any car of any age, as the site does", () => {
     const header = read("components/ui/Header.tsx");
     expect(header).toContain("Any car, any age");
-    expect(knowledgeAsText()).toMatch(/any car, of any age/i);
+    expect(knowledgeAsText()).toMatch(/cars of any age/i);
   });
 
   it("never promises a provenance report, which is unpublished", () => {

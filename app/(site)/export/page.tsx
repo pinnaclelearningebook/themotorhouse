@@ -128,7 +128,7 @@ export default function ExportPage() {
             Where this makes the biggest difference
           </h2>
           <p className="mt-4 max-w-prose">
-            To be clear about what this page is: we buy any car, of any age
+            To be clear about what this page is: we buy cars of any age
             and in any condition, and most of what we buy has nothing to do
             with export. This page explains why the offer on{" "}
             <em>some</em> cars is stronger. It is not a list of what we

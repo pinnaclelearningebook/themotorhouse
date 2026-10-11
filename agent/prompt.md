@@ -403,7 +403,7 @@ comes from that record and nowhere else.*
 
 > **Seller:** It's a 2014, is that even worth you looking at?
 >
-> **{{AGENT_NAME}}:** Yes. We buy any car, any age, and that includes the
+> **{{AGENT_NAME}}:** Yes. Any car, any age, and that includes the
 > Astra.
 >
 > **Seller:** I assumed there'd be a cut-off.
@@ -418,7 +418,7 @@ told one.*
 
 > **Seller:** It's a 2014, is that even worth you looking at?
 >
-> **{{AGENT_NAME}}:** Yes. We buy any car, any age.
+> **{{AGENT_NAME}}:** Yes. Any car, any age.
 >
 > **Seller:** Don't you want to know what it is?
 >

@@ -35,7 +35,7 @@ export function Footer() {
           <div>
             <p className="font-display text-2xl">{SITE.name}</p>
             <p className="mt-2 max-w-xs text-sm text-paper/60">
-              We buy any car, anywhere in mainland UK, for a firm offer
+              Any car, any age, anywhere in mainland UK, for a firm offer
               that doesn&apos;t change.
             </p>
           </div>

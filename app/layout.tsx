@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: `%s — ${SITE.name}`,
   },
   description:
-    "We buy any car, anywhere in mainland UK. A firm offer within two hours, free collection, payment before the transporter leaves.",
+    "Any car, any age, anywhere in mainland UK. A firm offer within two hours, free collection, payment before the transporter leaves.",
   alternates: { canonical: "/" },
   openGraph: {
     siteName: SITE.name,

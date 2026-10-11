@@ -141,7 +141,7 @@ const LEGITIMATE = [
   "The offer stands for seven days, provided the mileage hasn't materially increased.",
   "No deductions. Not at collection, not ever.",
   "Payment reaches you before the transporter leaves with the car.",
-  "We buy any car, any age.",
+  "Any car, any age, with no cut-off.",
   "You ring your lender and ask for a settlement figure. They have to give it to you.",
   "Once you've paid half the total amount payable you can end the agreement.",
   "The Defender has 18400 on it according to the last MOT.",
@@ -390,8 +390,8 @@ describe("sentence splitting for speech", () => {
   });
 
   it("keeps a single sentence whole", () => {
-    expect(sentences("No cut-off, we buy any car.")).toEqual([
-      "No cut-off, we buy any car.",
+    expect(sentences("No cut-off, any car and any age.")).toEqual([
+      "No cut-off, any car and any age.",
     ]);
   });
 
