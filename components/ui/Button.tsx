@@ -1,7 +1,13 @@
 import Link from "next/link";
 
+/**
+ * `min-h-11` is 44px, the tap target floor. Every size below sets its
+ * padding for how the button should look; this stops the smallest of
+ * them looking right and missing the thumb, which is what `tight` was
+ * doing in the header at 36px tall.
+ */
 const base =
-  "inline-block rounded bg-oxblood text-center font-medium text-paper transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-oxblood-lt disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 items-center justify-center rounded bg-oxblood text-center font-medium text-paper transition-[background-color,transform] duration-200 hover:-translate-y-px hover:bg-oxblood-lt disabled:cursor-not-allowed disabled:opacity-60";
 
 const sizes = {
   default: "px-8 py-4",

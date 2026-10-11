@@ -82,7 +82,11 @@ export function Header() {
           <div
             className="flex h-16 items-center justify-between gap-6 text-ink"
           >
-            <Link href="/" aria-label="The Motor House, home" className="shrink-0">
+            <Link
+              href="/"
+              aria-label="The Motor House, home"
+              className="flex min-h-11 shrink-0 items-center"
+            >
               <Logo className="hidden sm:block" />
               <Logo compact className="block sm:hidden" />
             </Link>
@@ -105,7 +109,7 @@ export function Header() {
                 onClick={() => setMenu(true)}
                 aria-label="Open the menu"
                 aria-expanded={menu}
-                className="-mr-2 flex h-10 w-10 items-center justify-center lg:hidden"
+                className="-mr-2 flex h-11 w-11 items-center justify-center lg:hidden"
               >
                 <span aria-hidden="true" className="flex flex-col gap-[5px]">
                   <span className="block h-px w-6 bg-current" />

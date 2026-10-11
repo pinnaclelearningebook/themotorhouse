@@ -24,12 +24,15 @@ export function PageHero({
   intro,
   image,
   id = "page-heading",
+  children,
 }: {
-  eyebrow: string;
+  eyebrow: React.ReactNode;
   heading: string;
   intro?: React.ReactNode;
   image?: PhotoSlot;
   id?: string;
+  /** A byline, a date, a breadcrumb — whatever the page adds below. */
+  children?: React.ReactNode;
 }) {
   return (
     <section
@@ -41,7 +44,7 @@ export function PageHero({
           <Photo
             slot={image}
             priority
-            quality={62}
+            quality={60}
             sizes="100vw"
             className="absolute inset-0 z-0 h-full w-full object-cover"
           />
@@ -67,6 +70,7 @@ export function PageHero({
               {intro}
             </p>
           )}
+          {children}
         </div>
       </Container>
     </section>

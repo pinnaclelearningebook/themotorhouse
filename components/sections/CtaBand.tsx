@@ -14,9 +14,12 @@ import { PROMISES } from "@/config/site";
  */
 export function CtaBand({
   heading = "Ready when you are.",
+  intro,
   id = "cta-heading",
 }: {
   heading?: string;
+  /** Replaces the standard line, for a page that closes on its own. */
+  intro?: React.ReactNode;
   id?: string;
 }) {
   return (
@@ -27,7 +30,7 @@ export function CtaBand({
       <Photo
         slot={PHOTOGRAPHY.ctaDusk}
         sizes="100vw"
-        quality={58}
+        quality={60}
         className="absolute inset-0 z-0 h-full w-full object-cover opacity-70"
       />
       <div
@@ -40,8 +43,12 @@ export function CtaBand({
             {heading}
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-paper/85">
-            One registration, {PROMISES.offerWithinHours} hours, one firm
-            number. No obligation to accept it.
+            {intro ?? (
+              <>
+                One registration, {PROMISES.offerWithinHours} hours, one firm
+                number. No obligation to accept it.
+              </>
+            )}
           </p>
           <div className="mt-9">
             <PlateForm id={`${id}-reg`} />

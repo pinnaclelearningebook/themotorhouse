@@ -35,7 +35,7 @@ export function CookieConsent() {
   }
 
   const choiceButton =
-    "shrink-0 rounded border border-paper/40 px-4 py-2 text-sm font-medium transition-colors duration-200 hover:border-paper hover:bg-ink-soft";
+    "inline-flex min-h-11 shrink-0 items-center justify-center rounded border border-paper/40 px-4 text-sm font-medium transition-colors duration-200 hover:border-paper hover:bg-ink-soft";
 
   return (
     <div
@@ -46,8 +46,13 @@ export function CookieConsent() {
       <div className="mx-auto flex w-full max-w-300 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
         <p className="text-sm text-paper/85">
           Analytics only, and nothing loads unless you allow it.{" "}
-          <Link href="/cookies" className="link-draw text-paper">
-            More detail
+          <Link
+            href="/cookies"
+            className="inline-flex min-h-11 items-center text-paper sm:min-h-0"
+          >
+            <span className="link-draw">
+              More detail
+            </span>
           </Link>
         </p>
         <div className="flex shrink-0 gap-2">

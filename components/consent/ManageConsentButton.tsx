@@ -8,7 +8,7 @@ export function ManageConsentButton() {
     <button
       type="button"
       onClick={() => clearConsent()}
-      className="rounded border border-line px-5 py-2.5 text-sm font-medium transition-colors duration-200 hover:border-oxblood"
+      className="inline-flex min-h-11 items-center rounded border border-line px-5 text-sm font-medium transition-colors duration-200 hover:border-oxblood"
     >
       Change my cookie choice
     </button>

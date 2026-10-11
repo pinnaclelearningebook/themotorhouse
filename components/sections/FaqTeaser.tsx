@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Accordion } from "@/components/ui/Accordion";
 import { FAQ } from "@/config/faq";
+import { TextLink } from "@/components/ui/TextLink";
 
 /**
  * The four questions people ask first, answered here rather than made
@@ -35,10 +35,8 @@ export function FaqTeaser() {
               answer: entry.answer,
             }))}
           />
-          <p className="mt-8">
-            <Link href="/faq" className="link-draw font-medium text-oxblood">
-              Every question
-            </Link>
+          <p className="mt-6">
+            <TextLink href="/faq">Every question</TextLink>
           </p>
         </div>
       </div>

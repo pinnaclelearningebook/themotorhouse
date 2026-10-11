@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Section } from "@/components/ui/Section";
-import { PlateForm } from "@/components/ui/PlateForm";
+import { ArrowRight } from "lucide-react";
+import { CtaBand } from "@/components/sections/CtaBand";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { Card } from "@/components/ui/Card";
+import { PageHero } from "@/components/ui/PageHero";
+import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MODELS } from "@/config/models";
+import { PHOTOGRAPHY } from "@/config/photography";
 import { EXPORT_MARKET } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -20,28 +25,22 @@ export default function ExportPage() {
         trail={[{ name: "Why we pay more", path: "/export" }]}
       />
 
-      <Section ground="ink" labelledBy="export-heading">
-        <div className="max-w-3xl">
-          <h1
-            id="export-heading"
-            className="font-display text-display-3 md:text-display-2"
-          >
-            Why we can pay more for some cars than a UK buyer can
-          </h1>
-          <p className="mt-6 text-lg text-paper/80">
-            Any buyer who tells you they pay more than everyone else should
-            be able to explain why. Here is our reason, in full, so you can
-            judge whether it holds up.
-          </p>
-        </div>
-      </Section>
+      <PageHero
+        eyebrow="Why we pay more"
+        heading="Why we can pay more for some cars than a UK buyer can"
+        intro="Any buyer who tells you they pay more than everyone else should be able to explain why. Here is our reason, in full, so you can judge whether it holds up."
+        image={PHOTOGRAPHY.exportCoast}
+        id="export-heading"
+      />
 
       <Section ground="paper" labelledBy="cyprus-heading">
-        <div className="max-w-3xl">
-          <h2 id="cyprus-heading" className="font-display text-display-3">
-            We supply buyers in {EXPORT_MARKET}
-          </h2>
-          <p className="mt-6 max-w-prose">
+        <SectionHeader
+          id="cyprus-heading"
+          eyebrow="The market"
+          heading={`We supply buyers in ${EXPORT_MARKET}`}
+        />
+        <div className="mt-8 max-w-3xl">
+          <p className="max-w-prose">
             Cyprus drives on the left. Right-hand-drive cars are not a
             curiosity there, they are the standard, and because the island
             has a small domestic market almost everything is imported. The
@@ -77,11 +76,13 @@ export default function ExportPage() {
       </Section>
 
       <Section ground="paper-warm" labelledBy="why-more-heading">
-        <div className="max-w-3xl">
-          <h2 id="why-more-heading" className="font-display text-display-3">
-            Why that turns into a bigger number for you
-          </h2>
-          <p className="mt-6 max-w-prose">
+        <SectionHeader
+          id="why-more-heading"
+          eyebrow="What it means for you"
+          heading="Why that turns into a bigger number for you"
+        />
+        <div className="mt-8 max-w-3xl">
+          <p className="max-w-prose">
             A UK trade buyer prices your car against what a UK retail buyer
             will pay for it, minus what they need to make. That is a
             perfectly reasonable way to run a business, and it is why most
@@ -103,11 +104,14 @@ export default function ExportPage() {
       </Section>
 
       <Section ground="ink" labelledBy="five-years-heading">
-        <div className="max-w-3xl">
-          <h2 id="five-years-heading" className="font-display text-display-3">
-            Why it only applies to cars under five years old
-          </h2>
-          <p className="mt-6 max-w-prose text-paper/80">
+        <SectionHeader
+          id="five-years-heading"
+          eyebrow="The limit"
+          heading="Why it only applies to cars under five years old"
+          tone="dark"
+        />
+        <div className="mt-8 max-w-3xl">
+          <p className="max-w-prose text-paper/80">
             The economics only work on younger cars. Once a car is past
             about five years, the cost of moving it stops being justified by
             what it fetches at the other end, and the export route closes.
@@ -123,11 +127,13 @@ export default function ExportPage() {
       </Section>
 
       <Section ground="paper" labelledBy="models-heading">
-        <div className="max-w-3xl">
-          <h2 id="models-heading" className="font-display text-display-3">
-            Where this makes the biggest difference
-          </h2>
-          <p className="mt-4 max-w-prose">
+        <SectionHeader
+          id="models-heading"
+          eyebrow="The models"
+          heading="Where this makes the biggest difference"
+        />
+        <div className="mt-8 max-w-3xl">
+          <p className="max-w-prose">
             To be clear about what this page is: we buy cars of any age
             and in any condition, and most of what we buy has nothing to do
             with export. This page explains why the offer on{" "}
@@ -140,37 +146,30 @@ export default function ExportPage() {
             strongest.
           </p>
         </div>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {MODELS.map((model) => (
-            <li key={model.slug}>
+            <Card as="li" key={model.slug} tone="paper" hover className="p-0">
               <Link
                 href={`/${model.slug}`}
-                className="block h-full rounded border border-line p-6 transition-colors duration-200 hover:border-oxblood"
+                className="flex h-full flex-col justify-between gap-6 p-6"
               >
                 <span className="font-display text-2xl">{model.name}</span>
-                <span className="mt-3 block text-sm font-medium text-oxblood">
+                <span className="flex items-center gap-2 text-sm font-medium text-oxblood">
                   Get my offer
+                  <ArrowRight aria-hidden="true" size={16} />
                 </span>
               </Link>
-            </li>
+            </Card>
           ))}
         </ul>
       </Section>
 
-      <Section ground="ink" labelledBy="export-cta-heading">
-        <div className="max-w-3xl">
-          <h2 id="export-cta-heading" className="font-display text-display-3">
-            Find out where your car lands.
-          </h2>
-          <p className="mt-4 text-paper/80">
-            We will tell you honestly whether yours is an export car or a UK
-            trade car, and price it accordingly.
-          </p>
-          <div className="mt-8">
-            <PlateForm id="export-reg" />
-          </div>
-        </div>
-      </Section>
+      <CtaBand
+        id="export-cta-heading"
+        heading="Find out where your car lands."
+        intro="We will tell you honestly whether yours is an export car or a UK trade car, and price it accordingly."
+      />
+
     </main>
   );
 }

@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Section } from "@/components/ui/Section";
+import { ArrowRight } from "lucide-react";
+import { CtaBand } from "@/components/sections/CtaBand";
+import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
-import { PlateForm } from "@/components/ui/PlateForm";
+import { PageHero } from "@/components/ui/PageHero";
+import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MdxContent } from "@/components/blog/MdxContent";
-import { PostCard } from "@/components/blog/PostCard";
+import { GuideCard } from "@/components/blog/GuideCard";
 import { BlogPostingJsonLd } from "@/components/seo/BlogPostingJsonLd";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getModel } from "@/config/models";
+import { PHOTOGRAPHY } from "@/config/photography";
 import { CATEGORY_LABELS, getAllPosts, getPost } from "@/lib/blog";
 
 export function generateStaticParams() {
@@ -47,9 +52,13 @@ export default async function BlogPostPage({
   const post = getPost(slug);
   if (!post) notFound();
 
-  const related = getAllPosts()
-    .filter((other) => other.slug !== post.slug)
-    .slice(0, 3);
+  // Same category first, then anything else, so "more reading" reads as
+  // a continuation rather than whatever happened to be published last.
+  const others = getAllPosts().filter((other) => other.slug !== post.slug);
+  const related = [
+    ...others.filter((other) => other.category === post.category),
+    ...others.filter((other) => other.category !== post.category),
+  ].slice(0, 3);
   const models = post.relatedModels.map(getModel);
 
   return (
@@ -63,33 +72,31 @@ export default async function BlogPostPage({
       />
 
       <article>
-        <Section ground="paper" labelledBy="post-heading">
-          <div className="max-w-2xl">
+        <PageHero
+          id="post-heading"
+          eyebrow={
             <Link
               href={`/blog/category/${post.category}`}
-              className="link-draw text-caption tracking-wide text-structure uppercase"
+              className="link-draw text-paper/70"
             >
               {CATEGORY_LABELS[post.category]}
             </Link>
-            <h1
-              id="post-heading"
-              className="mt-4 font-display text-display-3 md:text-display-2"
-            >
-              {post.title}
-            </h1>
-            <p className="mt-5 text-lg text-structure">{post.description}</p>
-            <p className="mt-6 font-mono text-caption text-structure">
-              <time dateTime={post.publishedAt}>{post.publishedAt}</time> ·{" "}
-              {post.readingMinutes} min read
-              {post.updatedAt && post.updatedAt !== post.publishedAt && (
-                <> · updated {post.updatedAt}</>
-              )}
-            </p>
-          </div>
-        </Section>
+          }
+          heading={post.title}
+          intro={post.description}
+          image={PHOTOGRAPHY.guides[post.category]}
+        >
+          <p className="mt-7 font-mono text-caption text-paper/65">
+            <time dateTime={post.publishedAt}>{post.publishedAt}</time> ·{" "}
+            {post.readingMinutes} min read
+            {post.updatedAt && post.updatedAt !== post.publishedAt && (
+              <> · updated {post.updatedAt}</>
+            )}
+          </p>
+        </PageHero>
 
         <Container>
-          <div className="max-w-2xl pb-24">
+          <div className="max-w-2xl py-16 md:py-24">
             <MdxContent source={post.content} />
           </div>
         </Container>
@@ -97,25 +104,25 @@ export default async function BlogPostPage({
 
       {models.length > 0 && (
         <Section ground="paper-warm" labelledBy="post-models-heading">
-          <h2
+          <SectionHeader
             id="post-models-heading"
-            className="font-display text-display-3"
-          >
-            Selling one of these?
-          </h2>
+            eyebrow="Related"
+            heading="Selling one of these?"
+          />
           <ul className="mt-10 grid gap-4 sm:grid-cols-3">
             {models.map((model) => (
-              <li key={model.slug}>
+              <Card as="li" key={model.slug} tone="paper" hover className="p-0">
                 <Link
                   href={`/${model.slug}`}
-                  className="block h-full rounded border border-line bg-paper p-6 transition-colors duration-200 hover:border-oxblood"
+                  className="flex h-full flex-col justify-between gap-6 p-6"
                 >
                   <span className="font-display text-2xl">{model.name}</span>
-                  <span className="mt-3 block text-sm font-medium text-oxblood">
+                  <span className="flex items-center gap-2 text-sm font-medium text-oxblood">
                     Get my offer
+                    <ArrowRight aria-hidden="true" size={16} />
                   </span>
                 </Link>
-              </li>
+              </Card>
             ))}
           </ul>
         </Section>
@@ -123,35 +130,26 @@ export default async function BlogPostPage({
 
       {related.length > 0 && (
         <Section ground="paper" labelledBy="post-related-heading">
-          <h2
+          <SectionHeader
             id="post-related-heading"
-            className="font-display text-display-3"
-          >
-            More reading
-          </h2>
+            eyebrow="Keep reading"
+            heading="More on selling a car"
+          />
           <ul className="mt-10 grid gap-6 md:grid-cols-3">
             {related.map((other) => (
               <li key={other.slug}>
-                <PostCard post={other} />
+                <GuideCard post={other} />
               </li>
             ))}
           </ul>
         </Section>
       )}
 
-      <Section ground="ink" labelledBy="post-cta-heading">
-        <div className="max-w-3xl">
-          <h2 id="post-cta-heading" className="font-display text-display-3">
-            When you are ready, we will give you a number.
-          </h2>
-          <p className="mt-4 text-paper/80">
-            A firm offer within two hours, and no obligation to take it.
-          </p>
-          <div className="mt-8">
-            <PlateForm id="post-reg" />
-          </div>
-        </div>
-      </Section>
+      <CtaBand
+        id="post-cta-heading"
+        heading="When you are ready, we will give you a number."
+      />
+
     </main>
   );
 }

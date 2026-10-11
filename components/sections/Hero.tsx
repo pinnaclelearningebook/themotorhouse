@@ -31,7 +31,7 @@ export function Hero() {
       <Photo
         slot={PHOTOGRAPHY.homeHero}
         priority
-        quality={62}
+        quality={60}
         sizes="100vw"
         className="absolute inset-0 z-0 h-full w-full object-cover"
       />

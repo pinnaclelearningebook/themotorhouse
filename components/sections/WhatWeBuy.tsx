@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { Reveal } from "@/components/motion/Reveal";
 import { MODELS } from "@/config/models";
+import { TextLink } from "@/components/ui/TextLink";
 
 /**
  * The "any car" card leads and carries the most visual weight. The
@@ -38,14 +39,8 @@ export function WhatWeBuy() {
                 One field. We pull the car up from the DVLA record, and a
                 person prices it from there.
               </p>
-              <p className="mt-6">
-                <Link
-                  href="/valuation"
-                  className="inline-flex items-center gap-2 font-medium text-oxblood"
-                >
-                  <span className="link-draw">Get my offer</span>
-                  <ArrowRight aria-hidden="true" size={16} />
-                </Link>
+              <p className="mt-4">
+                <TextLink href="/valuation">Get my offer</TextLink>
               </p>
             </div>
           </div>

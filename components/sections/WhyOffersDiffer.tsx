@@ -1,10 +1,9 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Reveal } from "@/components/motion/Reveal";
 import { Photo } from "@/components/ui/Photo";
 import { PHOTOGRAPHY } from "@/config/photography";
+import { TextLink } from "@/components/ui/TextLink";
 
 /**
  * The reason why — the argument that makes a strong offer believable.
@@ -37,15 +36,9 @@ export function WhyOffersDiffer() {
               the UK trade.
             </p>
             <p className="mt-8">
-              <Link
-                href="/export"
-                className="inline-flex items-center gap-2 font-medium text-paper"
-              >
-                <span className="link-draw">
-                  The full reason, and where your car lands
-                </span>
-                <ArrowRight aria-hidden="true" size={16} />
-              </Link>
+              <TextLink href="/export" tone="dark">
+                The full reason, and where your car lands
+              </TextLink>
             </p>
           </Reveal>
         </div>

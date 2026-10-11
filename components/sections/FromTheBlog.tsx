@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { GuideCard } from "@/components/blog/GuideCard";
 import { Reveal } from "@/components/motion/Reveal";
 import { getAllPosts } from "@/lib/blog";
+import { TextLink } from "@/components/ui/TextLink";
 
 /**
  * The three latest guides. Renders nothing while no posts exist, same
@@ -28,10 +28,8 @@ export function FromTheBlog() {
           </Reveal>
         ))}
       </ul>
-      <p className="mt-10">
-        <Link href="/blog" className="link-draw font-medium text-oxblood">
-          All guides
-        </Link>
+      <p className="mt-8">
+        <TextLink href="/blog">All guides</TextLink>
       </p>
     </Section>
   );
