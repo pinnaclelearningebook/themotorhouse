@@ -77,7 +77,11 @@ export async function startLeadAction(payload: unknown): Promise<ActionState> {
       stage: "started",
     });
   } catch (error) {
-    console.error("operator alert failed", error);
+    console.error(
+      `OPERATOR ALERT NOT SENT for new lead ${id} (${parsed.data.reg}, ` +
+        `${parsed.data.phone}). Nobody has been told; it is in /admin ` +
+        `only. Cause: ${error}`,
+    );
   }
 
   return { status: "created", id };
@@ -146,14 +150,34 @@ export async function completeLeadAction(
     stage: "completed" as const,
   };
 
-  const results = await Promise.allSettled([
+  /*
+   * Both emails are allowed to fail, and neither may cost the lead —
+   * the row is already written above. But "valuation email failed"
+   * for both was not enough to read: the two failures mean entirely
+   * different things. An operator alert that does not arrive means
+   * nobody knows the lead exists. A seller confirmation that does not
+   * arrive means the seller is waiting on a promise the site made on
+   * screen and did not keep. The log now names which, and says what
+   * the consequence is, because that line is the only place either
+   * failure surfaces.
+   */
+  const [operator, seller] = await Promise.allSettled([
     sendOperatorAlert(alert),
     sendSellerConfirmation(alert),
   ]);
-  for (const result of results) {
-    if (result.status === "rejected") {
-      console.error("valuation email failed", result.reason);
-    }
+  if (operator.status === "rejected") {
+    console.error(
+      `OPERATOR ALERT NOT SENT for lead ${id} (${summary.reg}). ` +
+        "Nobody has been told this lead exists; it is in /admin only. " +
+        `Cause: ${operator.reason}`,
+    );
+  }
+  if (seller.status === "rejected") {
+    console.error(
+      `SELLER CONFIRMATION NOT SENT to ${parsed.data.email} for lead ${id}. ` +
+        "The seller was told on screen that we have emailed them, and we " +
+        `have not. Cause: ${seller.reason}`,
+    );
   }
 
   // Enrich inline so the scored alert arrives with the submission rather

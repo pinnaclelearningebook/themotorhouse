@@ -1,4 +1,5 @@
 import { ogImage, ogSize, ogContentType } from "@/components/og/OgImage";
+import { PHOTOGRAPHY } from "@/config/photography";
 
 export const size = ogSize;
 export const contentType = ogContentType;
@@ -8,5 +9,6 @@ export default function Image() {
   return ogImage({
     title: "Why we can pay more for some cars than a UK buyer can",
     eyebrow: "The reason, in full",
+    image: PHOTOGRAPHY.exportCoast,
   });
 }

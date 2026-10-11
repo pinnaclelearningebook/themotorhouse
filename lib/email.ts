@@ -35,6 +35,38 @@ export interface AlertPayload {
  */
 
 /**
+ * Who each kind of email comes from.
+ *
+ * Two senders, because the two audiences have different constraints
+ * while the domain is unverified. Resend will not send from an
+ * unverified domain at all, so `EMAIL_FROM` — currently a gmail
+ * address — is rejected outright, and on 12 October 2026 that meant
+ * every operator alert, every scored alert and every seller
+ * confirmation silently failed. A seller could submit and nobody was
+ * told.
+ *
+ * The stopgap is Resend's own `onboarding@resend.dev`, which works
+ * without a verified domain but will only deliver to the Resend
+ * account holder. That is fine for an operator alert, which goes to
+ * one inbox we control, and useless for a seller confirmation, which
+ * goes wherever the seller says. So the operator mail gets its own
+ * sender and starts working today; the seller mail keeps `EMAIL_FROM`
+ * and keeps failing loudly until the domain is live.
+ *
+ * Both collapse to one variable the moment the domain exists: set
+ * EMAIL_FROM to the verified sender and delete EMAIL_FROM_OPERATOR.
+ * See PENDING-INFO.md.
+ */
+function operatorSender(): string {
+  return (process.env.EMAIL_FROM_OPERATOR ||
+    process.env.EMAIL_FROM) as string;
+}
+
+function sellerSender(): string {
+  return process.env.EMAIL_FROM as string;
+}
+
+/**
  * Operator alert recipients. OPERATOR_EMAILS is comma-separated so both
  * operators are alerted from day one (ARCHITECTURE.md section 8).
  */
@@ -133,7 +165,7 @@ export async function sendOperatorAlert(
   await send(
     resend,
     {
-      from: process.env.EMAIL_FROM as string,
+      from: operatorSender(),
       to: operatorEmails(),
       subject: started
         ? `Lead started: ${submission.reg}`
@@ -155,7 +187,7 @@ export async function sendSellerConfirmation(
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await send(resend, {
-    from: process.env.EMAIL_FROM as string,
+    from: sellerSender(),
     to: submission.email as string,
     subject: `Offer request received — ${submission.reg}`,
     text: [
@@ -221,7 +253,7 @@ export async function sendEnrichmentAlert(
   await send(
     resend,
     {
-      from: process.env.EMAIL_FROM as string,
+      from: operatorSender(),
       to: operatorEmails(),
       subject: `Scored: ${alert.reg} — ${alert.score}/100`,
       text: lines.join("\n"),

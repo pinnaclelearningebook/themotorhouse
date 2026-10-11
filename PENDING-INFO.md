@@ -58,9 +58,14 @@ These block a public launch regardless of what gets built afterwards.
 
 Both government APIs are applied for separately and neither is instant. Apply before Session 1 or Phase B stalls on paperwork.
 
+**Still outstanding as of 12 October 2026, and this is the single biggest gap on the live site.** All seven variable names exist in `.env.local` with empty values — `DVLA_VES_API_KEY`, `DVSA_MOT_CLIENT_ID`, `DVSA_MOT_CLIENT_SECRET`, `DVSA_MOT_API_KEY`, `DVSA_MOT_SCOPE`, `DVSA_MOT_TOKEN_URL`, `DVSA_MOT_API_BASE` — so there is nothing to push to Vercel. Every seller on production currently sees "Vehicle lookup is not available. Enter the details yourself." The form still works, but the recognition moment in CLAUDE.md section 4 — the site showing it knows their car — never happens, and that is the lever the whole of step 1 is built on. Apply here:
+  - DVLA VES: https://developer-portal.driver-vehicle-licensing.api.gov.uk/
+  - DVSA MOT History: https://documentation.history.mot.api.gov.uk/
+
 ### Decisions
 
 - [ ] **Photo retention and deletion policy** — how long seller photos live in Blob after a lead closes, and who deletes them. Needed for the privacy policy as well as the code.
+- [ ] **Switch all email to the verified domain sender when the domain is live.** Operator alerts currently go from Resend's own `onboarding@resend.dev` via `EMAIL_FROM_OPERATOR`, because Resend refuses to send from the unverified gmail address in `EMAIL_FROM`. That sender will only deliver to the Resend account holder, so `OPERATOR_EMAILS` has been narrowed from two addresses to one for the duration. **The seller auto-reply is still failing on every submission** — it has to go to the seller's own address, which the test sender will not do. When the domain is verified: set `EMAIL_FROM` to the verified sender in all three environments, delete `EMAIL_FROM_OPERATOR`, and restore the second operator address.
 
 ---
 
