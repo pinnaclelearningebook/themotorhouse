@@ -162,7 +162,7 @@ export async function sendOperatorAlert(
       ].filter((line): line is string => line !== null);
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await send(
+  const id = await send(
     resend,
     {
       from: operatorSender(),
@@ -173,6 +173,17 @@ export async function sendOperatorAlert(
       text: lines.join("\n"),
     },
     "operator alert",
+  );
+  /*
+   * Logged on success, not only on failure. The send-only API key
+   * cannot list what Resend has accepted, so without this the only
+   * evidence an alert went out is the absence of an error — which is
+   * also what a silently skipped send looks like. The id is the thing
+   * to quote to Resend support when an operator says nothing arrived.
+   */
+  console.log(
+    `operator alert accepted by Resend (${id}) for lead ${submission.id} ` +
+      `[${submission.stage}] → ${operatorEmails().length} recipient(s)`,
   );
 }
 
@@ -250,7 +261,7 @@ export async function sendEnrichmentAlert(
   ].filter((line): line is string => line !== null);
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await send(
+  const id = await send(
     resend,
     {
       from: operatorSender(),
@@ -259,5 +270,8 @@ export async function sendEnrichmentAlert(
       text: lines.join("\n"),
     },
     "enrichment alert",
+  );
+  console.log(
+    `enrichment alert accepted by Resend (${id}) for lead ${alert.leadId}`,
   );
 }
