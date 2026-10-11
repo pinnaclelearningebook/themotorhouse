@@ -612,6 +612,85 @@ function detectUnsupportedCarFact(
     }
   }
 
+  const colour = detectUnsupportedColour(text, context);
+  if (colour) return colour;
+
+  const trim = TRIM_NAME.exec(text);
+  if (trim && !contextHas(context, trim[0])) return trim[0];
+
+  return null;
+}
+
+/* ─── colour and trim ────────────────────────────────────────────────── */
+
+const BASE_COLOURS = [
+  "black",
+  "white",
+  "silver",
+  "grey",
+  "gray",
+  "blue",
+  "red",
+  "green",
+  "yellow",
+  "orange",
+  "brown",
+  "beige",
+  "bronze",
+  "gold",
+  "purple",
+  "maroon",
+  "cream",
+  "turquoise",
+];
+
+/**
+ * A manufacturer's paint name: a capitalised word in front of a colour.
+ * "Santorini Black", "Fuji White", "Eiger Grey", "Carpathian Grey".
+ */
+const PAINT_NAME = new RegExp(
+  `\\b([A-Z][a-z]{2,})\\s+(${BASE_COLOURS.join("|")})\\b`,
+  "i",
+);
+
+const BASE_COLOUR = new RegExp(`\\b(${BASE_COLOURS.join("|")})\\b`, "i");
+
+/**
+ * A trim or engine designation: D300, P400, SD4, GLE 350.
+ *
+ * Unsupported by definition on the free data. lib/adapters/dvla.ts sets
+ * derivative to null on every lookup, so unless the seller said it, or
+ * it is part of the model the MOT record gave us, there is nowhere for
+ * one of these to have come from.
+ */
+const TRIM_NAME = /\b[A-Z]{1,3}\d{3}\b/;
+
+/**
+ * A colour she was not given.
+ *
+ * DVLA returns a plain word in capitals — "BLACK" — and nothing else.
+ * It never returns a paint name, so "Santorini Black" against a record
+ * saying BLACK is an invention of exactly the kind section 10 forbids,
+ * and until now nothing checked it: the car-fact guard knew about makes
+ * and spec figures and stopped there.
+ *
+ * The paint name is checked before the base colour, because the base
+ * colour of an invented paint name is usually right. It is the
+ * modifier — the bit that sounds like it came off a brochure — that was
+ * never in the record.
+ */
+function detectUnsupportedColour(
+  text: string,
+  context: VehicleContext,
+): string | null {
+  const paint = PAINT_NAME.exec(text);
+  if (paint && /^[A-Z][a-z]{2,}$/.test(paint[1]) && !contextHas(context, paint[1])) {
+    return paint[0];
+  }
+
+  const base = BASE_COLOUR.exec(text);
+  if (base && !contextHas(context, base[1])) return base[0];
+
   return null;
 }
 

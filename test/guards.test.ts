@@ -20,11 +20,20 @@ import {
  * is easy to block everything.
  */
 
+/**
+ * What a real lookup returns, and no more.
+ *
+ * DVLA's VES gives a plain colour word in capitals and no derivative;
+ * the model comes from the MOT history. The fixture used to say
+ * "Santorini Black", which is a paint name no free source has ever
+ * handed us, and a fixture richer than the data is how a gap in a guard
+ * stays invisible.
+ */
 const DEFENDER: VehicleContext = {
   make: "LAND ROVER",
   model: "Defender",
   year: 2023,
-  colour: "Santorini Black",
+  colour: "BLACK",
   fuel: "Diesel",
   engineCapacity: 2996,
   mileage: 18400,
@@ -136,7 +145,7 @@ const LEGITIMATE = [
   "You ring your lender and ask for a settlement figure. They have to give it to you.",
   "Once you've paid half the total amount payable you can end the agreement.",
   "The Defender has 18400 on it according to the last MOT.",
-  "It's a 2023 Defender in Santorini Black, diesel.",
+  "It's a 2023 Defender in black, diesel.",
   "Free collection anywhere in mainland UK.",
   "Marketing is a separate tick box you haven't been opted into.",
   "I've got nothing on screen yet, so I'd only be guessing if I named it.",
@@ -413,7 +422,7 @@ describe("figures that are not prices", () => {
     // Context holds 2996; she wrote "2,996cc". Comparing the rendered
     // string blocked her for correctly reading her own context.
     const result = runGuards(
-      "The record shows it as diesel, a 2,996cc 2021 car in Santorini Black, not petrol.",
+      "The record shows it as diesel, a 2,996cc 2021 car in black, not petrol.",
       { ...DEFENDER, engineCapacity: 2996 },
     );
     expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
@@ -704,5 +713,92 @@ describe("\"No.\" as an answer, not an abbreviation", () => {
   it("leaves the other abbreviations alone", () => {
     expect(sentences("Ask for Mr. Patel when they call.")).toHaveLength(1);
     expect(sentences("It is approx. 12,000 miles.")).toHaveLength(1);
+  });
+});
+
+describe("colour and trim are car facts too", () => {
+  /**
+   * From a production voice turn: "It's the 2996cc diesel, a 2021
+   * Defender 110 in Santorini Black". The seeded record said Santorini
+   * Black, so she had read it — but the seed was wrong, because DVLA
+   * returns a plain colour word and never a paint name. Against a real
+   * record the same sentence is an invention, and nothing checked it:
+   * the car-fact guard knew makes and spec figures and stopped there.
+   */
+  it("blocks a paint name the record does not have", () => {
+    const result = runGuards(
+      "It's the 2996cc diesel, a 2021 Defender 110 in Santorini Black.",
+      DEFENDER,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.rule).toBe("unsupported-car-fact");
+      expect(result.matched).toMatch(/Santorini Black/);
+    }
+  });
+
+  it("blocks a colour that is not the one on the record", () => {
+    const result = runGuards("It's the white one, isn't it?", DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("unsupported-car-fact");
+  });
+
+  it("blocks any colour when the record has none", () => {
+    const result = runGuards("A black Defender, then.", {
+      make: "LAND ROVER",
+      model: "Defender",
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("allows the colour the record actually gives", () => {
+    for (const text of [
+      "The record has it as black.",
+      "A 2023 black Defender, diesel, 18400 miles.",
+      "It's down as BLACK on the DVLA record.",
+    ]) {
+      const result = runGuards(text, DEFENDER);
+      expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+    }
+  });
+
+  it("allows a paint name when the record really does carry one", () => {
+    // A comparable logged by hand can hold one, and then it is hers to
+    // read. The rule is about invention, not about the words.
+    const result = runGuards("It's in Santorini Black.", {
+      ...DEFENDER,
+      colour: "Santorini Black",
+    });
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("blocks a trim or engine designation the record does not have", () => {
+    // derivative is null on every DVLA lookup, so there is nowhere a
+    // D300 could have come from.
+    const result = runGuards("Yours is the D300, so the straight six.", DEFENDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.rule).toBe("unsupported-car-fact");
+  });
+
+  it("allows a designation that is part of the model she was given", () => {
+    const result = runGuards("The GLE 350 is one we buy.", {
+      make: "MERCEDES-BENZ",
+      model: "GLE 350",
+      colour: "GREY",
+    });
+    expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+  });
+
+  it("does not block ordinary speech that happens to name a colour", () => {
+    // The rule only fires on a colour word, so these must survive: the
+    // guards are only worth having if a useful turn gets through.
+    for (const text of [
+      "A person prices your car once your details are in.",
+      "Photographs and your service history are what help them most.",
+      "Collection is free anywhere in mainland UK.",
+    ]) {
+      const result = runGuards(text, DEFENDER);
+      expect(result.ok, result.ok ? "" : `blocked on ${result.matched}`).toBe(true);
+    }
   });
 });

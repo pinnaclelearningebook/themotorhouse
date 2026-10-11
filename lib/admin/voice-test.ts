@@ -35,8 +35,15 @@ export async function seedVoiceTestLead(by: string): Promise<SeededTestLead | nu
         reg: TEST_REG,
         make: "LAND ROVER",
         model: "DEFENDER 110",
-        derivative: "D300 X-Dynamic HSE",
-        colour: "Santorini Black",
+        // What a real lookup returns, and no more. DVLA's VES gives a
+        // plain colour word in capitals and no derivative at all —
+        // lib/adapters/dvla.ts sets derivative to null on every request,
+        // and the model comes from the MOT history, not from DVLA. A
+        // seed carrying "Santorini Black" and "D300 X-Dynamic HSE" made
+        // the test car richer than any car we will ever look up, which
+        // is how the vehicle-context bug stayed invisible for weeks.
+        derivative: null,
+        colour: "BLACK",
         fuel: "DIESEL",
         engine_cc: 2996,
         year_of_manufacture: 2021,

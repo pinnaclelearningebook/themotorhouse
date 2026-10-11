@@ -190,7 +190,7 @@ Working name **Maya** — real name to PENDING-INFO.md. A voice-and-text assista
 
 **Legal:** AI disclosure on first speech and in the widget. Recording and transcript consent before audio starts. Transcripts stored on the lead under the same retention policy. Opt-in only, silent by default, persistent "just the form" dismiss.
 
-**Tools** (defined in `agent/tools.ts`, served from `/api/agent/*`): `read_form_state` · `set_field` · `go_to_step` · `trigger_photo_guide` · `append_lead_note` · `get_vehicle_context`.
+**Tools** (defined in `agent/tools.ts`, served from `/api/agent/*`): `get_vehicle_context` · `read_form_state` · `set_field` · `append_lead_note`. Four, not six. `go_to_step` and `trigger_photo_guide` were removed on 11 October 2026: both set an effect the chat endpoint returned and no component read, so calling one moved nothing and returned success, and she could tell a seller she had taken them to a step they were not on. They come back when the form consumes the effect, not before. Voice turns have no tools at all — everything about the car is in the system context and notes are written beside the reply (ARCHITECTURE section 6b).
 
 ## 11. The decision engine (Phase C)
 
