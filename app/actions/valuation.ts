@@ -15,6 +15,7 @@ import {
   startLead,
 } from "@/lib/submissions";
 import { sendOperatorAlert, sendSellerConfirmation } from "@/lib/email";
+import { recordSellerConfirmation } from "@/lib/seller-confirmation";
 import { rememberOwnedLead } from "@/lib/agent/session";
 import { runEnrichment } from "@/lib/decision/enrich";
 
@@ -175,10 +176,17 @@ export async function completeLeadAction(
   if (seller.status === "rejected") {
     console.error(
       `SELLER CONFIRMATION NOT SENT to ${parsed.data.email} for lead ${id}. ` +
-        "The seller was told on screen that we have emailed them, and we " +
-        `have not. Cause: ${seller.reason}`,
+        "The thank-you page will not claim we emailed them. " +
+        `Cause: ${seller.reason}`,
     );
   }
+  // What the thank-you page is allowed to say next. `fulfilled` is not
+  // enough on its own: sendSellerConfirmation resolves without sending
+  // when there is no address and when Resend is unconfigured, so only
+  // its `true` means an email exists for the seller to look for.
+  await recordSellerConfirmation(
+    seller.status === "fulfilled" && seller.value === true ? "sent" : "failed",
+  );
 
   // Enrich inline so the scored alert arrives with the submission rather
   // than on the next cron tick. Cron is the catch-up, not the mechanism

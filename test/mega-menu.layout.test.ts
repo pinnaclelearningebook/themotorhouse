@@ -37,10 +37,23 @@ const PANEL = "[data-mega-menu]";
 /** Every model page, plus the catch-all. The panel shows all of them. */
 const EXPECTED_LINKS = 8;
 
+/**
+ * Is this actually The Motor House?
+ *
+ * Port 3000 is whatever happens to be listening on it. On 12 October
+ * 2026 that was a different project's dev server, and these tests
+ * failed loudly against someone else's markup — which is the better
+ * of the two outcomes, because a page that happened to have a
+ * `[data-mega-menu]` would have passed and told us nothing.
+ *
+ * So the base URL has to identify itself before anything is measured.
+ */
 async function reachable(url: string): Promise<boolean> {
   try {
     const response = await fetch(url, { redirect: "manual" });
-    return response.status < 500;
+    if (response.status >= 500) return false;
+    const html = await response.text();
+    return /The Motor House/.test(html);
   } catch {
     return false;
   }
@@ -94,7 +107,9 @@ describe("the What we buy panel", () => {
     // no tests at all, and they should be read as such.
     const missing = [
       available ? null : `no Chrome at ${CHROME} (set CHROME_PATH)`,
-      serverUp ? null : `nothing serving ${BASE} (set LAYOUT_BASE_URL)`,
+      serverUp
+        ? null
+        : `${BASE} is not serving The Motor House (set LAYOUT_BASE_URL)`,
     ].filter(Boolean);
     if (missing.length > 0) {
       console.warn(`[mega-menu] not measured: ${missing.join("; ")}`);

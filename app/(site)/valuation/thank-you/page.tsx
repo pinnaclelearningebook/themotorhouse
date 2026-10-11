@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Camera, Mail, PhoneCall } from "lucide-react";
+import { Camera, Mail, PhoneCall, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { PROMISES } from "@/config/site";
 import { TextLink } from "@/components/ui/TextLink";
+import { PROMISES } from "@/config/site";
+import { readSellerConfirmation } from "@/lib/seller-confirmation";
 
 export const metadata: Metadata = {
   title: "Offer request received",
@@ -16,15 +17,33 @@ export const metadata: Metadata = {
 /**
  * What happens next, in the order it happens.
  *
- * No CtaBand on this page. The seller has just submitted; a band
- * inviting them to start again is the sort of thing a funnel does.
+ * **The email card only appears when there is an email.** This page
+ * used to say "we have emailed you a confirmation" and "reply to that
+ * email with a few photos" to everyone, while the seller confirmation
+ * was being rejected by Resend on every single submission. A page that
+ * tells someone to watch an inbox nothing is coming to is worse than
+ * one that says less: it is the first thing we do after taking their
+ * details, and it is false.
+ *
+ * So the copy is keyed to what actually happened for this lead, and
+ * the unknown case is treated as "no email" — claiming nothing is
+ * always safe, claiming an email is only safe when Resend took it.
+ *
+ * Every line is published elsewhere: the two-hour response, the offer
+ * standing for seven days, and the photo request that the confirmation
+ * email itself carries. No new promise is made here.
+ *
+ * No CtaBand either. The seller has just submitted; a band inviting
+ * them to start again is the sort of thing a funnel does.
  */
-const next = [
-  {
-    icon: PhoneCall,
-    title: `A call within ${PROMISES.offerWithinHours} hours`,
-    body: "From a person who knows your car, with a firm number. Not a bot, not an estimate.",
-  },
+const CALL = {
+  icon: PhoneCall,
+  title: `A call within ${PROMISES.offerWithinHours} hours`,
+  body: "From a person who knows your car, with a firm number. Not a bot, not an estimate.",
+};
+
+const EMAILED = [
+  CALL,
   {
     icon: Mail,
     title: "A confirmation by email",
@@ -37,7 +56,24 @@ const next = [
   },
 ];
 
-export default function ThankYouPage() {
+const NOT_EMAILED = [
+  CALL,
+  {
+    icon: ShieldCheck,
+    title: "The number does not change",
+    body: "Describe the car honestly and the offer we make is the amount that lands in your account.",
+  },
+  {
+    icon: Camera,
+    title: "Photos help, when we call",
+    body: "The outside from each corner and the interior. Have them to hand and the offer is one we can stand behind.",
+  },
+];
+
+export default async function ThankYouPage() {
+  const confirmation = await readSellerConfirmation();
+  const next = confirmation === "sent" ? EMAILED : NOT_EMAILED;
+
   return (
     <main>
       <section

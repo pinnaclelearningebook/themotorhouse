@@ -187,14 +187,24 @@ export async function sendOperatorAlert(
   );
 }
 
+/**
+ * Returns true only when Resend accepted the message.
+ *
+ * It resolves rather than throws in two cases that are not a send —
+ * no email address, and no Resend configuration at all — and the
+ * thank-you page keys its wording off this, so "the promise resolved"
+ * must not be allowed to read as "the seller has an email". Anything
+ * other than an accepted send is false, and a rejection still throws
+ * so the caller can log the cause.
+ */
 export async function sendSellerConfirmation(
   submission: AlertPayload,
-): Promise<void> {
+): Promise<boolean> {
   if (!isEmailConfigured()) {
     logUnsent("seller confirmation", submission);
-    return;
+    return false;
   }
-  if (!submission.email) return;
+  if (!submission.email) return false;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await send(resend, {
@@ -211,6 +221,7 @@ export async function sendSellerConfirmation(
       SITE.name,
     ].join("\n"),
   }, "seller confirmation");
+  return true;
 }
 
 
