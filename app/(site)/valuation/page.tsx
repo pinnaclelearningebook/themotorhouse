@@ -54,11 +54,20 @@ export default async function ValuationPage({
          * explaining why it is worth filling in.
          */}
         <div className="mt-12 grid items-start gap-10 lg:mt-16 lg:grid-cols-[minmax(0,36rem)_minmax(0,22rem)] lg:gap-16">
-          <ValuationFormV2
-            initialReg={reg}
-            agentEnabled={mode !== "off"}
-            agentPreview={mode === "preview"}
-          />
+          {/*
+            * The wrapper is load-bearing. ValuationFormV2 returns a
+            * fragment — the progress indicator and the step beside it —
+            * and a fragment's children become grid items in their own
+            * right, which put the progress bar in one column and the
+            * step in the other.
+            */}
+          <div>
+            <ValuationFormV2
+              initialReg={reg}
+              agentEnabled={mode !== "off"}
+              agentPreview={mode === "preview"}
+            />
+          </div>
           <div className="lg:sticky lg:top-28">
             <ValuationReassurance />
           </div>

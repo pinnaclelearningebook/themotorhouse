@@ -64,7 +64,7 @@ export function Footer() {
   return (
     <footer className="on-ink border-t border-line-dark bg-ink py-16 text-paper md:py-20">
       <Container>
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-10">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] lg:gap-10">
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-paper/60">
@@ -101,23 +101,32 @@ export function Footer() {
             </ul>
           </nav>
 
-          <div>
-            <FooterHeading>Contact</FooterHeading>
-            <div className="mt-4 text-sm text-paper/70">
-              {isAwaiting(CONTACT.phone) ? (
-                <AwaitingInfo label="Business phone number" />
-              ) : (
-                <p className="font-mono">{CONTACT.phone}</p>
-              )}
-              {isAwaiting(CONTACT.email) ? (
-                <div className="mt-3">
-                  <AwaitingInfo label="Business email address" />
-                </div>
-              ) : (
-                <p className="mt-3">{CONTACT.email}</p>
-              )}
+          {/*
+            * The column disappears entirely while both values are
+            * placeholders. AwaitingInfo renders nothing in production,
+            * so keeping the heading would leave a "Contact" with
+            * nothing under it — which looks less like a site waiting
+            * for a phone number and more like one that lost it.
+            */}
+          {!(isAwaiting(CONTACT.phone) && isAwaiting(CONTACT.email)) && (
+            <div>
+              <FooterHeading>Contact</FooterHeading>
+              <div className="mt-4 text-sm text-paper/70">
+                {isAwaiting(CONTACT.phone) ? (
+                  <AwaitingInfo label="Business phone number" />
+                ) : (
+                  <p className="font-mono">{CONTACT.phone}</p>
+                )}
+                {isAwaiting(CONTACT.email) ? (
+                  <div className="mt-3">
+                    <AwaitingInfo label="Business email address" />
+                  </div>
+                ) : (
+                  <p className="mt-3">{CONTACT.email}</p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="mt-14 flex flex-col gap-5 border-t border-line-dark pt-7 text-caption text-paper/50">
