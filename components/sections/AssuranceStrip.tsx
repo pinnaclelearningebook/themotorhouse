@@ -1,42 +1,65 @@
-import { Container } from "@/components/ui/Container";
+import { BadgeCheck, Clock, Truck, Wallet } from "lucide-react";
+import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { IconList } from "@/components/ui/IconList";
 import { PROMISES } from "@/config/site";
 
 /**
- * Three promises, and not one word that is not already published.
+ * Four promises, and not one word that is not already published.
  *
- * Every line reads from config/site PROMISES, which the hero, the
- * how-it-works page and the seller auto-reply all read too. Nothing is
- * retyped here, because a strip of short assurances is exactly where a
- * new claim slips in unnoticed — and one had. It said "Same-day
- * payment" while every other surface said payment happens before the
- * transporter leaves. Those are different promises: one is a deadline
- * we have never agreed to and the other is a sequence we control, and
- * the stricter-sounding one was on the home page.
+ * Three read straight from config/site PROMISES, which the hero and the
+ * auto-reply read too; the fourth is the offer-doesn't-change
+ * commitment, in the wording the promise band uses. Nothing here is
+ * retyped, because a strip of short assurances is exactly where a new
+ * claim slips in unnoticed.
  *
- * test/promises.test.ts fails if a claim here is a literal rather than
- * a constant, and if "same-day payment" reappears anywhere.
+ * One already had. This strip used to say "Same-day payment" while
+ * every other surface said payment happens before the transporter
+ * leaves — a deadline nobody agreed to, typed in as a literal, on the
+ * first page a seller sees. That is why no line here is a string.
+ * test/promises.test.ts fails if one becomes one again.
  */
-const ASSURANCES: React.ReactNode[] = [
-  <>
-    Firm offer within{" "}
-    <span className="font-mono">{PROMISES.offerWithinHours}</span> hours
-  </>,
-  PROMISES.collection,
-  PROMISES.payment,
-];
-
 export function AssuranceStrip() {
   return (
-    <section aria-label="What you can rely on" className="on-ink bg-ink pb-20 text-paper">
-      <Container>
-        <ul className="flex flex-col gap-4 border-t border-line-dark pt-8 sm:flex-row sm:gap-12">
-          {ASSURANCES.map((item, index) => (
-            <li key={index} className="text-sm tracking-wide text-paper/70">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </section>
+    <Section ground="ink" labelledBy="assurance-heading">
+      <SectionHeader
+        tone="dark"
+        eyebrow="What you can rely on"
+        id="assurance-heading"
+        heading="Four things that do not move."
+      />
+      <IconList
+        className="mt-10"
+        tone="dark"
+        entries={[
+          {
+            icon: BadgeCheck,
+            title: "The offer we make is the offer we pay",
+            detail: "No revised number on the driveway.",
+          },
+          {
+            icon: Clock,
+            title: (
+              <>
+                A firm offer within{" "}
+                <span className="font-mono">{PROMISES.offerWithinHours}</span>{" "}
+                hours
+              </>
+            ),
+            detail: "From a person who knows the model.",
+          },
+          {
+            icon: Truck,
+            title: PROMISES.collection,
+            detail: "At a time that suits you.",
+          },
+          {
+            icon: Wallet,
+            title: PROMISES.payment,
+            detail: "You watch it arrive first.",
+          },
+        ]}
+      />
+    </Section>
   );
 }

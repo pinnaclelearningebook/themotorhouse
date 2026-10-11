@@ -131,5 +131,6 @@ describe("a competitor's trademark", () => {
     const inAString = 'const strapline = "We buy any car";';
     expect(BANNED.test(withoutComments(inAComment)), "comment").toBe(false);
     expect(BANNED.test(withoutComments(inAString)), "string literal").toBe(true);
+
   });
 });

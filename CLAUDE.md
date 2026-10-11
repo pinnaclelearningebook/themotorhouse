@@ -109,7 +109,11 @@ Scale 72/56/36/24/18/16/13. Body line-height 1.7, display 1.05, display tracking
 
 **Signature element** — the registration input as a UK number plate. The one loud object on the site.
 
-**Photography** — real cars we bought, or nothing. No stock.
+**Photography** — real cars we bought, or licensed imagery used for mood and context only. Never stock presented as our team, our premises, or a car we bought. No manufacturer press images or marks, and no visible badges or foreign plates where they can be cropped out. Every licensed image is logged in SOURCES.md with photographer, URL and licence as it lands.
+
+Every image is a slot in `config/photography.ts`, so a real photograph replaces a licensed one by adding a file and changing one line. A slot with no image renders *nothing* — no grey box, no placeholder car. A section has to look finished without its photograph, because most of them will be without one for a while.
+
+Be warned what this rules out. Free-licence car photography is almost universally badge-bearing: the strong candidates reviewed on 11 October 2026 carried `LAND ROVER` lettering and a Dutch plate, `DEFENDER` on a spare wheel in an American car park, and an `RS` badge beside an Audi four-rings sticker. What survives is abstract — paintwork, water, light — so that is what the site uses, and the model cards stay typographic until there are cars of ours to photograph.
 
 **Admin dashboard** uses the same tokens and type. Internal, but still ours. Denser spacing is allowed (64px sections, 16px gaps); the palette and faces are not negotiable.
 
@@ -148,7 +152,19 @@ Never: bounce, spinners, typewriter, autoplay carousels, confetti, parallax on t
 
 ### 7a. Header and navigation
 
-Wordmark left · "Cars we buy" disclosure (seven models) · "Why we pay more" (`/export`) · `Get my offer` right. Ink on paper, 1px hairline, no shadow. Sticky copy after the hero, `aria-hidden` + `inert`. Below 768px: wordmark + CTA only, no hamburger. How it works, About, FAQ, Blog live in the footer. Footer carries the full sitemap and company details.
+The lockup left — the arch, then the name with a rule under it, on one baseline — nav centre, `Get my offer` right.
+
+**`Get my offer` is visible at every width, including inside the open menu.** That is the header's job and everything else is secondary to it.
+
+Fixed, and transparent over the home hero only: every other page is paper from the first pixel, so the transparent state there would be paper-coloured text on paper. Past 24px it becomes `bg-paper/85` with a backdrop blur and a hairline. On a phone it hides on scroll-down and returns on scroll-up.
+
+"What we buy" opens a mega-menu: the seven models plus "Any other car" to `/valuation`. Then How it works, Why we pay more (`/export`), About, FAQ, Guides. Below the `lg` breakpoint those collapse into a full-screen menu on ink — a real dialog, with focus moved in, Tab trapped, Esc to close, the page behind it locked, and focus returned to the button that opened it. Items stagger in at 45ms.
+
+This replaces the v1 rule of "wordmark + CTA only, no hamburger" below 768px. That rule was written to keep the form one tap away, which the always-visible CTA now does on its own.
+
+Footer carries the grouped sitemap, the business details block (placeholders render nothing until filled) and the legal links.
+
+**No tagline, and never the phrase "we buy any car"** — it is a competitor's registered trademark. `test/trademark.test.ts` fails if it appears in the source or in the built output, in any case.
 
 ## 8. Page briefs (unchanged from v1)
 
@@ -244,4 +260,14 @@ UK GDPR: privacy policy, lawful basis, retention, deletion. Explicit unticked ma
 
 **A page rendered through `ADMIN_DEV_BYPASS` has been rendered, not verified.** The bypass skips the auth gate, so it also skips everything the gate depends on: session cookies, the PKCE exchange, the `admin_users` lookup and the RLS policies that read `auth.jwt()`. A dashboard that renders perfectly under the bypass can be unreachable in production — that is exactly what happened on 5 October 2026, when the gate redirected the login page to itself and three seeded leads rendered cleanly anyway. An admin page is verified when it has been reached through a real magic-link sign-in. Say which of the two was done; never report the first as the second.
 
-Renders at 375/768/1440 · keyboard navigable with visible focus · reduced motion respected · WCAG AA contrast · mobile Lighthouse ≥ 90 performance, ≥ 95 accessibility · unique title and description · no fabricated data, every unknown an `AWAITING_RESPONSE` with a `PENDING-INFO.md` line · no exclamation marks, "up to", "free quote", urgency mechanics · plate yellow only on the plate · no auto-offer path · every number in the dashboard shows its source · and the question that matters: would a seller believe a person who actually buys cars built this?
+Renders at 375/768/1440 · keyboard navigable with visible focus · reduced motion respected · WCAG AA contrast · mobile Lighthouse ≥ 90 performance, ≥ 95 accessibility, ≥ 95 best practices, 100 SEO, with LCP < 2.0s and CLS < 0.05 (section 14 — these are the bar, and they are stricter than the 2.5s/0.1 a brief will usually ask for) · unique title and description · no fabricated data, every unknown an `AWAITING_RESPONSE` with a `PENDING-INFO.md` line · no exclamation marks, "up to", "free quote", urgency mechanics · plate yellow only on the plate · no auto-offer path · every number in the dashboard shows its source · and the question that matters: would a seller believe a person who actually buys cars built this?
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -173,6 +173,113 @@ body {
   animation: step-in 400ms var(--ease-standard) both;
 }
 
+/*
+ * The mega-menu's entrance. Y only.
+ *
+ * This used to carry translate(-50%, …) because the panel it was
+ * written for was centred on its trigger with -translate-x-1/2. When
+ * the panel was re-anchored to the header, the class came off the
+ * element but the offset stayed here, in the animation's `both` fill —
+ * so the panel kept landing half its own width to the left, 720px
+ * off-screen at 1440. A keyframe that hard-codes layout is a second,
+ * invisible copy of the layout. Move only what is being animated.
+ */
+@keyframes menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-drop {
+  animation: menu-drop 220ms var(--ease-standard) both;
+}
+
+/*
+ * The hero's mask reveal, in CSS rather than JavaScript.
+ *
+ * The headline over the hero photograph is on the critical path, and
+ * the animation library is not: a reveal that waits for hydration
+ * defers first paint of the largest thing on the screen by however long
+ * the bundle takes. Below the fold, components/motion does this with
+ * Motion, where the cost is paid after the page is usable.
+ *
+ * Movement only, never opacity — the same rule as .rise-in-solid, for
+ * the same reason.
+ */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-block: 0.08em 0.14em;
+  margin-block: -0.08em -0.14em;
+}
+
+@keyframes mask-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.mask-line > span {
+  display: block;
+}
+
+/*
+ * The hero's lines animate on load. Everything below the fold waits
+ * for the viewport and gets .mask-line-in from components/motion.
+ */
+.mask-line > span.mask-line-in {
+  animation: mask-rise 800ms var(--ease-standard) both;
+}
+
+/*
+ * The hero headline does not do this, and the reason is the whole of
+ * CLAUDE.md section 6's warning about the LCP element.
+ *
+ * A mask reveal holds the type outside its own clipping box until the
+ * animation runs. That is not a fade — the text is not painted in
+ * place at all — so the browser records the largest-contentful paint
+ * when the animation lands, not when the page is ready. Measured: with
+ * the hero photograph removed so the headline was unambiguously the
+ * LCP element, it reported 3.70s against a 0.9s first paint.
+ *
+ * So the hero rises as a whole, in one movement, from an offset that
+ * never hides it. Everything below the fold keeps the mask.
+ */
+.hero-mask .mask-line {
+  padding-block: 0;
+  margin-block: 0;
+  overflow: visible;
+}
+
+/*
+ * Scroll reveals: a 24px rise and a fade, once, in CSS.
+ *
+ * Scoped to [data-js], which an inline script in the root layout sets
+ * before first paint. Without scripting there is no hidden state at
+ * all — a reveal that needs JavaScript must never be the reason a
+ * paragraph is invisible.
+ */
+[data-js] .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 700ms var(--ease-standard),
+    transform 700ms var(--ease-standard);
+}
+
+[data-js] .reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
 @keyframes header-drop {
   from {
     transform: translateY(-100%);
@@ -190,8 +297,16 @@ body {
   .rise-in,
   .rise-in-solid,
   .step-in,
-  .header-drop {
+  .header-drop,
+  .menu-drop,
+  .mask-line > span.mask-line-in {
     animation: none;
+  }
+
+  [data-js] .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 
   .link-draw {

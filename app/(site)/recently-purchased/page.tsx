@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { CtaBand } from "@/components/sections/CtaBand";
+import { PageHero } from "@/components/ui/PageHero";
 import { Section } from "@/components/ui/Section";
-import { PlateForm } from "@/components/ui/PlateForm";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 
 export const metadata: Metadata = {
@@ -24,15 +25,18 @@ export default function RecentlyPurchasedPage() {
 
   return (
     <main>
-      <Section ground="paper" labelledBy="purchased-page-heading">
-        <h1 id="purchased-page-heading" className="font-display text-display-2">
-          Recently purchased
-        </h1>
-        <p className="mt-4 max-w-prose text-lg text-structure">
-          Every car here is one we actually bought, photographed as it was
-          collected.
-        </p>
-        <ul className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <PageHero
+        eyebrow="Recently purchased"
+        heading="Cars we actually bought"
+        intro="Every car here is one we bought, photographed as it was collected. No stock photography and no examples we did not pay for."
+        id="purchased-page-heading"
+      />
+
+      <Section ground="paper" labelledBy="purchased-list-heading">
+        <h2 id="purchased-list-heading" className="sr-only">
+          Recent purchases
+        </h2>
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {RECENTLY_PURCHASED.map((car) => (
             <li
               key={`${car.model}-${car.year}-${car.mileage}`}
@@ -55,14 +59,8 @@ export default function RecentlyPurchasedPage() {
           ))}
         </ul>
       </Section>
-      <Section ground="ink" labelledBy="purchased-cta-heading">
-        <h2 id="purchased-cta-heading" className="font-display text-display-3">
-          Yours could be next.
-        </h2>
-        <div className="mt-8">
-          <PlateForm id="purchased-reg" />
-        </div>
-      </Section>
+      <CtaBand id="purchased-cta-heading" heading="Yours could be next." />
+
     </main>
   );
 }

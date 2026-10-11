@@ -11,6 +11,7 @@ import {
   type VehicleContext,
 } from "@/agent/guards";
 import { isAgentConfigured, agentUnavailableReason } from "@/agent/provider";
+import { recordAgentFailure, recordAgentSuccess } from "@/lib/agent/health";
 import { runTurn } from "@/lib/agent/run";
 import { getVehicleContext, readFormState } from "@/agent/tools";
 import { PROMISES } from "@/config/site";
@@ -136,9 +137,13 @@ export async function POST(request: NextRequest) {
       maxTokens: settings.maxOutputTokens,
     });
   } catch (error) {
+    // Counted. Three in a row and she stops being offered at all, which
+    // is quieter for the seller than an assistant that apologises.
+    recordAgentFailure();
     console.error("[agent] turn failed:", error);
     return NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
+  recordAgentSuccess();
 
   // The same object, not a copy of selected fields. Rebuilding it by hand
   // is how the engine size went missing: the vehicle gained a field and

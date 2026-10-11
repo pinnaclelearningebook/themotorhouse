@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Section } from "@/components/ui/Section";
-import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
+import { CtaBand } from "@/components/sections/CtaBand";
 import { FaqJsonLd } from "@/components/seo/FaqJsonLd";
-import { PlateForm } from "@/components/ui/PlateForm";
-import { FAQ } from "@/config/faq";
+import { Accordion } from "@/components/ui/Accordion";
+import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
+import { PageHero } from "@/components/ui/PageHero";
+import { Section } from "@/components/ui/Section";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { FAQ, FAQ_GROUPS } from "@/config/faq";
+import { PHOTOGRAPHY } from "@/config/photography";
 
 export const metadata: Metadata = {
   title: "Frequently asked questions",
@@ -16,39 +20,45 @@ export default function FaqPage() {
   return (
     <main>
       <FaqJsonLd entries={FAQ} />
-      <Section ground="paper" labelledBy="faq-heading">
-        <div className="max-w-3xl">
-          <h1 id="faq-heading" className="font-display text-display-2">
-            Frequently asked questions
-          </h1>
-          <p className="mt-4 text-lg text-structure">
-            Straight answers. If yours is not here, ask us when we call.
-          </p>
-          <dl className="mt-14">
-            {FAQ.map((entry) => (
-              <div
-                key={entry.question}
-                className="border-t border-line py-8 first:border-t-0"
-              >
-                <dt className="font-display text-2xl">{entry.question}</dt>
-                <dd className="mt-3 max-w-prose">
-                  {entry.answer ?? (
+
+      <PageHero
+        eyebrow="Questions"
+        heading="Straight answers, including the awkward ones."
+        intro="Finance, damage, write-offs, what happens if you change your mind. If yours is not here, ask when we call."
+        image={PHOTOGRAPHY.faqInterior}
+      />
+
+      {FAQ_GROUPS.map((group, index) => {
+        const entries = FAQ.filter((entry) => entry.group === group);
+        if (entries.length === 0) return null;
+        const id = `faq-${index}`;
+        return (
+          <Section
+            key={group}
+            ground={index % 2 === 0 ? "paper" : "paper-warm"}
+            labelledBy={id}
+          >
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,18rem)_1fr] lg:gap-16">
+              <SectionHeader
+                id={id}
+                eyebrow={`0${index + 1}`}
+                heading={group}
+                className="lg:sticky lg:top-28 lg:self-start"
+              />
+              <Accordion
+                items={entries.map((entry) => ({
+                  question: entry.question,
+                  answer: entry.answer ?? (
                     <AwaitingInfo label={entry.pendingLabel ?? "Answer"} />
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </Section>
-      <Section ground="ink" labelledBy="faq-cta-heading">
-        <h2 id="faq-cta-heading" className="font-display text-display-3">
-          Ready for your number?
-        </h2>
-        <div className="mt-8">
-          <PlateForm id="faq-reg" />
-        </div>
-      </Section>
+                  ),
+                }))}
+              />
+            </div>
+          </Section>
+        );
+      })}
+
+      <CtaBand heading="Ready for your number?" />
     </main>
   );
 }

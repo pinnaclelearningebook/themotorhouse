@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { Logo } from "@/components/ui/Logo";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
-import { SITE, CONTACT, COMPANY, isAwaiting } from "@/config/site";
+import { CONTACT, COMPANY, isAwaiting } from "@/config/site";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 import { MODELS } from "@/config/models";
 
@@ -27,81 +28,116 @@ const legalLinks = [
   { href: "/terms", label: "Terms" },
   { href: "/cookies", label: "Cookies" },
 ];
+/**
+ * A column heading. The footer used to be four blocks of different
+ * shapes in a flex row, which read as leftovers; four labelled columns
+ * on a grid read as a sitemap, which is what section 7a asks for.
+ */
+function FooterHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-caption font-semibold tracking-[0.16em] text-paper/50 uppercase">
+      {children}
+    </p>
+  );
+}
+
+/**
+ * Footer links get a 44px row on a phone and tighten from md.
+ * A 13px link with 8px between it and the next one is a tap target
+ * that misses, and the footer is where someone goes when they are
+ * already slightly lost.
+ */
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link
+        href={href as never}
+        className="flex min-h-11 items-center text-sm text-paper/80 transition-colors duration-200 hover:text-paper md:min-h-0 md:py-1"
+      >
+        <span className="link-draw">{children}</span>
+      </Link>
+    </li>
+  );
+}
+
 export function Footer() {
   return (
-    <footer className="on-ink border-t border-line-dark bg-ink py-16 text-paper">
+    <footer className="on-ink border-t border-line-dark bg-ink py-16 text-paper md:py-20">
       <Container>
-        <div className="flex flex-col justify-between gap-10 md:flex-row">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] lg:gap-10">
           <div>
-            <p className="font-display text-2xl">{SITE.name}</p>
-            <p className="mt-2 max-w-xs text-sm text-paper/60">
+            <Logo />
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-paper/60">
               Any car, any age, anywhere in mainland UK, for a firm offer
               that doesn&apos;t change.
             </p>
           </div>
+
           <nav aria-label="Footer">
-            <ul className="space-y-2 text-sm">
+            <FooterHeading>The site</FooterHeading>
+            <ul className="mt-4">
               {siteLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="link-draw">
-                    {link.label}
-                  </Link>
-                </li>
+                <FooterLink key={link.href} href={link.href}>
+                  {link.label}
+                </FooterLink>
               ))}
               {RECENTLY_PURCHASED.length > 0 && (
-                <li>
-                  <Link href="/recently-purchased" className="link-draw">
-                    Recently purchased
-                  </Link>
-                </li>
+                <FooterLink href="/recently-purchased">
+                  Recently purchased
+                </FooterLink>
               )}
             </ul>
           </nav>
+
           <nav aria-label="What we buy">
-            <p className="mb-2 text-caption tracking-wide text-paper/50 uppercase">
-              What we buy
-            </p>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/valuation" className="link-draw font-medium">
-                  Any car, any age
-                </Link>
-              </li>
-            </ul>
-            <p className="mt-4 mb-2 text-caption tracking-wide text-paper/50 uppercase">
-              Where we pay more
-            </p>
-            <ul className="space-y-2 text-sm">
+            <FooterHeading>What we buy</FooterHeading>
+            <ul className="mt-4">
+              <FooterLink href="/valuation">Any car, any age</FooterLink>
               {MODELS.map((model) => (
-                <li key={model.slug}>
-                  <Link href={`/${model.slug}`} className="link-draw">
-                    {model.name}
-                  </Link>
-                </li>
+                <FooterLink key={model.slug} href={`/${model.slug}`}>
+                  {model.name}
+                </FooterLink>
               ))}
             </ul>
           </nav>
-          <div className="text-sm text-paper/60">
-            {isAwaiting(CONTACT.phone) ? (
-              <AwaitingInfo label="Business phone number" />
-            ) : (
-              <p className="font-mono">{CONTACT.phone}</p>
-            )}
-            {isAwaiting(CONTACT.email) ? (
-              <div className="mt-2">
-                <AwaitingInfo label="Business email address" />
+
+          {/*
+            * The column disappears entirely while both values are
+            * placeholders. AwaitingInfo renders nothing in production,
+            * so keeping the heading would leave a "Contact" with
+            * nothing under it — which looks less like a site waiting
+            * for a phone number and more like one that lost it.
+            */}
+          {!(isAwaiting(CONTACT.phone) && isAwaiting(CONTACT.email)) && (
+            <div>
+              <FooterHeading>Contact</FooterHeading>
+              <div className="mt-4 text-sm text-paper/70">
+                {isAwaiting(CONTACT.phone) ? (
+                  <AwaitingInfo label="Business phone number" />
+                ) : (
+                  <p className="font-mono">{CONTACT.phone}</p>
+                )}
+                {isAwaiting(CONTACT.email) ? (
+                  <div className="mt-3">
+                    <AwaitingInfo label="Business email address" />
+                  </div>
+                ) : (
+                  <p className="mt-3">{CONTACT.email}</p>
+                )}
               </div>
-            ) : (
-              <p className="mt-2">{CONTACT.email}</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        <div className="mt-12 flex flex-col gap-4 border-t border-line-dark pt-6 text-caption text-paper/50">
-          <ul className="flex gap-6">
+
+        <div className="mt-14 flex flex-col gap-5 border-t border-line-dark pt-7 text-caption text-paper/50">
+          <ul className="flex flex-wrap gap-x-7">
             {legalLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="link-draw">
-                  {link.label}
+                <Link
+                  href={link.href}
+                  className="flex min-h-11 items-center transition-colors duration-200 hover:text-paper/80 md:min-h-0"
+                >
+                  <span className="link-draw">{link.label}</span>
                 </Link>
               </li>
             ))}

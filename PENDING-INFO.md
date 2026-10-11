@@ -42,6 +42,7 @@ These block a public launch regardless of what gets built afterwards.
 - [ ] **Do we accept part-exchange, or purchase only?** The FAQ and form step 3 both need a definite answer.
 - [ ] **Do we buy non-runners and Category N/S cars?** The FAQ has `AwaitingInfo` slots for both.
 - [ ] **Is the two-hour response promise realistic seven days a week?** **The site states it unconditionally** — `/how-it-works`, the FAQ, the hero and three section components all promise two hours with no carve-out for weekends. Maya is the only place that admits the gap: asked directly about a Saturday she says she does not know and defers to a person, and `agent/guards.ts` blocks any weekend claim either way. That is an honest assistant in front of a promise the site has not qualified, which is the wrong way round. Either the promise holds seven days a week, or the copy needs the carve-out.  Breaking it once undermines the entire positioning.
+- [ ] **Photography: two images with a caveat.** All thirteen are AI-generated and logged in SOURCES.md. `guide-market.jpg` reads as a dealer forecourt and must never sit anywhere that could imply our premises. `cta-dusk.jpg` has a warm orange sky, which CLAUDE.md section 5 says to avoid; it sits under a scrim where it reads as dusk rather than as colour. Replace both first when real photography arrives. (`export-coast.jpg` was the third: replaced 12 October 2026 with an image of a car on the left-hand side of the road, which is what the page argues.)
 - [ ] **Do we publish an indicative price range, or only firm offers by phone?** Recommendation remains firm offers only — it protects the no-deductions promise and keeps Maya's price refusal coherent.
 
 ---
@@ -152,3 +153,5 @@ Kept briefly so nobody re-chases them.
 - ~~Airtable base ID and API key~~ — live; superseded by Supabase from Phase B
 - ~~Resend API key~~ — live. The *verified sending domain* half of this was closed too early: see the open item in Phase C.
 - ~~Seller photo upload flow~~ — now Phase B scope, not a later task
+- ~~`/export` telling the seller which channel their car took~~ — sentence removed 12 October 2026. CLAUDE.md section 11 won. `test/channel.test.ts` now fails if any public page says it again, and `INTERNAL_PATTERNS` in `agent/guards.ts` already covered Maya.
+- ~~`export-coast.jpg` showing a car on the right-hand side of the road~~ — replaced 12 October 2026

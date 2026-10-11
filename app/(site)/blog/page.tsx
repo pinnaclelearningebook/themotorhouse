@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Section } from "@/components/ui/Section";
-import { PostCard } from "@/components/blog/PostCard";
-import { PlateForm } from "@/components/ui/PlateForm";
+import { CtaBand } from "@/components/sections/CtaBand";
+import { GuideCard } from "@/components/blog/GuideCard";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { PageHero } from "@/components/ui/PageHero";
+import { Section } from "@/components/ui/Section";
+import { PHOTOGRAPHY } from "@/config/photography";
 import { CATEGORY_LABELS, getAllPosts, getUsedCategories } from "@/lib/blog";
 
 export const metadata: Metadata = {
@@ -20,24 +22,28 @@ export default function BlogIndexPage() {
   return (
     <main>
       <BreadcrumbJsonLd trail={[{ name: "Blog", path: "/blog" }]} />
-      <Section ground="paper" labelledBy="blog-heading">
-        <div className="max-w-3xl">
-          <h1 id="blog-heading" className="font-display text-display-2">
-            Advice for people selling a car
-          </h1>
-          <p className="mt-4 text-lg text-structure">
-            Written to be useful whether or not you ever sell us anything.
-          </p>
-        </div>
+
+      <PageHero
+        eyebrow="Guides"
+        heading="Advice for people selling a car"
+        intro="Written to be useful whether or not you ever sell us anything, including the parts where another route beats us."
+        image={PHOTOGRAPHY.guides.valuations}
+        id="blog-heading"
+      />
+
+      <Section ground="paper" labelledBy="guides-heading">
+        <h2 id="guides-heading" className="sr-only">
+          All guides
+        </h2>
 
         {categories.length > 0 && (
-          <nav aria-label="Categories" className="mt-10">
+          <nav aria-label="Categories">
             <ul className="flex flex-wrap gap-3">
               {categories.map((category) => (
                 <li key={category}>
                   <Link
                     href={`/blog/category/${category}`}
-                    className="inline-block rounded border border-line px-4 py-2 text-sm transition-colors duration-200 hover:border-oxblood"
+                    className="inline-flex min-h-11 items-center rounded border border-line px-4 text-sm transition-colors duration-200 hover:border-oxblood hover:text-oxblood"
                   >
                     {CATEGORY_LABELS[category]}
                   </Link>
@@ -51,7 +57,7 @@ export default function BlogIndexPage() {
           <ul className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
               <li key={post.slug}>
-                <PostCard post={post} />
+                <GuideCard post={post} />
               </li>
             ))}
           </ul>
@@ -62,16 +68,7 @@ export default function BlogIndexPage() {
         )}
       </Section>
 
-      <Section ground="ink" labelledBy="blog-cta-heading">
-        <div className="max-w-3xl">
-          <h2 id="blog-cta-heading" className="font-display text-display-3">
-            Or skip the reading and get your number.
-          </h2>
-          <div className="mt-8">
-            <PlateForm id="blog-reg" />
-          </div>
-        </div>
-      </Section>
+      <CtaBand heading="Or skip the reading and get your number." />
     </main>
   );
 }

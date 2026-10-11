@@ -13,6 +13,7 @@ import { StepCar, type CarDetails } from "./StepCar";
 import { StepSale, type SaleDetails } from "./StepSale";
 import { StepYou, type ContactDetails } from "./StepYou";
 import { PhoneStep } from "./PhoneStep";
+import { FormProgress } from "./FormProgress";
 import type { PendingPhoto } from "./PhotoUpload";
 import { AgentWidget } from "@/components/agent/AgentWidget";
 
@@ -256,6 +257,9 @@ export function ValuationFormV2({
   }
 
   /**
+   * Everything a step is wrapped in: the progress indicator above it,
+   * and the assistant beside it.
+   *
    * The assistant is a floating launcher, from the moment the car is
    * identified (CLAUDE.md section 10) — never on the registration step,
    * where the only thing asked for is one field. It is rendered beside
@@ -266,29 +270,32 @@ export function ValuationFormV2({
    * registration when it writes the opening line, so there is one place
    * that decides what she says first.
    */
-  function withAgent(node: React.ReactNode) {
-    if (!agentEnabled || !identified) return node;
+  function withAgent(node: React.ReactNode, progress: number) {
     return (
       <>
+        <FormProgress current={progress} />
         {node}
-        <AgentWidget
-          leadId={leadId}
-          reg={identified.reg}
-          preview={agentPreview}
-        />
+        {agentEnabled && identified && (
+          <AgentWidget
+            leadId={leadId}
+            reg={identified.reg}
+            preview={agentPreview}
+          />
+        )}
       </>
     );
   }
 
   if (step === "identify" || !identified) {
-    return (
+    return withAgent(
       <IdentifyStep
         initialReg={initialReg}
         onIdentified={(result) => {
           setIdentified(result);
           setStep("phone");
         }}
-      />
+      />,
+      0,
     );
   }
 
@@ -306,7 +313,8 @@ export function ValuationFormV2({
         pending={pending}
         error={errors.phone?.[0]}
         formError={formError}
-      />
+      />,
+      0,
     );
   }
 
@@ -319,7 +327,8 @@ export function ValuationFormV2({
         value={car}
         onChange={setCar}
         onContinue={leaveCar}
-      />
+      />,
+      1,
     );
   }
 
@@ -330,7 +339,8 @@ export function ValuationFormV2({
         onBack={() => setStep("car")}
         onContinue={leaveSale}
         error={errors.timeline?.[0]}
-      />
+      />,
+      2,
     );
   }
 
@@ -344,7 +354,8 @@ export function ValuationFormV2({
         pending={pending}
         errors={errors}
         formError={formError}
-      />
+      />,
+      3,
     );
   }
 
