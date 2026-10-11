@@ -6,6 +6,9 @@ const base =
 const sizes = {
   default: "px-8 py-4",
   compact: "px-5 py-2.5 text-sm",
+  // The header at 375, where the lockup, the call to action and the
+  // menu button have to share 327px of container.
+  tight: "px-4 py-2 text-sm sm:px-5 sm:py-2.5",
 } as const;
 
 type ButtonSize = keyof typeof sizes;

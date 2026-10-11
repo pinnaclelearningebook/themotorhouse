@@ -70,9 +70,11 @@ export function MaskReveal({
       {lines.map((line, index) => (
         <m.span
           key={index}
-          // Generous enough for a descender at display sizes, pulled
-          // back out again so the leading is untouched.
-          className="block overflow-hidden pb-[0.14em] [margin-bottom:-0.14em]"
+          // Room for an ascender above and a descender below at
+          // display sizes, pulled back out again so the leading is
+          // untouched. Without the top padding, Newsreader's caps were
+          // shaved off at the tight end of the scale.
+          className="block overflow-hidden pt-[0.08em] pb-[0.14em] [margin-block:-0.08em_-0.14em]"
           initial="hidden"
           {...(onView
             ? { whileInView: "shown", viewport: { once: true, amount: 0.35 } }

@@ -81,8 +81,8 @@ export function Header() {
             }`}
           >
             <Link href="/" aria-label="The Motor House, home" className="shrink-0">
-              <Wordmark className="hidden sm:inline-flex" />
-              <Wordmark compact className="sm:hidden" />
+              <Wordmark className="hidden sm:block" />
+              <Wordmark compact className="block sm:hidden" />
             </Link>
 
             <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
@@ -94,8 +94,8 @@ export function Header() {
               ))}
             </nav>
 
-            <div className="flex shrink-0 items-center gap-3">
-              <ButtonLink href="/valuation" size="compact">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+              <ButtonLink href="/valuation" size="tight">
                 Get my offer
               </ButtonLink>
               <button
@@ -103,7 +103,7 @@ export function Header() {
                 onClick={() => setMenu(true)}
                 aria-label="Open the menu"
                 aria-expanded={menu}
-                className="flex h-10 w-10 items-center justify-center lg:hidden"
+                className="-mr-2 flex h-10 w-10 items-center justify-center lg:hidden"
               >
                 <span aria-hidden="true" className="flex flex-col gap-[5px]">
                   <span className="block h-px w-6 bg-current" />
@@ -252,8 +252,20 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     };
   }, [close]);
 
-  // A link to the page you are already on should still close the menu.
+  /**
+   * A route change closes the menu — including a link to the page you
+   * are already on, which `onClick` alone would miss.
+   *
+   * Skipping the first run matters: without it the effect fires on
+   * mount and closes the menu in the same tick it opened, and the
+   * button appears to do nothing at all.
+   */
+  const mounted = useRef(false);
   useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);

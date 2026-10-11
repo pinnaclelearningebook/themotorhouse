@@ -42,7 +42,7 @@ export function Hero() {
           <MaskReveal
             id="hero-heading"
             lines={["Sell your car for a firm", "offer that doesn't change."]}
-            className="font-display text-display-3 sm:text-display-2 md:text-display-1"
+            className="font-display text-[2rem] leading-[1.08] tracking-[-0.02em] sm:text-display-2 md:text-display-1"
           />
           <Reveal delay={0.18}>
             <p className="mt-6 max-w-2xl text-lg text-paper/80">

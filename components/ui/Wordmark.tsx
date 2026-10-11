@@ -26,19 +26,30 @@ export function Wordmark({
   compact?: boolean;
   className?: string;
 }) {
+  /**
+   * `className` lands on a wrapper, not on the lockup itself.
+   *
+   * Passing `hidden sm:inline-flex` straight onto the lockup put
+   * `hidden` and `inline-flex` in the same class list, and Tailwind
+   * resolves that by source order in the stylesheet rather than by the
+   * attribute — so `inline-flex` won and both the full and the compact
+   * wordmark rendered side by side on a phone.
+   */
   return (
-    <span className={`inline-flex items-end gap-2.5 ${className}`}>
-      <Arch size={compact ? 24 : 30} className="shrink-0 translate-y-px" />
-      <span className="inline-flex flex-col">
-        <span
-          className={`font-display leading-none ${compact ? "text-lg" : "text-2xl"}`}
-        >
-          {SITE.name}
+    <span className={className}>
+      <span className="inline-flex items-end gap-2 sm:gap-2.5">
+        <Arch size={compact ? 24 : 30} className="shrink-0 translate-y-px" />
+        <span className="inline-flex flex-col">
+          <span
+            className={`font-display leading-none ${compact ? "text-base" : "text-2xl"}`}
+          >
+            {SITE.name}
+          </span>
+          <span
+            aria-hidden="true"
+            className="mt-1.5 block h-px w-full bg-current opacity-30"
+          />
         </span>
-        <span
-          aria-hidden="true"
-          className="mt-1.5 block h-px w-full bg-current opacity-30"
-        />
       </span>
     </span>
   );
