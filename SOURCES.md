@@ -241,3 +241,18 @@ Kept here so nobody re-adds them believing they were an oversight.
 - No V5C section number anywhere on the site.
 - No Defender residual-value percentage in the blog, matching the model page.
 - No figure for what any pre-sale preparation returns.
+
+---
+
+## Photography
+
+**Pages:** home
+
+Licensed imagery, used for mood and context only. None of it shows a car we bought, our premises or our people, and nothing on the site says or implies otherwise — see CLAUDE.md section 5.
+
+A note on what is *not* here. Free-licence car photography is, almost without exception, badge-bearing: of the strong candidates reviewed on 11 October 2026, one carried `LAND ROVER` and `DEFENDER` lettering and a Dutch plate, one carried `DEFENDER` on the spare wheel and Land Rover mudflaps in an American car park, and one carried an `RS` badge and an Audi four-rings sticker. None of them could be used. What survives the no-badge rule is abstract — paintwork, water, light — so that is what the site uses, and the slots for real cars stay empty until there are real cars. See PENDING-INFO.md for the shot list.
+
+| File | Photographer | Source | Licence | Used for |
+|---|---|---|---|---|
+| `public/photography/hero-wet-bodywork.jpg` | [Ashton Christiansen](https://unsplash.com/@anatharax) | [Raindrops on the hood and windshield of a black car at night](https://unsplash.com/photos/raindrops-on-black-car-at-night-xfdDe3IwObE) | Unsplash License | Home hero, behind an ink scrim |
+| `public/photography/detail-water-on-paint.jpg` | [Ben Wicks](https://unsplash.com/@profwicks) | [Close up of water droplets on a dark surface](https://unsplash.com/photos/close-up-of-water-droplets-on-a-dark-surface-7EMYjpQ4IG4) | Unsplash License | Home, the export band |

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
-import { SITE, CONTACT, COMPANY, isAwaiting } from "@/config/site";
+import { CONTACT, COMPANY, isAwaiting } from "@/config/site";
 import { RECENTLY_PURCHASED } from "@/config/recently-purchased";
 import { MODELS } from "@/config/models";
 
@@ -33,8 +34,8 @@ export function Footer() {
       <Container>
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           <div>
-            <p className="font-display text-2xl">{SITE.name}</p>
-            <p className="mt-2 max-w-xs text-sm text-paper/60">
+            <Wordmark />
+            <p className="mt-5 max-w-xs text-sm text-paper/60">
               Any car, any age, anywhere in mainland UK, for a firm offer
               that doesn&apos;t change.
             </p>

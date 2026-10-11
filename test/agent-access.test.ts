@@ -23,19 +23,39 @@ const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 
 describe("the agent access decision", () => {
+  const up = { available: true };
+
   it("gives a seller nothing while the switch is false", () => {
-    expect(decideAgentMode({ enabled: false, isAdmin: false })).toBe("off");
+    expect(decideAgentMode({ ...up, enabled: false, isAdmin: false })).toBe("off");
   });
 
   it("gives a signed-in admin a preview while the switch is false", () => {
-    expect(decideAgentMode({ enabled: false, isAdmin: true })).toBe("preview");
+    expect(decideAgentMode({ ...up, enabled: false, isAdmin: true })).toBe("preview");
   });
 
   it("gives everyone the real thing once the switch is true", () => {
-    expect(decideAgentMode({ enabled: true, isAdmin: false })).toBe("live");
+    expect(decideAgentMode({ ...up, enabled: true, isAdmin: false })).toBe("live");
     // Not "preview": an admin on a live site is talking to the same Maya
     // a seller is, and that conversation is not a test.
-    expect(decideAgentMode({ enabled: true, isAdmin: true })).toBe("live");
+    expect(decideAgentMode({ ...up, enabled: true, isAdmin: true })).toBe("live");
+  });
+
+  it("offers her to nobody when she is not answering", () => {
+    /**
+     * A key that exists is not a key with credit on it. When the model
+     * is failing, the launcher invites a seller in and then apologises
+     * — so it is not offered at all, to anyone, including an admin
+     * previewing. A preview of a broken assistant previews nothing.
+     */
+    const down = { available: false };
+    expect(decideAgentMode({ ...down, enabled: true, isAdmin: true })).toBe("off");
+    expect(decideAgentMode({ ...down, enabled: true, isAdmin: false })).toBe("off");
+    expect(decideAgentMode({ ...down, enabled: false, isAdmin: true })).toBe("off");
+  });
+
+  it("asks whether she is configured and answering", () => {
+    const access = read("lib/agent/access.ts");
+    expect(access).toMatch(/available: isAgentConfigured\(\) && isAgentHealthy\(\)/);
   });
 
   it("marks preview conversations and nothing else", () => {
@@ -131,5 +151,70 @@ describe("nothing decides for itself whether Maya is on", () => {
     // CLAUDE.md section 5: the registration input and nowhere else.
     const widget = read("components/agent/AgentWidget.tsx");
     expect(widget).not.toMatch(/plate/);
+  });
+});
+
+describe("when the model stops answering", () => {
+  /**
+   * Three failed turns in a row and she is no longer offered, for five
+   * minutes. The form is untouched throughout — that is the whole point
+   * of her being optional.
+   */
+  it("trips after three consecutive failures and recovers on a success", async () => {
+    const { recordAgentFailure, recordAgentSuccess, isAgentHealthy, resetAgentHealth } =
+      await import("@/lib/agent/health");
+
+    resetAgentHealth();
+    expect(isAgentHealthy()).toBe(true);
+
+    recordAgentFailure();
+    recordAgentFailure();
+    expect(isAgentHealthy(), "two failures is not a pattern").toBe(true);
+
+    recordAgentFailure();
+    expect(isAgentHealthy(), "three in a row is").toBe(false);
+
+    // A turn that works clears it immediately — no waiting out a
+    // cool-off for a service that has come back.
+    recordAgentSuccess();
+    expect(isAgentHealthy()).toBe(true);
+
+    resetAgentHealth();
+  });
+
+  it("counts a failed turn in the chat endpoint, and a good one too", () => {
+    const chat = read("app/api/agent/chat/route.ts");
+    const failAt = chat.search(/recordAgentFailure\(\)/);
+    const okAt = chat.search(/recordAgentSuccess\(\)/);
+    expect(failAt, "a failed turn must be counted").toBeGreaterThan(-1);
+    expect(okAt, "a good turn must clear the count").toBeGreaterThan(-1);
+    // The failure is recorded inside the catch, before the 503.
+    const caught = chat.slice(chat.indexOf("} catch (error) {"));
+    expect(caught).toMatch(/recordAgentFailure\(\)/);
+  });
+
+  it("hides her rather than announcing it", () => {
+    /**
+     * Hidden, not "chat unavailable". There is no launcher-level copy
+     * for a broken assistant, because the launcher is not rendered when
+     * she is one — the page asks lib/agent/access and gets "off".
+     *
+     * The one apology that does exist lives inside the open panel and is
+     * for a different case: a seller who is already talking when a turn
+     * fails. They have seen her, so saying nothing would be worse.
+     */
+    const widget = read("components/agent/AgentWidget.tsx");
+    expect(widget).not.toMatch(/chat unavailable/i);
+
+    const inPanelApology = /isn&apos;t available right now/;
+    expect(inPanelApology.test(widget), "the in-panel apology still exists").toBe(true);
+    // And it is reachable only once the panel is open.
+    const unavailableAt = widget.search(inPanelApology);
+    const panelAt = widget.search(/view === "launcher"/);
+    expect(unavailableAt).toBeGreaterThan(panelAt);
+
+    // The launcher itself is gated on the mode, not on a message.
+    const page = read("app/(site)/valuation/page.tsx");
+    expect(page).toMatch(/agentEnabled=\{mode !== "off"\}/);
   });
 });

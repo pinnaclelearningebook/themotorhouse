@@ -2,6 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { adminDevBypass, currentAdmin } from "@/lib/admin/auth";
 import { agentSettings, type AgentSettings } from "@/lib/agent/settings";
+import { isAgentConfigured } from "@/agent/provider";
+import { isAgentHealthy } from "@/lib/agent/health";
 
 /**
  * Who Maya is running for, on this request.
@@ -47,7 +49,16 @@ export interface AgentAccess {
 export function decideAgentMode(opts: {
   enabled: boolean;
   isAdmin: boolean;
+  /**
+   * Configured and answering. False means a missing key, or a model
+   * that has failed several turns in a row — out of credit, rate
+   * limited, down. Either way she is not offered to anyone, including
+   * an admin previewing: a preview of a broken assistant is not a
+   * preview of anything.
+   */
+  available: boolean;
 }): AgentMode {
+  if (!opts.available) return "off";
   if (opts.enabled) return "live";
   if (opts.isAdmin) return "preview";
   return "off";
@@ -81,6 +92,7 @@ export async function agentAccess(): Promise<AgentAccess> {
   const mode = decideAgentMode({
     enabled: settings.enabled,
     isAdmin: admin !== null,
+    available: isAgentConfigured() && isAgentHealthy(),
   });
 
   return {

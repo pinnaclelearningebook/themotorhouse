@@ -43,8 +43,13 @@ describe("knowledge base", () => {
   });
 
   it("says any car of any age, as the site does", () => {
+    // The phrase moved from the header's disclosure to the section that
+    // leads on it, when the header became a mega-menu. The knowledge
+    // base has to keep agreeing with whichever page carries it.
+    const section = read("components/sections/WhatWeBuy.tsx");
+    expect(section).toContain("Any make, any age");
     const header = read("components/ui/Header.tsx");
-    expect(header).toContain("Any car, any age");
+    expect(header).toContain("Any other car");
     expect(knowledgeAsText()).toMatch(/cars of any age/i);
   });
 

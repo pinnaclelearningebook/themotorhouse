@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Section";
+import { Reveal } from "@/components/motion/Reveal";
+import { ModelCard } from "@/components/sections/ModelCard";
 import { MODELS } from "@/config/models";
 
 /**
@@ -10,48 +12,44 @@ import { MODELS } from "@/config/models";
  */
 export function WhatWeBuy() {
   return (
-    <Section ground="paper" labelledBy="buy-heading">
-      <h2 id="buy-heading" className="font-display text-display-3">
-        What we buy
-      </h2>
-
-      <div className="mt-10 max-w-3xl rounded border border-oxblood bg-paper-warm p-8">
-        <h3 className="font-display text-2xl">Any make, any age, any condition</h3>
-        <p className="mt-3 max-w-prose">
-          Most of what we buy isn&apos;t on this list. Same firm offer, same
-          free collection, same payment before the transporter leaves.
+    <Section ground="paper-warm" labelledBy="buy-heading">
+      <Reveal>
+        <p className="text-caption font-medium tracking-[0.14em] text-structure uppercase">
+          What we buy
         </p>
-        <p className="mt-5">
-          <Link
-            href="/valuation"
-            className="link-draw font-medium text-oxblood"
-          >
+        <h2 id="buy-heading" className="mt-4 max-w-3xl font-display text-display-3">
+          Any make, any age, any condition.
+        </h2>
+        <p className="mt-5 max-w-prose text-lg">
+          Most of what we buy isn&apos;t on the list below. Same firm offer,
+          same free collection, same payment before the transporter leaves.
+        </p>
+        <p className="mt-6">
+          <Link href="/valuation" className="link-draw font-medium text-oxblood">
             Get my offer
           </Link>
         </p>
-      </div>
+      </Reveal>
 
-      <p className="mt-14 text-sm font-medium tracking-wide text-structure uppercase">
-        Where we pay more
-      </p>
-      <p className="mt-3 max-w-prose text-structure">
-        On these, export demand sits on top of the UK market, so our number
-        is usually stronger than a general buyer&apos;s.
-      </p>
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {MODELS.map((model) => (
-          <li key={model.slug}>
-            <Link
-              href={`/${model.slug}`}
-              className="block h-full rounded border border-line p-6 transition-colors duration-200 hover:border-oxblood"
-            >
-              <span className="font-display text-2xl">{model.name}</span>
-              <span className="mt-3 block text-sm font-medium text-oxblood">
-                Get my offer
-              </span>
-            </Link>
-          </li>
+      <Reveal delay={0.1}>
+        <p className="mt-20 text-caption font-medium tracking-[0.14em] text-structure uppercase">
+          Where we pay more
+        </p>
+        <p className="mt-3 max-w-prose text-structure">
+          On these, export demand sits on top of the UK market, so our number
+          is usually stronger than a general buyer&apos;s.
+        </p>
+      </Reveal>
+
+      <ul className="mt-10 grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+        {MODELS.map((model, index) => (
+          <Reveal as="li" key={model.slug} delay={Math.min(index, 4) * 0.05}>
+            <ModelCard slug={model.slug} name={model.name} />
+          </Reveal>
         ))}
+        <Reveal as="li" delay={0.25}>
+          <ModelCard slug="valuation" name="Any other car" href="/valuation" />
+        </Reveal>
       </ul>
     </Section>
   );

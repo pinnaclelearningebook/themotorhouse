@@ -131,5 +131,16 @@ describe("a competitor's trademark", () => {
     const inAString = 'const strapline = "We buy any car";';
     expect(BANNED.test(withoutComments(inAComment)), "comment").toBe(false);
     expect(BANNED.test(withoutComments(inAString)), "string literal").toBe(true);
+
+    // And a comment naming the ban is not a breach of it, while the
+    // same words in a string still are.
+    expect(
+      offenders(["components/ui/Wordmark.tsx"], true),
+      "a comment explaining the rule must not trip it",
+    ).toEqual([]);
+    expect(
+      offenders(["components/ui/Wordmark.tsx"]).length,
+      "and the comment really is there, or this proves nothing",
+    ).toBe(1);
   });
 });

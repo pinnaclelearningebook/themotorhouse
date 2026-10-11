@@ -1,4 +1,5 @@
 import { Section } from "@/components/ui/Section";
+import { Reveal } from "@/components/motion/Reveal";
 import { SITE } from "@/config/site";
 
 /**
@@ -38,32 +39,41 @@ const columns = [
 
 export function Comparison() {
   return (
-    <Section ground="paper-warm" labelledBy="comparison-heading">
-      <h2 id="comparison-heading" className="font-display text-display-3">
-        Your three ways to sell
-      </h2>
-      <p className="mt-4 max-w-prose text-ink/70">
-        Each has its place. Here is the honest version of all three.
-      </p>
-      <div className="mt-12 grid gap-6 lg:grid-cols-3">
-        {columns.map((column) => (
-          <div
+    <Section ground="paper" labelledBy="comparison-heading">
+      <Reveal>
+        <p className="text-caption font-medium tracking-[0.14em] text-structure uppercase">
+          Honestly
+        </p>
+        <h2 id="comparison-heading" className="mt-4 font-display text-display-3">
+          Your three ways to sell
+        </h2>
+        <p className="mt-5 max-w-prose text-lg">
+          Each has its place, and one of them beats us for some sellers.
+          Here is the honest version of all three.
+        </p>
+      </Reveal>
+      <div className="mt-14 grid gap-px bg-line lg:grid-cols-3">
+        {columns.map((column, index) => (
+          <Reveal
             key={column.title}
-            className={`rounded border p-8 ${
-              column.highlight
-                ? "border-oxblood bg-paper"
-                : "border-line bg-paper"
-            }`}
+            delay={index * 0.08}
+            className={`p-8 ${column.highlight ? "bg-paper-warm" : "bg-paper"}`}
           >
-            <h3 className="text-lg font-medium">{column.title}</h3>
-            <ul className="mt-4 space-y-3 text-sm text-structure">
+            <h3 className="font-display text-2xl">{column.title}</h3>
+            {column.highlight && (
+              <span
+                aria-hidden="true"
+                className="mt-3 block h-0.5 w-10 bg-oxblood"
+              />
+            )}
+            <ul className="mt-6 space-y-4 text-sm leading-relaxed text-structure">
               {column.points.map((point) => (
-                <li key={point} className="border-t border-line pt-3">
+                <li key={point} className="border-t border-line pt-4">
                   {point}
                 </li>
               ))}
             </ul>
-          </div>
+          </Reveal>
         ))}
       </div>
     </Section>

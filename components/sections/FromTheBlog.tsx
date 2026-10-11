@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Section";
 import { PostCard } from "@/components/blog/PostCard";
+import { Reveal } from "@/components/motion/Reveal";
 import { getAllPosts } from "@/lib/blog";
 
 /**
@@ -15,20 +16,25 @@ export function FromTheBlog() {
 
   return (
     <Section ground="paper" labelledBy="blog-heading">
-      <h2 id="blog-heading" className="font-display text-display-3">
-        From the blog
-      </h2>
-      <p className="mt-4 max-w-prose text-structure">
-        Written to be useful whether or not you sell us anything.
-      </p>
+      <Reveal>
+        <p className="text-caption font-medium tracking-[0.14em] text-structure uppercase">
+          Guides
+        </p>
+        <h2 id="blog-heading" className="mt-4 font-display text-display-3">
+          Worth reading first
+        </h2>
+        <p className="mt-5 max-w-prose text-lg">
+          Written to be useful whether or not you sell us anything.
+        </p>
+      </Reveal>
       <ul className="mt-12 grid gap-6 lg:grid-cols-3">
-        {posts.map((post) => (
-          <li key={post.slug}>
+        {posts.map((post, index) => (
+          <Reveal as="li" key={post.slug} delay={index * 0.08}>
             <PostCard post={post} />
-          </li>
+          </Reveal>
         ))}
       </ul>
-      <p className="mt-10">
+      <p className="mt-12">
         <Link href="/blog" className="link-draw font-medium text-oxblood">
           All articles
         </Link>

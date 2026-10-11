@@ -1,33 +1,131 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { m, useReducedMotion } from "motion/react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { MODELS } from "@/config/models";
-import { SITE } from "@/config/site";
 
 /**
- * Header per CLAUDE.md section 7a: wordmark · nav · `Get my offer`, ink on
- * paper, 1px bottom hairline, no shadow or transparency. Below 768px only
- * the wordmark and CTA show — the nav lives in the footer, because on a
- * phone the header's one job is keeping the form a tap away.
+ * The header.
  *
- * At Milestone 3 the nav carries the commercial routes: the seven model
- * pages behind a "What we buy" disclosure, plus /export. How it works,
- * About and FAQ moved to footer-only, since navigation should serve the
- * seller's decision rather than our sitemap.
+ * Opaque at the top of the page and translucent with a backdrop blur
+ * once you leave the hero, so the hero photograph reads full-bleed and
+ * everything after it reads as paper. On a phone it gets out of the way
+ * on the way down and comes straight back on the way up — the one place
+ * a seller wants it is the moment they have decided.
  *
- * Static in flow at the top; once the user scrolls past the hero a fixed
- * copy slides in over 250ms. The fixed copy is inert and aria-hidden so
- * assistive tech and the tab order see one header, not two.
+ * `Get my offer` is visible at every width and inside the open menu.
+ * That is the header's job; the rest of the navigation is secondary to
+ * it and always has been (CLAUDE.md section 7a).
+ *
+ * Scroll state is read in a passive listener and written to a ref before
+ * it reaches React, so a scrolling page does not re-render on every
+ * frame — only when a threshold is actually crossed.
  */
 
-const STICKY_AFTER_PX = 560;
+const SOLID_AFTER_PX = 24;
+const HIDE_AFTER_PX = 200;
+
+const LINKS = [
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/export", label: "Why we pay more" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/blog", label: "Guides" },
+] as const;
+
+export function Header() {
+  /**
+   * Only the home page has a dark hero for the header to sit over. On
+   * every other page it is paper from the first pixel, so the
+   * transparent state would be paper-coloured text on paper — invisible
+   * navigation, which is how a header like this usually goes wrong.
+   */
+  const overHero = usePathname() === "/";
+  const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > SOLID_AFTER_PX);
+      // Only once past the hero, and never while the menu is open.
+      setHidden(y > HIDE_AFTER_PX && y > lastY.current);
+      lastY.current = y;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <>
+      <header
+        className={`fixed inset-x-0 top-0 z-40 border-b transition-[transform,background-color,border-color,backdrop-filter] duration-300 ease-(--ease-standard) motion-reduce:transition-none ${
+          scrolled || !overHero
+            ? "border-line bg-paper/85 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-paper"
+            : "border-transparent bg-transparent"
+        } ${hidden && !menu ? "-translate-y-full" : "translate-y-0"}`}
+      >
+        <Container>
+          <div
+            className={`flex h-16 items-center justify-between gap-6 ${
+              scrolled || !overHero ? "text-ink" : "text-paper"
+            }`}
+          >
+            <Link href="/" aria-label="The Motor House, home" className="shrink-0">
+              <Wordmark className="hidden sm:inline-flex" />
+              <Wordmark compact className="sm:hidden" />
+            </Link>
+
+            <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
+              <ModelsMenu />
+              {LINKS.map((link) => (
+                <Link key={link.href} href={link.href} className="link-draw text-sm">
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="flex shrink-0 items-center gap-3">
+              <ButtonLink href="/valuation" size="compact">
+                Get my offer
+              </ButtonLink>
+              <button
+                type="button"
+                onClick={() => setMenu(true)}
+                aria-label="Open the menu"
+                aria-expanded={menu}
+                className="flex h-10 w-10 items-center justify-center lg:hidden"
+              >
+                <span aria-hidden="true" className="flex flex-col gap-[5px]">
+                  <span className="block h-px w-6 bg-current" />
+                  <span className="block h-px w-6 bg-current" />
+                </span>
+              </button>
+            </div>
+          </div>
+        </Container>
+      </header>
+
+      {menu && <MobileMenu onClose={() => setMenu(false)} />}
+    </>
+  );
+}
+
+/* ─── the mega-menu ──────────────────────────────────────────────────── */
 
 function ModelsMenu() {
   const [open, setOpen] = useState(false);
   const wrapper = useRef<HTMLDivElement>(null);
+  const calm = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -46,11 +144,15 @@ function ModelsMenu() {
   }, [open]);
 
   return (
-    <div ref={wrapper} className="relative" onBlur={(event) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-        setOpen(false);
-      }
-    }}>
+    <div
+      ref={wrapper}
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setOpen(false);
+        }
+      }}
+    >
       <button
         type="button"
         aria-expanded={open}
@@ -59,91 +161,184 @@ function ModelsMenu() {
       >
         What we buy
       </button>
+
       {open && (
-        <ul className="absolute top-full left-0 z-50 mt-3 w-64 rounded border border-line bg-paper py-2">
-          <li>
-            <Link
-              href="/valuation"
-              onClick={() => setOpen(false)}
-              className="block border-b border-line px-4 py-3 transition-colors duration-200 hover:bg-paper-warm"
-            >
-              <span className="block text-sm font-medium">Any car, any age</span>
-              <span className="mt-0.5 block text-caption text-structure">
-                Most of what we buy is not on this list
-              </span>
-            </Link>
-          </li>
-          <li className="px-4 pt-3 pb-1">
-            <span className="text-caption tracking-wide text-structure uppercase">
-              Where we pay more
-            </span>
-          </li>
-          {MODELS.map((model) => (
-            <li key={model.slug}>
+        <m.div
+          initial={calm ? false : { opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute top-full left-1/2 z-50 mt-4 w-[46rem] -translate-x-1/2 rounded border border-line bg-paper p-2 text-ink shadow-[0_12px_40px_rgba(18,20,15,0.14)]"
+        >
+          <p className="px-4 pt-3 pb-2 text-caption font-medium tracking-[0.14em] text-structure uppercase">
+            Where we pay more
+          </p>
+          <ul className="grid grid-cols-2 gap-px bg-line">
+            {MODELS.map((model) => (
+              <li key={model.slug}>
+                <Link
+                  href={`/${model.slug}` as never}
+                  onClick={() => setOpen(false)}
+                  className="block bg-paper px-4 py-3 text-sm transition-colors duration-200 hover:bg-paper-warm"
+                >
+                  {model.name}
+                </Link>
+              </li>
+            ))}
+            <li>
               <Link
-                href={`/${model.slug}`}
+                href="/valuation"
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-sm transition-colors duration-200 hover:bg-paper-warm"
+                className="block bg-paper px-4 py-3 text-sm font-medium text-oxblood transition-colors duration-200 hover:bg-paper-warm"
               >
-                {model.name}
+                Any other car
               </Link>
             </li>
-          ))}
-        </ul>
+          </ul>
+        </m.div>
       )}
     </div>
   );
 }
 
-function HeaderBar({ interactive }: { interactive: boolean }) {
-  return (
-    <Container className="flex h-16 items-center justify-between gap-6">
-      <Link href="/" className="font-display text-xl">
-        {SITE.name}
-      </Link>
-      <div className="flex items-center gap-8">
-        <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
-          {interactive ? (
-            <ModelsMenu />
-          ) : (
-            <span className="text-sm">What we buy</span>
-          )}
-          <Link href="/export" className="link-draw text-sm">
-            Why we pay more
-          </Link>
-        </nav>
-        <ButtonLink href="/valuation" size="compact">
-          Get my offer
-        </ButtonLink>
-      </div>
-    </Container>
-  );
-}
+/* ─── the full-screen mobile menu ────────────────────────────────────── */
 
-export function Header() {
-  const [pinned, setPinned] = useState(false);
+/**
+ * A dialog, with everything that word implies: focus moves in, Tab is
+ * trapped, Esc closes it, the page behind it does not scroll, and focus
+ * returns to the button that opened it.
+ */
+function MobileMenu({ onClose }: { onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const opener = useRef<Element | null>(null);
+  const pathname = usePathname();
+  const calm = useReducedMotion();
+
+  const close = useCallback(() => {
+    onClose();
+    (opener.current as HTMLElement | null)?.focus?.();
+  }, [onClose]);
 
   useEffect(() => {
-    const onScroll = () => setPinned(window.scrollY > STICKY_AFTER_PX);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    opener.current = document.activeElement;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    panel.current?.querySelector<HTMLElement>("[data-first]")?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+        return;
+      }
+      if (event.key !== "Tab" || !panel.current) return;
+      const focusable = panel.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = overflow;
+    };
+  }, [close]);
+
+  // A link to the page you are already on should still close the menu.
+  useEffect(() => {
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const items = [
+    { href: "/valuation", label: "Get my offer", accent: true },
+    ...LINKS,
+  ];
 
   return (
-    <>
-      <header className="border-b border-line bg-paper text-ink">
-        <HeaderBar interactive />
-      </header>
-      {pinned && (
-        <div
-          aria-hidden="true"
-          inert
-          className="header-drop fixed inset-x-0 top-0 z-40 border-b border-line bg-paper text-ink"
-        >
-          <HeaderBar interactive={false} />
+    <div
+      ref={panel}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Menu"
+      className="on-ink fixed inset-0 z-50 flex flex-col bg-ink text-paper lg:hidden"
+    >
+      <Container>
+        <div className="flex h-16 items-center justify-between">
+          <Wordmark compact />
+          <button
+            type="button"
+            data-first
+            onClick={close}
+            aria-label="Close the menu"
+            className="flex h-10 w-10 items-center justify-center text-2xl leading-none"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
-      )}
-    </>
+      </Container>
+
+      <Container className="flex-1 overflow-y-auto pt-6 pb-14">
+        <ul>
+          {items.map((item, index) => (
+            <m.li
+              key={item.href}
+              initial={calm ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.4,
+                delay: calm ? 0 : 0.04 + index * 0.045,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="border-b border-line-dark"
+            >
+              <Link
+                href={item.href}
+                onClick={close}
+                className={`block py-5 font-display text-3xl ${
+                  "accent" in item && item.accent ? "text-oxblood-lt" : ""
+                }`}
+              >
+                {item.label}
+              </Link>
+            </m.li>
+          ))}
+        </ul>
+
+        <p className="mt-10 text-caption font-medium tracking-[0.14em] text-paper/45 uppercase">
+          Where we pay more
+        </p>
+        <ul className="mt-4 grid grid-cols-2 gap-x-6">
+          {MODELS.map((model, index) => (
+            <m.li
+              key={model.slug}
+              initial={calm ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.4,
+                delay: calm ? 0 : 0.3 + index * 0.03,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              <Link
+                href={`/${model.slug}` as never}
+                onClick={close}
+                className="block border-b border-line-dark py-3 text-sm text-paper/75"
+              >
+                {model.name}
+              </Link>
+            </m.li>
+          ))}
+        </ul>
+      </Container>
+    </div>
   );
 }
