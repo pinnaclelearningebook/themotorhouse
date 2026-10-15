@@ -13,14 +13,21 @@ export function isAwaiting(value: string): boolean {
 
 export const SITE = {
   name: "The Motor House",
-  domain: `${AWAITING}: domain name`,
+  domain: "www.selltothemotorhouse.co.uk",
 } as const;
 
 /**
  * Absolute base URL, needed for canonicals, the sitemap and OG images.
- * Set NEXT_PUBLIC_SITE_URL once the real domain exists (PENDING-INFO.md).
- * Until then Vercel's own production URL keeps preview and production
- * deployments emitting correct absolute URLs rather than broken ones.
+ *
+ * NEXT_PUBLIC_SITE_URL is the real domain, set in all three Vercel
+ * environments on 15 October 2026. Before it was set, every page on
+ * www.selltothemotorhouse.co.uk carried a canonical pointing at
+ * themotorhouse.vercel.app — two hosts serving identical content with
+ * the wrong one declared the original, which is the one configuration
+ * mistake that can stop a new domain ranking at all.
+ *
+ * The Vercel fallback stays for preview deployments built before the
+ * variable propagates, and localhost for development.
  */
 export function siteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;

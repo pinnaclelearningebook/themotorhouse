@@ -26,6 +26,7 @@ export default function FaqPage() {
         heading="Straight answers, including the awkward ones."
         intro="Finance, damage, write-offs, what happens if you change your mind. If yours is not here, ask when we call."
         image={PHOTOGRAPHY.faqInterior}
+        crumbs={[{ name: "FAQ", path: "/faq" }]}
       />
 
       {FAQ_GROUPS.map((group, index) => {

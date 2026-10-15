@@ -5,9 +5,9 @@ import { PHOTOGRAPHY } from "@/config/photography";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { GuideCard } from "@/components/blog/GuideCard";
 import { PageHero } from "@/components/ui/PageHero";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import {
   CATEGORIES,
+  CATEGORY_DESCRIPTIONS,
   CATEGORY_LABELS,
   getPostsByCategory,
   getUsedCategories,
@@ -33,7 +33,7 @@ export async function generateMetadata({
   if (!isCategory(category)) return {};
   return {
     title: CATEGORY_LABELS[category],
-    description: `Articles on ${CATEGORY_LABELS[category].toLowerCase()} from The Motor House.`,
+    description: CATEGORY_DESCRIPTIONS[category],
     alternates: { canonical: `/blog/category/${category}` },
   };
 }
@@ -50,21 +50,19 @@ export default async function CategoryPage({
 
   return (
     <main>
-      <BreadcrumbJsonLd
-        trail={[
-          { name: "Blog", path: "/blog" },
-          {
-            name: CATEGORY_LABELS[category],
-            path: `/blog/category/${category}`,
-          },
-        ]}
-      />
       <PageHero
         eyebrow="Guides"
         heading={CATEGORY_LABELS[category]}
         intro={`${posts.length} ${posts.length === 1 ? "guide" : "guides"} in this category. Every one of them is written to be useful whether or not you ever sell us anything.`}
         image={PHOTOGRAPHY.guides[category]}
         id="category-heading"
+        crumbs={[
+          { name: "Guides", path: "/blog" },
+          {
+            name: CATEGORY_LABELS[category],
+            path: `/blog/category/${category}`,
+          },
+        ]}
       />
 
       <Section ground="paper" labelledBy="category-list-heading">

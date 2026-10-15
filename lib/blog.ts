@@ -28,10 +28,43 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   ownership: "Ownership",
 };
 
+/**
+ * What each category page is for, in its own words.
+ *
+ * The generated "Articles on x from The Motor House." was 43-48
+ * characters of the same sentence five times — technically unique,
+ * substantively one description repeated, which is what a thin
+ * category page looks like to a crawler and to a reader.
+ */
+export const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
+  valuations:
+    "What actually moves the number on a used car, how buyers arrive at a figure, and how to judge whether an offer is a fair one.",
+  "selling-guides":
+    "Step-by-step guides to selling a car in the UK: the paperwork, outstanding finance, write-off categories, and the routes worth comparing.",
+  "model-guides":
+    "Model-by-model guides from the selling side — what affects resale value on a Range Rover, Defender, Evoque, Velar, Discovery Sport, Lexus or GLE.",
+  "market-insight":
+    "Why used car values move: export demand, theft and insurance, supply, and what each of them means for what you are offered.",
+  ownership:
+    "Running and preparing a car for sale — what spending comes back when you sell it, what does not, and what to have ready.",
+};
+
 export interface PostFrontmatter {
   title: string;
   slug: string;
   description: string;
+  /**
+   * The <title>, when the headline is too long for one.
+   *
+   * A headline is editorial and a title tag is a 60-character budget;
+   * forcing one to be the other costs you a sentence somebody wrote
+   * on purpose. Absent, the title is used — see the post page, which
+   * also drops the brand suffix on guides so the whole 60 goes on the
+   * question the reader actually typed.
+   */
+  seoTitle?: string;
+  /** The meta description, when `description` is too long for one. */
+  seoDescription?: string;
   category: Category;
   publishedAt: string;
   updatedAt?: string;
@@ -95,6 +128,21 @@ export function getAllPosts(): Post[] {
 
 export function getPost(slug: string): Post | null {
   return getAllPosts().find((post) => post.slug === slug) ?? null;
+}
+
+/**
+ * The guides that name this model, newest first.
+ *
+ * The relationship is already in the content — every post lists the
+ * models it is about — so the model pages read it backwards rather
+ * than keeping a second list that can disagree with the first. It is
+ * also the fix for model pages having nothing to link to but their
+ * three siblings and the form.
+ */
+export function getPostsForModel(slug: string, limit = 3): Post[] {
+  return getAllPosts()
+    .filter((post) => post.relatedModels.includes(slug))
+    .slice(0, limit);
 }
 
 export function getPostsByCategory(category: Category): Post[] {

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CtaBand } from "@/components/sections/CtaBand";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { Card } from "@/components/ui/Card";
 import { PageHero } from "@/components/ui/PageHero";
 import { Section } from "@/components/ui/Section";
@@ -10,27 +9,25 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MODELS } from "@/config/models";
 import { PHOTOGRAPHY } from "@/config/photography";
 import { EXPORT_MARKET } from "@/config/site";
+import { TextLink } from "@/components/ui/TextLink";
 
 export const metadata: Metadata = {
   title: "Why we pay more for some cars",
   description:
-    "We supply buyers in Cyprus, where traffic drives on the left and UK right-hand-drive cars are the local standard. That is why our offers on young premium SUVs are stronger.",
+    "We supply buyers in Cyprus, where traffic drives on the left and UK right-hand-drive cars are the standard. That is why some of our offers are stronger.",
   alternates: { canonical: "/export" },
 };
 
 export default function ExportPage() {
   return (
     <main>
-      <BreadcrumbJsonLd
-        trail={[{ name: "Why we pay more", path: "/export" }]}
-      />
-
       <PageHero
         eyebrow="Why we pay more"
         heading="Why we can pay more for some cars than a UK buyer can"
         intro="Any buyer who tells you they pay more than everyone else should be able to explain why. Here is our reason, in full, so you can judge whether it holds up."
         image={PHOTOGRAPHY.exportCoast}
         id="export-heading"
+        crumbs={[{ name: "Why we pay more", path: "/export" }]}
       />
 
       <Section ground="paper" labelledBy="cyprus-heading">
@@ -58,6 +55,9 @@ export default function ExportPage() {
             Cyprus is the market we currently supply. We would rather name
             one market we actually sell into than list a continent we do
             not.
+          </p>
+          <p className="mt-6">
+            <TextLink href="/about">Who we are, and how we buy</TextLink>
           </p>
           <p className="mt-6 text-caption text-structure">
             Background on the Cyprus market and its reliance on UK

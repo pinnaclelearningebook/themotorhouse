@@ -2,6 +2,7 @@ import { ClipboardList, PhoneCall, Truck, Banknote } from "lucide-react";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StepTimeline } from "@/components/sections/StepTimeline";
+import { TextLink } from "@/components/ui/TextLink";
 
 const STEPS = [
   {
@@ -36,6 +37,17 @@ export function HowItWorks() {
         intro="Four steps, about a minute of typing, and a person on the phone."
       />
       <StepTimeline steps={STEPS} ground="paper" />
+      {/*
+        * The section is called How it works and did not link to the
+        * page called How it works — which is how /how-it-works ended
+        * up with no inbound link from any page's body, reachable only
+        * through the footer.
+        */}
+      <p className="mt-10">
+        <TextLink href="/how-it-works">
+          The whole process, including the no-deductions policy
+        </TextLink>
+      </p>
     </Section>
   );
 }

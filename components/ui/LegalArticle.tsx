@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 /**
  * Shared shell for the legal pages: one measure, consistent heading
@@ -15,11 +16,14 @@ export function LegalArticle({
   updated,
   children,
   labelledBy,
+  path,
 }: {
   title: string;
   updated: string;
   children: React.ReactNode;
   labelledBy: string;
+  /** This page's own path, for the breadcrumb trail. */
+  path: string;
 }) {
   return (
     <main>
@@ -29,6 +33,10 @@ export function LegalArticle({
       >
         <Container>
           <div className="max-w-2xl">
+            <Breadcrumbs
+              className="mb-6"
+              trail={[{ name: title, path }]}
+            />
             <p className="text-caption font-semibold tracking-[0.16em] text-paper/70 uppercase">
               Legal
             </p>

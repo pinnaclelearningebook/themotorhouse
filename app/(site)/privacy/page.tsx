@@ -16,6 +16,7 @@ export default function PrivacyPage() {
     <LegalArticle
       title="Privacy policy"
       updated="2026-08-29"
+      path="/privacy"
       labelledBy="privacy-heading"
     >
       <h2>Who we are</h2>
