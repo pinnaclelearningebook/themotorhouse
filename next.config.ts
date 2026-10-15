@@ -1,6 +1,33 @@
 import type { NextConfig } from "next";
 
+/**
+ * Everything the site was reachable at before the domain existed.
+ *
+ * themotorhouse.vercel.app is still live and still serving the same
+ * pages, which is two hosts with identical content — the oldest way
+ * to split a site's authority in half. Anything that arrives there
+ * goes to the same path on the real domain, permanently, so links and
+ * any indexing that happened in the meantime consolidate rather than
+ * compete.
+ *
+ * Host-matched rather than blanket, so preview deployments (which
+ * have their own hostnames and must not redirect into production)
+ * are untouched.
+ */
+const OLD_HOSTS = [
+  "themotorhouse.vercel.app",
+  "themotorhouse-pinnaclelearningebook-7934s-projects.vercel.app",
+];
+
 const nextConfig: NextConfig = {
+  async redirects() {
+    return OLD_HOSTS.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      destination: "https://www.selltothemotorhouse.co.uk/:path*",
+      permanent: true,
+    }));
+  },
   images: {
     /**
      * AVIF first. The hero is the largest-contentful element on the

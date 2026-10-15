@@ -9,8 +9,10 @@ import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Paragraphs, renderCopy } from "@/components/models/Prose";
 import { FaqJsonLd } from "@/components/seo/FaqJsonLd";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getModel, type ModelEntry } from "@/config/models";
+import { getPostsForModel } from "@/lib/blog";
+import { GuideCard } from "@/components/blog/GuideCard";
 import { TextLink } from "@/components/ui/TextLink";
 
 /**
@@ -26,13 +28,11 @@ import { TextLink } from "@/components/ui/TextLink";
  */
 export function ModelPage({ model }: { model: ModelEntry }) {
   const siblings = model.siblings.map(getModel);
+  const guides = getPostsForModel(model.slug);
 
   return (
     <main>
       <FaqJsonLd entries={model.faqs} />
-      <BreadcrumbJsonLd
-        trail={[{ name: model.h1, path: `/${model.slug}` }]}
-      />
 
       <section
         aria-labelledby="model-heading"
@@ -40,6 +40,13 @@ export function ModelPage({ model }: { model: ModelEntry }) {
       >
         <Container>
           <div className="max-w-3xl">
+            <Breadcrumbs
+              className="mb-6"
+              trail={[
+                { name: "Cars we buy", path: "/export" },
+                { name: model.name, path: `/${model.slug}` },
+              ]}
+            />
             <p className="text-caption font-semibold tracking-[0.16em] text-paper/70 uppercase">
               {model.name}
             </p>
@@ -154,7 +161,31 @@ export function ModelPage({ model }: { model: ModelEntry }) {
         </div>
       </Section>
 
-      <Section ground="paper" labelledBy="siblings-heading">
+      {/*
+        * Guides that name this model, read back out of the posts
+        * themselves. Before this, a model page's only way out was its
+        * three siblings and the form — four links, all of them
+        * commercial, which is a dead end for anyone still reading
+        * rather than ready to sell.
+        */}
+      {guides.length > 0 && (
+        <Section ground="paper" labelledBy="model-guides-heading">
+          <SectionHeader
+            id="model-guides-heading"
+            eyebrow="Worth reading first"
+            heading={`Guides on the ${model.name}`}
+          />
+          <ul className="mt-10 grid gap-6 md:grid-cols-3">
+            {guides.map((post) => (
+              <li key={post.slug}>
+                <GuideCard post={post} />
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section ground="paper-warm" labelledBy="siblings-heading">
         <SectionHeader
           id="siblings-heading"
           eyebrow="Also on the list"

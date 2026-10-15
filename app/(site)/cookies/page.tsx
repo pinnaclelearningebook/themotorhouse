@@ -14,6 +14,7 @@ export default function CookiesPage() {
     <LegalArticle
       title="Cookie policy"
       updated="2026-08-29"
+      path="/cookies"
       labelledBy="cookies-heading"
     >
       <h2>The short version</h2>

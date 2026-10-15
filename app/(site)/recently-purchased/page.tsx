@@ -30,6 +30,7 @@ export default function RecentlyPurchasedPage() {
         heading="Cars we actually bought"
         intro="Every car here is one we bought, photographed as it was collected. No stock photography and no examples we did not pay for."
         id="purchased-page-heading"
+        crumbs={[{ name: "Recently purchased", path: "/recently-purchased" }]}
       />
 
       <Section ground="paper" labelledBy="purchased-list-heading">

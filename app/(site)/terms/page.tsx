@@ -15,6 +15,7 @@ export default function TermsPage() {
     <LegalArticle
       title="Terms of service"
       updated="2026-08-29"
+      path="/terms"
       labelledBy="terms-heading"
     >
       <h2>Who we are</h2>
