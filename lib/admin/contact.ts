@@ -1,5 +1,13 @@
-import "server-only";
 import type { ContactMethod } from "@/lib/validation";
+
+/*
+ * Deliberately not `server-only`. Everything here is a pure function
+ * over a lead's own phone and email — a label, a tel: link, a wa.me
+ * number. The inbox table is a client component and needs the same
+ * labels and links the lead page uses; marking this server-only
+ * forced a second copy, which is how two versions of "what WhatsApp
+ * link do we build" would end up in the codebase.
+ */
 
 /**
  * How to act on a seller's stated preference, in one place.

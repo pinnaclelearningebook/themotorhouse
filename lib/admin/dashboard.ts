@@ -27,7 +27,7 @@ export interface DashboardData {
   collectedThisMonth: number;
   slaHours: number | null;
   leadsPerWeek: Array<{ week: string; count: number }>;
-  funnel: { confirmedCar: number; reachedSale: number; reachedContact: number; completed: number };
+  funnel: Funnel;
   byMethod: Array<{ method: ContactMethod | "not asked"; count: number }>;
   bySource: Array<{ source: string; count: number }>;
   needsYou: {
@@ -44,7 +44,14 @@ export interface NeedsYouRow {
   detail: string;
 }
 
-interface LeadRow {
+export interface Funnel {
+  confirmedCar: number;
+  reachedSale: number;
+  reachedContact: number;
+  completed: number;
+}
+
+export interface LeadRow {
   id: string;
   reg: string;
   name: string | null;
@@ -55,6 +62,27 @@ interface LeadRow {
   furthest_step: number;
   preferred_contact_method: ContactMethod | null;
   next_contact_date: string | null;
+}
+
+/**
+ * How far sellers get, counted from the rows themselves.
+ *
+ * Deliberately not a funnel from the first keystroke: a row only
+ * exists once a car is confirmed, so people who typed a registration
+ * and left before that are not here and cannot be. What this measures
+ * is everyone who got past step 1 — which is the part we changed, and
+ * the part where the drop-off is now worth watching.
+ *
+ * A pure function rather than four expressions inside the query, so
+ * the counting rules can be tested without a database.
+ */
+export function funnelFrom(leads: LeadRow[]): Funnel {
+  return {
+    confirmedCar: leads.length,
+    reachedSale: leads.filter((lead) => lead.furthest_step >= 3).length,
+    reachedContact: leads.filter((lead) => lead.furthest_step >= 4).length,
+    completed: leads.filter((lead) => lead.completed_at !== null).length,
+  };
 }
 
 function startOfWeek(date: Date): Date {
@@ -173,12 +201,7 @@ export async function dashboardData(): Promise<DashboardData> {
     ).length,
     slaHours,
     leadsPerWeek: [...weeks].map(([week, count]) => ({ week, count })),
-    funnel: {
-      confirmedCar: leads.length,
-      reachedSale: leads.filter((lead) => lead.furthest_step >= 3).length,
-      reachedContact: leads.filter((lead) => lead.furthest_step >= 4).length,
-      completed: real.length,
-    },
+    funnel: funnelFrom(leads),
     byMethod: [...methodCounts]
       .map(([method, count]) => ({ method, count }))
       .sort((a, b) => b.count - a.count),

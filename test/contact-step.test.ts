@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { contactSchema, startLeadSchema, CONTACT_METHODS } from "@/lib/validation";
 import { contactPatch } from "@/lib/submissions";
 import { contactAction, contactActions, waNumber } from "@/lib/admin/contact";
-import { funnelFrom, type InboxRow } from "@/lib/admin/inbox";
+import { funnelFrom, type LeadRow } from "@/lib/admin/dashboard";
 
 /**
  * Step 4 takes every contact detail, and the rules about which of them
@@ -182,23 +182,28 @@ describe("the one-tap action per method", () => {
 
 /* ─── the inbox ────────────────────────────────────────────────────── */
 
-function row(over: Partial<InboxRow>): InboxRow {
+function row(over: Partial<LeadRow>): LeadRow {
   return {
-    id: "x", reg: "AB12CDE", name: null, phone: null, email: null,
-    preferredContactMethod: null, incomplete: true, furthestStep: 2,
-    createdAt: "2026-10-15T09:00:00Z", timeline: null, status: "new",
-    make: null, model: null, year: null, score: null, confidence: null,
-    recommendedChannel: null, flagCount: 0, pending: false, ...over,
+    id: "x", reg: "AB12CDE", name: null, status: "new", source: null,
+    created_at: "2026-10-15T09:00:00Z", completed_at: null, furthest_step: 2,
+    preferred_contact_method: null, next_contact_date: null, ...over,
   };
 }
 
 describe("incomplete leads", () => {
   it("are counted in the funnel but are not the queue", () => {
+    // completed_at is the one column only step 4 writes, so it — not
+    // the step number — is what makes a row somebody can ring.
     const rows = [
-      row({ id: "a", furthestStep: 2 }),
-      row({ id: "b", furthestStep: 3 }),
-      row({ id: "c", furthestStep: 4 }),
-      row({ id: "d", furthestStep: 4, incomplete: false, name: "Helen" }),
+      row({ id: "a", furthest_step: 2 }),
+      row({ id: "b", furthest_step: 3 }),
+      row({ id: "c", furthest_step: 4 }),
+      row({
+        id: "d",
+        furthest_step: 4,
+        completed_at: "2026-10-15T09:05:00Z",
+        name: "Helen",
+      }),
     ];
     expect(funnelFrom(rows)).toEqual({
       confirmedCar: 4,
@@ -206,21 +211,25 @@ describe("incomplete leads", () => {
       reachedContact: 2,
       completed: 1,
     });
-    expect(rows.filter((r) => !r.incomplete)).toHaveLength(1);
+    expect(rows.filter((r) => r.completed_at !== null)).toHaveLength(1);
   });
 
   it("are hidden from the inbox unless asked for", () => {
-    const page = readFileSync("app/admin/(workspace)/inbox/page.tsx", "utf8");
-    expect(page).toMatch(/showIncomplete \? all : all\.filter/);
-    expect(page).toMatch(/incomplete=1/);
-    expect(page).toMatch(/Hide incomplete/);
+    // The filter moved into the query when the inbox became a table:
+    // excluding them in Postgres rather than after the fetch is what
+    // makes the row count and the pagination agree.
+    const query = readFileSync("lib/admin/inbox-query.ts", "utf8");
+    expect(query).toMatch(/if \(!filters\.incomplete\) query = query\.not\("completed_at", "is", null\)/);
+    const table = readFileSync("components/admin/InboxTable.tsx", "utf8");
+    expect(table).toMatch(/incomplete/);
   });
 
   it("admits the funnel cannot see people who never confirmed a car", () => {
     // The first number is "confirmed a car", not "visitors", and the
     // page has to say so — a funnel whose top is quietly not the top
-    // is worse than no funnel.
-    const page = readFileSync("app/admin/(workspace)/inbox/page.tsx", "utf8");
+    // is worse than no funnel. The funnel lives on the dashboard now;
+    // the inbox is for working leads, not reading about them.
+    const page = readFileSync("app/admin/(workspace)/page.tsx", "utf8");
     expect(page).toMatch(/left before confirming the car leaves no record/);
   });
 });

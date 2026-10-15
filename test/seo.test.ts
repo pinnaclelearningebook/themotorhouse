@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getAllPosts, CATEGORY_DESCRIPTIONS, CATEGORIES } from "@/lib/blog";
 import { MODELS } from "@/config/models";
 import { siteUrl } from "@/config/site";
@@ -95,9 +95,28 @@ describe("canonicals and the domain", () => {
     // Before 15 October 2026 it returned themotorhouse.vercel.app, so
     // the live domain spent its first weeks telling Google the real
     // version of every page lived somewhere else.
-    const url = process.env.NEXT_PUBLIC_SITE_URL ?? siteUrl();
-    expect(url).not.toMatch(/vercel\.app/);
-    expect(url).toMatch(/^https:\/\/www\.selltothemotorhouse\.co\.uk$/);
+    //
+    // Asserted against the fallback rather than the environment. The
+    // earlier version read process.env.NEXT_PUBLIC_SITE_URL, so it
+    // only told the truth on a machine that happened to have the
+    // variable exported — and it was the fallback, not the variable,
+    // that emitted the wrong canonical in the first place.
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const url = siteUrl();
+      expect(url).not.toMatch(/vercel\.app/);
+      expect(url).toMatch(/^https:\/\/www\.selltothemotorhouse\.co\.uk$/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("has no Vercel hostname left in the fallback chain", () => {
+    // The specific arm that caused it. A test on the return value
+    // alone would pass again the moment someone reinstated this.
+    const config = readFileSync("config/site.ts", "utf8");
+    expect(config).not.toMatch(/VERCEL_PROJECT_PRODUCTION_URL/);
   });
 
   it("redirects the old deployment hostnames to it", () => {

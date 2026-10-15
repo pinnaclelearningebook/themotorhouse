@@ -728,6 +728,7 @@ describe("the seeded voice-test car is not a seller", () => {
     // does; this checks only that all three still go through it.
     for (const file of [
       "lib/admin/inbox.ts",
+      "lib/admin/inbox-query.ts",
       "lib/admin/pipeline.ts",
       "lib/admin/followups.ts",
     ]) {

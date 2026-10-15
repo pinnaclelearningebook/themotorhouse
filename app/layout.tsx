@@ -99,6 +99,15 @@ export default function RootLayout({
   return (
     <html
       lang="en-GB"
+      /*
+       * The inline script below adds `data-js` to this element before
+       * React hydrates, so the DOM carries an attribute the server
+       * HTML does not. React logs that as a hydration mismatch on
+       * every page, which is a false alarm here and, worse, the noise
+       * a real mismatch would hide behind. Suppression is scoped to
+       * this element's own attributes, not the tree.
+       */
+      suppressHydrationWarning
       className={`${newsreader.variable} ${interTight.variable} ${geistMono.variable}`}
     >
       <body>
