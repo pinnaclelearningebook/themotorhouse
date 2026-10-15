@@ -2,6 +2,7 @@ import { Header } from "@/components/ui/Header";
 import { Footer } from "@/components/sections/Footer";
 import { CookieConsent } from "@/components/consent/CookieConsent";
 import { AnalyticsGate } from "@/components/consent/AnalyticsGate";
+import { SiteJsonLd } from "@/components/seo/SiteJsonLd";
 
 /**
  * The public site's chrome. /admin sits outside this group, so the
@@ -19,6 +20,7 @@ export default function SiteLayout({
 }) {
   return (
     <>
+      <SiteJsonLd />
       <Header />
       {children}
       <Footer />

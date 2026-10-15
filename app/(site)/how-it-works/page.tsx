@@ -76,6 +76,7 @@ export default function HowItWorksPage() {
         heading="Four steps, and no surprises at any of them."
         intro="From the registration to the money in your account, this is the whole of it. There is no stage where the number changes."
         image={PHOTOGRAPHY.handover}
+        crumbs={[{ name: "How it works", path: "/how-it-works" }]}
       />
 
       <Section ground="paper" labelledBy="steps-heading">

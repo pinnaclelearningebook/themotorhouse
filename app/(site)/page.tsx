@@ -9,7 +9,6 @@ import { RecentlyPurchased } from "@/components/sections/RecentlyPurchased";
 import { FaqTeaser } from "@/components/sections/FaqTeaser";
 import { FromTheBlog } from "@/components/sections/FromTheBlog";
 import { CtaBand } from "@/components/sections/CtaBand";
-import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 
 /**
  * The order is the argument, and the grounds carry it.
@@ -35,7 +34,6 @@ import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 export default function HomePage() {
   return (
     <main>
-      <AutoDealerJsonLd />
       <Hero />
       <AssuranceStrip />
       <OfferPromise />

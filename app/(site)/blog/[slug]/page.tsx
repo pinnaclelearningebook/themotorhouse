@@ -11,7 +11,6 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { MdxContent } from "@/components/blog/MdxContent";
 import { GuideCard } from "@/components/blog/GuideCard";
 import { BlogPostingJsonLd } from "@/components/seo/BlogPostingJsonLd";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { getModel } from "@/config/models";
 import { PHOTOGRAPHY } from "@/config/photography";
 import { CATEGORY_LABELS, getAllPosts, getPost } from "@/lib/blog";
@@ -31,8 +30,15 @@ export async function generateMetadata({
   const post = getPost(slug);
   if (!post) return {};
   return {
-    title: post.title,
-    description: post.description,
+    /*
+     * `absolute`, so the "— The Motor House" suffix is dropped here.
+     * On a guide the brand is the least valuable eighteen characters
+     * on the page: nobody searches for us by name yet, and the words
+     * they do search for are the ones the suffix pushes out of the
+     * 60-character budget. The short pages keep it.
+     */
+    title: { absolute: post.seoTitle ?? post.title },
+    description: post.seoDescription ?? post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
@@ -64,12 +70,6 @@ export default async function BlogPostPage({
   return (
     <main>
       <BlogPostingJsonLd post={post} />
-      <BreadcrumbJsonLd
-        trail={[
-          { name: "Blog", path: "/blog" },
-          { name: post.title, path: `/blog/${post.slug}` },
-        ]}
-      />
 
       <article>
         <PageHero
@@ -85,6 +85,14 @@ export default async function BlogPostPage({
           heading={post.title}
           intro={post.description}
           image={PHOTOGRAPHY.guides[post.category]}
+          crumbs={[
+            { name: "Guides", path: "/blog" },
+            {
+              name: CATEGORY_LABELS[post.category],
+              path: `/blog/category/${post.category}`,
+            },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]}
         >
           <p className="mt-7 font-mono text-caption text-paper/65">
             <time dateTime={post.publishedAt}>{post.publishedAt}</time> ·{" "}

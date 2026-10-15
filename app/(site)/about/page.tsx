@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Banknote, Handshake, MapPin, ShieldCheck } from "lucide-react";
 import { CtaBand } from "@/components/sections/CtaBand";
-import { AutoDealerJsonLd } from "@/components/seo/AutoDealerJsonLd";
 import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 import { Card } from "@/components/ui/Card";
 import { IconList } from "@/components/ui/IconList";
@@ -54,13 +53,13 @@ const principles = [
 export default function AboutPage() {
   return (
     <main>
-      <AutoDealerJsonLd />
 
       <PageHero
         eyebrow="About us"
         heading={`${SITE.name} buys cars. That is the whole business.`}
         intro="Not as a marketplace, not as a middleman passing your details to dealers — we buy them ourselves, with our own money, and the offer we make is the offer we pay."
         image={PHOTOGRAPHY.aboutRoad}
+        crumbs={[{ name: "About", path: "/about" }]}
       />
 
       <Section ground="paper" labelledBy="why-heading">

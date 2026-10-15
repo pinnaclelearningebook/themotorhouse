@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import { Photo } from "@/components/ui/Photo";
+import { Breadcrumbs, type Crumb } from "@/components/ui/Breadcrumbs";
 import type { PhotoSlot } from "@/config/photography";
 
 /**
@@ -24,6 +25,7 @@ export function PageHero({
   intro,
   image,
   id = "page-heading",
+  crumbs,
   children,
 }: {
   eyebrow: React.ReactNode;
@@ -31,7 +33,13 @@ export function PageHero({
   intro?: React.ReactNode;
   image?: PhotoSlot;
   id?: string;
-  /** A byline, a date, a breadcrumb — whatever the page adds below. */
+  /**
+   * Everything after Home. Renders the visible trail and the
+   * BreadcrumbList that describes it, from the same array — a page
+   * that passes this must not also emit BreadcrumbJsonLd itself.
+   */
+  crumbs?: Crumb[];
+  /** A byline, a date — whatever else the page adds below. */
   children?: React.ReactNode;
 }) {
   return (
@@ -56,6 +64,7 @@ export function PageHero({
       )}
       <Container className="relative z-10">
         <div className="max-w-3xl">
+          {crumbs && <Breadcrumbs trail={crumbs} className="mb-6" />}
           <p className="text-caption font-semibold tracking-[0.16em] text-paper/70 uppercase">
             {eyebrow}
           </p>

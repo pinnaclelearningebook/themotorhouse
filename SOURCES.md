@@ -244,6 +244,25 @@ Kept here so nobody re-adds them believing they were an oversight.
 
 ---
 
+## Structured data: what Google still shows (15 October 2026)
+
+**Pages:** every page (the decision not to add HowTo; the decision to keep FAQPage)
+
+Two rich result types this site would otherwise have reached for are no longer shown by Google.
+
+**HowTo was deprecated in September 2023.** Google limited HowTo rich results to desktop in August 2023 and stopped showing them entirely on 13 September 2023. The markup remains valid and Google's guidance is that there is no need to remove it, but it produces nothing in Search. `/how-it-works` is a genuine four-step process and HowTo markup would be *accurate* — it is simply work with no result, so it has not been added.
+
+**FAQ rich results were deprecated on 7 May 2026**, restricted thereafter to government and health sites. Google's documentation says the FAQ search appearance, the rich result report and Rich Results Test support go in June 2026, with the Search Console API data following in August 2026.
+
+**FAQPage markup is kept anyway**, on `/faq` and the seven model pages. The reasons: the Q&A is real content visible on the page rather than markup added to chase a rich result; Google states that unused structured data does not harm Search; and the markup is still read by Bing and by retrieval crawlers. The caveat recorded honestly — the precise May/June/August 2026 dates come from secondary SEO publications rather than from a Google blog post read directly, so treat the dates as approximately right rather than quoted.
+
+- [Google completely removes How-To rich results — Search Engine Journal](https://www.searchenginejournal.com/google-completely-removes-how-to-rich-results/496479/)
+- [Changes to HowTo and FAQ rich results — Google Search Central blog, August 2023](https://developers.google.com/search/blog/2023/08/howto-faq-changes)
+- [Google drops FAQ rich results from Search — Search Engine Journal](https://www.searchenginejournal.com/google-drops-faq-rich-results-from-search/574429/)
+- [FAQ schema after 7 May 2026: what actually changed — SEO Strategy](https://www.seostrategy.co.uk/learn/faq-schema-deprecation-2026-rich-result-vs-schema/)
+
+---
+
 ## Photography
 
 **Pages:** home, how it works, why we pay more, about, FAQ, guides index, blog posts, the closing band on every page

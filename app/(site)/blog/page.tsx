@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { GuideCard } from "@/components/blog/GuideCard";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { PageHero } from "@/components/ui/PageHero";
 import { Section } from "@/components/ui/Section";
 import { PHOTOGRAPHY } from "@/config/photography";
@@ -21,14 +20,13 @@ export default function BlogIndexPage() {
 
   return (
     <main>
-      <BreadcrumbJsonLd trail={[{ name: "Blog", path: "/blog" }]} />
-
-      <PageHero
+            <PageHero
         eyebrow="Guides"
         heading="Advice for people selling a car"
         intro="Written to be useful whether or not you ever sell us anything, including the parts where another route beats us."
         image={PHOTOGRAPHY.guides.valuations}
         id="blog-heading"
+        crumbs={[{ name: "Guides", path: "/blog" }]}
       />
 
       <Section ground="paper" labelledBy="guides-heading">
