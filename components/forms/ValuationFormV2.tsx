@@ -138,6 +138,18 @@ export function ValuationFormV2({
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [formError, setFormError] = useState<string | undefined>();
   const [pending, startTransition] = useTransition();
+  /*
+   * Step 4's own pending state, separate from the shared transition.
+   *
+   * `pending` is true while *any* step is saving, and leaveSale starts
+   * its patch and advances in the same breath — so for about two
+   * seconds after arriving at step 4 the submit button sat disabled
+   * reading "Sending your request…" when nothing had been submitted.
+   * A seller reaching straight for it found it dead and lying. The
+   * save in the background does not concern them; their own submit
+   * does.
+   */
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const lastMileage =
@@ -229,9 +241,13 @@ export function ValuationFormV2({
     ]);
     const next = { ...contact, ...read } as ContactDetails;
     setContact(next);
+    setSubmitting(true);
 
     startTransition(async () => {
-      if (!leadId) return;
+      if (!leadId) {
+        setSubmitting(false);
+        return;
+      }
       const result = await completeLeadAction(
         leadId,
         {
@@ -251,6 +267,7 @@ export function ValuationFormV2({
       if (result.status === "error") {
         setErrors(result.fieldErrors);
         setFormError(result.formError);
+        setSubmitting(false);
         return;
       }
       await attachPhotos(leadId, car.photos);
@@ -343,7 +360,7 @@ export function ValuationFormV2({
         onChange={setContact}
         onBack={() => setStep("sale")}
         onSubmit={submit}
-        pending={pending}
+        pending={submitting}
         errors={errors}
         formError={formError}
       />,
