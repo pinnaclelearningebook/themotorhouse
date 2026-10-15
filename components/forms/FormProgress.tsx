@@ -1,11 +1,9 @@
 /**
  * Where the seller is in the form, and how much is left.
  *
- * Four stops, because CLAUDE.md section 9 has four steps — the phone
- * field belongs to step one, which ends by creating the lead, so it is
- * not a stop of its own. Showing five would make the form look longer
- * than it is, and the whole argument of the first step is that it is
- * short.
+ * Four stops, because CLAUDE.md section 9 has four steps. The first
+ * is the registration and nothing else, which is the whole argument
+ * for it being first — contact details all live on the last one.
  *
  * It is a list rather than a bar: a bar implies a percentage, and the
  * steps are not the same length. The current step is named in full and
@@ -16,7 +14,7 @@
  * registration, a mileage, a price — and a step counter set in it
  * reads as a measurement of the car (CLAUDE.md section 5).
  */
-export const FORM_STEPS = ["Your reg", "The car", "The sale", "You"] as const;
+export const FORM_STEPS = ["Your reg", "The car", "The sale", "Contact"] as const;
 
 export type FormStepName = (typeof FORM_STEPS)[number];
 

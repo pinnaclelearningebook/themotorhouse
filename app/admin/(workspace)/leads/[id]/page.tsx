@@ -14,6 +14,8 @@ import { provenanceUnavailableReason } from "@/lib/adapters/provenance";
 import { valuationUnavailableReason } from "@/lib/adapters/valuation";
 import { titleCaseVehicle } from "@/lib/format";
 import { formatReg } from "@/lib/reg";
+import { METHOD_LABEL, contactActions } from "@/lib/admin/contact";
+import type { ContactMethod } from "@/lib/validation";
 
 export const metadata: Metadata = {
   title: "Lead",
@@ -112,6 +114,11 @@ export default async function LeadPage({
   // Only used to pre-select the channel dropdown; never an amount.
   const enrichmentChannel = enrichment?.recommended_channel ?? null;
 
+  const actions = contactActions(
+    (lead.preferred_contact_method as ContactMethod) ?? null,
+    { phone: (lead.phone as string) ?? null, email: (lead.email as string) ?? null },
+  );
+
   const car = [
     vehicle?.make ? titleCaseVehicle(vehicle.make) : null,
     vehicle?.model ? titleCaseVehicle(vehicle.model) : null,
@@ -145,7 +152,49 @@ export default async function LeadPage({
         <div className="flex flex-col gap-8">
           <section className="rounded border border-line p-6">
             <h2 className="font-display text-2xl">The seller</h2>
-            <dl className="mt-4">
+
+            {/*
+             * How they asked to be reached, above everything else and
+             * with the action attached. The operator's next move is
+             * one tap, and the preferred method is the first button
+             * rather than a label they have to act on themselves.
+             *
+             * The other channels stay available. A preference is what
+             * the seller asked for, not a restriction on us: someone
+             * who picks WhatsApp and does not reply still gave a
+             * number we promised to ring.
+             */}
+            <div className="mt-5 rounded bg-paper-warm p-4">
+              <p className="text-caption tracking-wide text-structure uppercase">
+                {lead.preferred_contact_method
+                  ? "They asked to be contacted by"
+                  : "Contact preference"}
+              </p>
+              <p className="mt-1 font-display text-xl">
+                {lead.preferred_contact_method
+                  ? METHOD_LABEL[lead.preferred_contact_method as ContactMethod]
+                  : "Not asked — this lead predates the question"}
+              </p>
+              {actions.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {actions.map((action, index) => (
+                    <a
+                      key={action.href}
+                      href={action.href}
+                      className={`inline-flex min-h-11 items-center rounded px-4 text-sm font-medium transition-colors duration-200 ${
+                        index === 0
+                          ? "bg-oxblood text-paper hover:bg-oxblood-lt"
+                          : "border border-line hover:border-oxblood"
+                      }`}
+                    >
+                      {action.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <dl className="mt-6">
               <Row label="Name" value={lead.name} />
               <Row
                 label="Phone"
@@ -156,7 +205,7 @@ export default async function LeadPage({
                 label="Postcode"
                 value={<span className="data-inline">{lead.postcode}</span>}
               />
-              <Row label="Best time to call" value={lead.contact_window} />
+              <Row label="Best time to contact" value={lead.contact_window} />
               <Row
                 label="Timeline"
                 value={lead.timeline ? TIMELINE_LABELS[lead.timeline] : null}
@@ -264,7 +313,15 @@ export default async function LeadPage({
             <h2 className="font-display text-2xl">Photos</h2>
             {(photos ?? []).length === 0 ? (
               <p className="mt-3 text-sm text-structure">
-                None uploaded. The auto-reply invites them by email.
+                {/*
+                  Not "the auto-reply invites them by email": the seller
+                  confirmation has been rejected by Resend on every
+                  submission since the domain went unverified, so for
+                  now asking is the operator's job and the panel should
+                  not imply it has been done.
+                */}
+                None uploaded. Ask on the call — the outside from each
+                corner and the interior.
               </p>
             ) : (
               <ul className="mt-4 grid grid-cols-3 gap-3">

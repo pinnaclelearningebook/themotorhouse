@@ -6,7 +6,8 @@ import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TextLink } from "@/components/ui/TextLink";
 import { PROMISES } from "@/config/site";
-import { readSellerConfirmation } from "@/lib/seller-confirmation";
+import { readThankYouState } from "@/lib/thank-you-state";
+import type { ContactMethod } from "@/lib/validation";
 
 export const metadata: Metadata = {
   title: "Offer request received",
@@ -17,37 +18,60 @@ export const metadata: Metadata = {
 /**
  * What happens next, in the order it happens.
  *
+ * **The first card names the channel the seller chose.** They were
+ * asked at step 4, so answering "we will email you" when they picked
+ * WhatsApp is a question we took the trouble to ask and then ignored.
+ *
+ * **It still says a person will call**, whatever they picked, because
+ * that is the published promise: a person rings with a firm number.
+ * Choosing email changes which channel opens the conversation, not how
+ * the offer is made, and the card for that case says both.
+ *
  * **The email card only appears when there is an email.** This page
- * used to say "we have emailed you a confirmation" and "reply to that
- * email with a few photos" to everyone, while the seller confirmation
- * was being rejected by Resend on every single submission. A page that
- * tells someone to watch an inbox nothing is coming to is worse than
- * one that says less: it is the first thing we do after taking their
- * details, and it is false.
+ * used to tell everyone "we have emailed you a confirmation" and
+ * "reply to that email with a few photos" while the seller
+ * confirmation was being rejected by Resend on every submission. A
+ * page that tells someone to watch an inbox nothing is coming to is
+ * worse than one that says less: it is the first thing we do after
+ * taking their details, and it is false. An unknown outcome is treated
+ * as no email — claiming nothing is always safe.
  *
- * So the copy is keyed to what actually happened for this lead, and
- * the unknown case is treated as "no email" — claiming nothing is
- * always safe, claiming an email is only safe when Resend took it.
- *
- * Every line is published elsewhere: the two-hour response, the offer
- * standing for seven days, and the photo request that the confirmation
- * email itself carries. No new promise is made here.
+ * Every line is published elsewhere: the response time, the offer
+ * standing, the photo request the confirmation email itself carries.
+ * No new promise is made here.
  *
  * No CtaBand either. The seller has just submitted; a band inviting
  * them to start again is the sort of thing a funnel does.
  */
-const CALL = {
-  icon: PhoneCall,
-  title: `A call within ${PROMISES.offerWithinHours} hours`,
+const FIRST_CARD: Record<ContactMethod, { title: string; body: string }> = {
+  call: {
+    title: `A call within ${PROMISES.offerWithinHours} hours`,
+    body: "From a person who knows your car, with a firm number. Not a bot, not an estimate.",
+  },
+  whatsapp: {
+    title: `A WhatsApp message within ${PROMISES.offerWithinHours} hours`,
+    body: "From a person who knows your car. If it is easier to talk it through, they will call you on the same number.",
+  },
+  sms: {
+    title: `A text within ${PROMISES.offerWithinHours} hours`,
+    body: "From a person who knows your car. If it is easier to talk it through, they will call you on the same number.",
+  },
+  email: {
+    title: `An email within ${PROMISES.offerWithinHours} hours`,
+    body: "A person will also call you on the number you gave. The firm offer comes on the phone, whichever way we open.",
+  },
+};
+
+const UNKNOWN_FIRST_CARD = {
+  title: `Contact within ${PROMISES.offerWithinHours} hours`,
   body: "From a person who knows your car, with a firm number. Not a bot, not an estimate.",
 };
 
-const EMAILED = [
-  CALL,
+const EMAIL_CARDS = [
   {
     icon: Mail,
     title: "A confirmation by email",
-    body: "It repeats what you told us, so you can check we have it right before the call.",
+    body: "It repeats what you told us, so you can check we have it right before we get in touch.",
   },
   {
     icon: Camera,
@@ -56,8 +80,7 @@ const EMAILED = [
   },
 ];
 
-const NOT_EMAILED = [
-  CALL,
+const NO_EMAIL_CARDS = [
   {
     icon: ShieldCheck,
     title: "The number does not change",
@@ -65,14 +88,18 @@ const NOT_EMAILED = [
   },
   {
     icon: Camera,
-    title: "Photos help, when we call",
+    title: "Photos help, when we speak",
     body: "The outside from each corner and the interior. Have them to hand and the offer is one we can stand behind.",
   },
 ];
 
 export default async function ThankYouPage() {
-  const confirmation = await readSellerConfirmation();
-  const next = confirmation === "sent" ? EMAILED : NOT_EMAILED;
+  const { method, confirmation } = await readThankYouState();
+  const first = method ? FIRST_CARD[method] : UNKNOWN_FIRST_CARD;
+  const next = [
+    { icon: PhoneCall, ...first },
+    ...(confirmation === "sent" ? EMAIL_CARDS : NO_EMAIL_CARDS),
+  ];
 
   return (
     <main>

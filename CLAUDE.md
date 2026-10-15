@@ -186,9 +186,19 @@ Model and mileage come from MOT history and are absent on vehicles under ~3 year
 
 **Step 3 — The sale.** Reason for selling (free text) · timeline (asap / this month / next few months / just researching) · outstanding finance (yes/no/unsure, settlement known?) · part-exchange interest · fair price in their mind (optional, never echoed as an offer) · anyone else approached.
 
-**Step 4 — You.** Name · email · postcode · preferred contact window · marketing consent (unticked, separate from the enquiry). Phone was taken at the end of step 1.
+**Step 4 — How would you like us to contact you?** Preferred method (phone call / WhatsApp / text message / email, one choice) · phone number, **always required** · email, required only if they chose email and optional otherwise · best time to contact · name · postcode · marketing consent (unticked, separate from the enquiry).
 
-**Persistence.** A lead exists from the moment the car is confirmed and a phone number lands. Step 1 therefore ends with a single phone field — "Best number to reach you" — and creates the row with registration, vehicle and phone. Steps 2, 3 and 4 patch that same record, so abandonment at any point from step 1 onward leaves a lead someone can ring. The operator alert fires on first persistence, again on completion, and again with the score when enrichment completes.
+**The phone number is mandatory whichever method they pick**, because the published promise is that a person rings with the offer. The preference decides which channel opens the conversation, not whether we can keep that promise. The field's hint says as much, so a seller who picks WhatsApp and is then asked for a number knows why.
+
+**Persistence.** A lead exists from the moment the car is confirmed. Step 1 is the registration and nothing else; confirming it writes the row with registration and vehicle, and steps 2, 3 and 4 patch that same record.
+
+**Every contact detail arrives at step 4** (owner's decision, 15 October 2026). This replaces the v2 rule that took a phone number at the end of step 1. That rule bought one thing — every abandoned form left somebody callable — and cost the thing lever 4 in section 4 is actually asking for, which is a first step of one field. A row with no contact details is not a lead: `/admin` marks it **incomplete**, hides it from the inbox behind a "Show incomplete" filter, sorts it below every actionable lead, and keeps it for the drop-off counts.
+
+**Those counts cannot see everybody.** A row only exists once a car is confirmed, so a visitor who types a registration and leaves before confirming leaves nothing to count. The funnel on `/admin` says so on the page rather than letting its first number read as "visitors".
+
+**Two operator alerts, not three.** On completion, and again with the score when enrichment completes. The "lead started" alert went with the phone number: an alert naming a registration nobody can be contacted about is an interruption with no action attached to it, and a few of those a day is how an operator learns to ignore the alerts that matter.
+
+**`preferred_contact_method` is never backfilled.** Leads from before the question was asked show "not asked" in the dashboard. "Call" would be a guess, and a guess recorded as a preference is a fabricated business fact (section 3).
 
 **"Just researching" is a follow-up date, not a dead lead.** Never make it optional.
 
@@ -200,7 +210,7 @@ Working name **Maya** — real name to PENDING-INFO.md. A voice-and-text assista
 
 **Does:** greets by the car's name once identified · explains each step in a sentence · detects a stall (30s on a field, or a skipped required field) and helps with that field specifically · answers process questions from a grounded knowledge base · asks the mindset questions (what's prompting the sale, how soon, any worries, other offers) and writes answers to the lead as structured notes · can pre-fill a field the seller says aloud, move between steps, trigger the photo guide.
 
-**Never:** states a price, valuation, range, or anything that sounds like an offer · asserts a fact about the car not present in the lookup data · pressures, flatters, or creates urgency · promises anything the site doesn't · continues after the seller declines.
+**Never:** asks for a contact detail — name, number, email or postcode; the form takes all of them on its last step and she says so if asked · states a price, valuation, range, or anything that sounds like an offer · asserts a fact about the car not present in the lookup data · pressures, flatters, or creates urgency · promises anything the site doesn't · continues after the seller declines.
 
 **Hard rules are coded, not prompted.** Price/valuation refusal is a pattern-matched guard on the output, not a line in the prompt. Facts about the car are drawn only from the lookup payload passed as tool context.
 

@@ -12,7 +12,6 @@ import { IdentifyStep, type IdentifyResult } from "./IdentifyStep";
 import { StepCar, type CarDetails } from "./StepCar";
 import { StepSale, type SaleDetails } from "./StepSale";
 import { StepYou, type ContactDetails } from "./StepYou";
-import { PhoneStep } from "./PhoneStep";
 import { FormProgress } from "./FormProgress";
 import type { PendingPhoto } from "./PhotoUpload";
 import { AgentWidget } from "@/components/agent/AgentWidget";
@@ -20,11 +19,16 @@ import { AgentWidget } from "@/components/agent/AgentWidget";
 /**
  * The four-step form (CLAUDE.md section 9).
  *
- * Steps 2 and 3 are held here in component state. The lead row is
- * created when step 4 submits, because section 9 requires a confirmed
- * registration AND contact details before a lead exists. The cost of
- * that — a seller who abandons at step 3 leaves nothing — is recorded
- * in PENDING-INFO.md as a decision to revisit on real data.
+ * The lead row is created the moment the car is confirmed, and steps
+ * 2, 3 and 4 patch it. Every contact detail arrives at step 4, so a
+ * row carries nobody to ring until that step submits — the inbox calls
+ * those rows incomplete and hides them, and /admin counts them as
+ * drop-off.
+ *
+ * That is the owner's decision of 15 October 2026, and it is a
+ * trade: the old flow took a number at the end of step 1, so every
+ * abandoned form still left someone callable. The first step is one
+ * field again, which is what lever 4 in section 4 actually asks for.
  *
  * Photos upload to Blob during step 2 so the seller is not waiting at
  * the end; the photos rows are attached once the lead id exists.
@@ -54,6 +58,7 @@ const EMPTY_SALE: SaleDetails = {
 
 const EMPTY_CONTACT: ContactDetails = {
   name: "",
+  preferredContactMethod: "",
   phone: "",
   email: "",
   postcode: "",
@@ -61,7 +66,7 @@ const EMPTY_CONTACT: ContactDetails = {
   marketingConsent: false,
 };
 
-type Step = "identify" | "phone" | "car" | "sale" | "you" | "done";
+type Step = "identify" | "car" | "sale" | "you" | "done";
 
 /** Reads the current DOM values for an uncontrolled step before leaving it. */
 function readFields(names: string[]): Record<string, string> {
@@ -130,10 +135,22 @@ export function ValuationFormV2({
   const [car, setCar] = useState<CarDetails>(EMPTY_CAR);
   const [sale, setSale] = useState<SaleDetails>(EMPTY_SALE);
   const [contact, setContact] = useState<ContactDetails>(EMPTY_CONTACT);
-  const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [formError, setFormError] = useState<string | undefined>();
-  const [pending, startTransition] = useTransition();
+  /*
+   * The transition's own `isPending` is deliberately dropped.
+   *
+   * It is true while *any* step is saving, and leaveSale starts its
+   * patch and advances in the same breath — so for about two seconds
+   * after arriving at step 4 the submit button sat disabled reading
+   * "Sending your request…" with nothing submitted. A seller reaching
+   * straight for it found it dead and lying about why.
+   *
+   * The background save does not concern them. Their own submit does,
+   * so step 4 tracks that and nothing else.
+   */
+  const [, startTransition] = useTransition();
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const lastMileage =
@@ -200,20 +217,19 @@ export function ValuationFormV2({
     setStep("you");
   }
 
-  async function startWithPhone(enteredPhone: string) {
-    setPhone(enteredPhone);
-    const result = await startLeadAction({
-      reg: identified?.reg ?? "",
-      phone: enteredPhone,
+  /** Step 1 confirmed: create the row, then straight on to the car. */
+  async function startFromReg(result: IdentifyResult) {
+    const created = await startLeadAction({
+      reg: result.reg,
       model: car.model || undefined,
     });
-    if (result.status === "error") {
-      setErrors(result.fieldErrors);
-      setFormError(result.formError);
+    if (created.status === "error") {
+      setErrors(created.fieldErrors);
+      setFormError(created.formError);
       return;
     }
-    if (result.status === "created") {
-      setLeadId(result.id);
+    if (created.status === "created") {
+      setLeadId(created.id);
       setErrors({});
       setFormError(undefined);
       setStep("car");
@@ -221,16 +237,24 @@ export function ValuationFormV2({
   }
 
   function submit() {
-    const read = readFields(["name", "email", "postcode", "contactWindow"]);
+    const read = readFields([
+      "name", "phone", "email", "postcode", "contactWindow",
+    ]);
     const next = { ...contact, ...read } as ContactDetails;
     setContact(next);
+    setSubmitting(true);
 
     startTransition(async () => {
-      if (!leadId) return;
+      if (!leadId) {
+        setSubmitting(false);
+        return;
+      }
       const result = await completeLeadAction(
         leadId,
         {
           name: next.name,
+          preferredContactMethod: next.preferredContactMethod,
+          phone: next.phone,
           email: next.email,
           postcode: next.postcode,
           contactWindow: next.contactWindow || null,
@@ -238,13 +262,13 @@ export function ValuationFormV2({
         },
         {
           reg: identified?.reg ?? "",
-          phone: phone,
           mileage: car.mileage ? Number(car.mileage) : null,
         },
       );
       if (result.status === "error") {
         setErrors(result.fieldErrors);
         setFormError(result.formError);
+        setSubmitting(false);
         return;
       }
       await attachPhotos(leadId, car.photos);
@@ -292,27 +316,13 @@ export function ValuationFormV2({
         initialReg={initialReg}
         onIdentified={(result) => {
           setIdentified(result);
-          setStep("phone");
-        }}
-      />,
-      0,
-    );
-  }
-
-  if (step === "phone") {
-    return withAgent(
-      <PhoneStep
-        reg={identified.reg}
-        vehicle={identified.vehicle}
-        value={phone}
-        onContinue={(entered) =>
+          // Confirming the car is the whole of step 1 now. The row is
+          // written here and the seller goes straight to step 2; there
+          // is nothing left to ask on this screen.
           startTransition(() => {
-            void startWithPhone(entered);
-          })
-        }
-        pending={pending}
-        error={errors.phone?.[0]}
-        formError={formError}
+            void startFromReg(result);
+          });
+        }}
       />,
       0,
     );
@@ -351,7 +361,7 @@ export function ValuationFormV2({
         onChange={setContact}
         onBack={() => setStep("sale")}
         onSubmit={submit}
-        pending={pending}
+        pending={submitting}
         errors={errors}
         formError={formError}
       />,

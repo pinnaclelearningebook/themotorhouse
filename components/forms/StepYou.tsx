@@ -2,28 +2,48 @@
 
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/forms/fields";
+import { type ContactMethod } from "@/lib/validation";
 import { PROMISES } from "@/config/site";
 
 /**
- * Step 4 of four — you.
+ * Step 4 of four — how to reach you.
  *
- * The lead row is created when this step submits, because CLAUDE.md
- * section 9 requires a confirmed registration AND contact details before
- * a lead exists. Everything from steps 2 and 3 is held client-side until
- * now and written in the same call.
+ * Every contact detail arrives here now (owner's decision, 15 October
+ * 2026). The phone number used to be asked for at the end of step 1,
+ * which made the first step two questions when its whole argument is
+ * that it is one.
  *
- * Marketing consent is unticked, worded separately from the enquiry, and
- * never a condition of getting an offer (section 16).
+ * **The phone number is required whichever method they choose.** The
+ * published promise is that a person rings with the offer; a lead with
+ * no number is a lead we cannot keep that promise on. The preference
+ * decides which channel we open with, not whether we can call — and
+ * the hint under the field says so, because a seller who picks
+ * WhatsApp and is then asked for a phone number deserves to know why.
+ *
+ * Email is required only when they ask to be emailed. Otherwise it is
+ * for a copy of the enquiry, which is a convenience and not something
+ * to withhold an offer over.
+ *
+ * Marketing consent is unticked, worded separately from the enquiry,
+ * and never a condition of getting an offer (section 16).
  */
 
 export interface ContactDetails {
   name: string;
+  preferredContactMethod: ContactMethod | "";
   phone: string;
   email: string;
   postcode: string;
   contactWindow: string;
   marketingConsent: boolean;
 }
+
+const METHOD_OPTIONS: Array<{ value: ContactMethod; label: string }> = [
+  { value: "call", label: "Phone call" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "sms", label: "Text message" },
+  { value: "email", label: "Email" },
+];
 
 type FieldErrors = Record<string, string[] | undefined>;
 
@@ -49,6 +69,8 @@ export function StepYou({
     next: ContactDetails[K],
   ) => onChange({ ...value, [key]: next });
 
+  const wantsEmail = value.preferredContactMethod === "email";
+
   return (
     <form
       className="step-in"
@@ -59,14 +81,54 @@ export function StepYou({
       noValidate
     >
       <h2 className="font-display text-display-3">
-        Where do we send the offer?
+        How would you like us to contact you?
       </h2>
       <p className="mt-3 max-w-prose text-structure">
-        A person calls you within {PROMISES.offerWithinHours} hours with a
-        firm number. No automated valuation, and nothing else sent to you.
+        A person gets back to you within {PROMISES.offerWithinHours} hours with
+        a firm number. No automated valuation, and nothing else sent to you.
       </p>
 
       <div className="mt-10 flex flex-col gap-6">
+        {/*
+         * Controlled, unlike the other fields on this step. The email
+         * field's label and hint change with it, so it cannot wait to
+         * be read out of the DOM on submit like the rest.
+         */}
+        <fieldset
+          aria-describedby={
+            errors.preferredContactMethod ? "method-error" : undefined
+          }
+        >
+          <legend className="mb-2 block text-sm font-medium">
+            Preferred method
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {METHOD_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="min-h-11 cursor-pointer rounded border border-line px-4 py-2.5 text-sm transition-colors duration-200 has-checked:border-oxblood has-checked:bg-oxblood has-checked:text-paper has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-oxblood"
+              >
+                <input
+                  type="radio"
+                  name="preferredContactMethod"
+                  value={option.value}
+                  checked={value.preferredContactMethod === option.value}
+                  onChange={() =>
+                    set("preferredContactMethod", option.value)
+                  }
+                  className="sr-only"
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          {errors.preferredContactMethod?.[0] && (
+            <p id="method-error" role="alert" className="mt-2 text-sm text-oxblood">
+              {errors.preferredContactMethod[0]}
+            </p>
+          )}
+        </fieldset>
+
         <TextField
           label="Your name"
           name="name"
@@ -74,15 +136,17 @@ export function StepYou({
           defaultValue={value.name}
           error={errors.name?.[0]}
         />
+
         <div className="grid gap-6 sm:grid-cols-2">
           <TextField
-            label="Phone"
+            label="Phone number"
             name="phone"
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             mono
             defaultValue={value.phone}
+            hint="So we can reach you with your firm offer."
             error={errors.phone?.[0]}
           />
           <TextField
@@ -91,10 +155,17 @@ export function StepYou({
             type="email"
             inputMode="email"
             autoComplete="email"
+            optional={!wantsEmail}
             defaultValue={value.email}
+            hint={
+              wantsEmail
+                ? "Where we will send your offer."
+                : "For a copy of your enquiry."
+            }
             error={errors.email?.[0]}
           />
         </div>
+
         <div className="grid gap-6 sm:grid-cols-2">
           <TextField
             label="Postcode"
@@ -105,7 +176,7 @@ export function StepYou({
             error={errors.postcode?.[0]}
           />
           <TextField
-            label="Best time to call"
+            label="Best time to contact you"
             name="contactWindow"
             optional
             hint="Mornings, after six, weekends."
