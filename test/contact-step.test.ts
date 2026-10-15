@@ -210,7 +210,7 @@ describe("incomplete leads", () => {
   });
 
   it("are hidden from the inbox unless asked for", () => {
-    const page = readFileSync("app/admin/(workspace)/page.tsx", "utf8");
+    const page = readFileSync("app/admin/(workspace)/inbox/page.tsx", "utf8");
     expect(page).toMatch(/showIncomplete \? all : all\.filter/);
     expect(page).toMatch(/incomplete=1/);
     expect(page).toMatch(/Hide incomplete/);
@@ -220,7 +220,7 @@ describe("incomplete leads", () => {
     // The first number is "confirmed a car", not "visitors", and the
     // page has to say so — a funnel whose top is quietly not the top
     // is worse than no funnel.
-    const page = readFileSync("app/admin/(workspace)/page.tsx", "utf8");
+    const page = readFileSync("app/admin/(workspace)/inbox/page.tsx", "utf8");
     expect(page).toMatch(/left before confirming the car leaves no record/);
   });
 });

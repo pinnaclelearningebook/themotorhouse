@@ -97,5 +97,6 @@ export async function saveSetting(
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
+  revalidatePath("/admin/inbox");
   return { status: "saved", key };
 }

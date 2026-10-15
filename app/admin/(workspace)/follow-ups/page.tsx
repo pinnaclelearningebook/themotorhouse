@@ -131,7 +131,7 @@ export default async function FollowUpsPage() {
       {total === 0 && (
         <p className="mt-10 text-sm text-structure">
           No open leads. New enquiries appear in the{" "}
-          <Link href="/admin" className="link-draw text-oxblood">
+          <Link href="/admin/inbox" className="link-draw text-oxblood">
             inbox
           </Link>
           .
