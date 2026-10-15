@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Container } from "@/components/ui/Container";
 import { DevConfigBanner } from "@/components/ui/DevConfigBanner";
 import { ValuationFormV2 } from "@/components/forms/ValuationFormV2";
@@ -32,6 +33,11 @@ export default async function ValuationPage({
           <DevConfigBanner />
         </div>
         <div className="max-w-2xl">
+          <Breadcrumbs
+            tone="light"
+            className="mb-6"
+            trail={[{ name: "Get my offer", path: "/valuation" }]}
+          />
           <p className="text-caption font-semibold tracking-[0.16em] text-oxblood uppercase">
             Your car
           </p>
