@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { runEnrichment } from "@/lib/decision/enrich";
 import { TEST_SOURCE } from "@/lib/admin/voice-test";
+import type { ContactMethod } from "@/lib/validation";
 
 /**
  * The inbox query, plus the catch-up sweep.
@@ -41,6 +42,11 @@ export interface InboxRow {
   reg: string;
   name: string | null;
   phone: string | null;
+  email: string | null;
+  preferredContactMethod: ContactMethod | null;
+  /** No contact details: step 4 was never submitted. */
+  incomplete: boolean;
+  furthestStep: number;
   createdAt: string;
   timeline: string | null;
   status: string;
@@ -52,6 +58,31 @@ export interface InboxRow {
   recommendedChannel: string | null;
   flagCount: number;
   pending: boolean;
+}
+
+/**
+ * How far sellers get, counted from the rows themselves.
+ *
+ * Deliberately not a funnel from the first keystroke: a row only
+ * exists once a car is confirmed, so people who typed a registration
+ * and left before that are not here and cannot be. What this measures
+ * is everyone who got past step 1 — which is the part we changed, and
+ * the part where the drop-off is now worth watching.
+ */
+export interface Funnel {
+  confirmedCar: number;
+  reachedSale: number;
+  reachedContact: number;
+  completed: number;
+}
+
+export function funnelFrom(rows: InboxRow[]): Funnel {
+  return {
+    confirmedCar: rows.length,
+    reachedSale: rows.filter((r) => r.furthestStep >= 3).length,
+    reachedContact: rows.filter((r) => r.furthestStep >= 4).length,
+    completed: rows.filter((r) => !r.incomplete).length,
+  };
 }
 
 export async function inboxRows(): Promise<{
@@ -69,7 +100,7 @@ export async function inboxRows(): Promise<{
   const { data: leads } = await db()
     .from("leads")
     .select(
-      "id, reg, name, phone, created_at, timeline, status, pending_enrichment, vehicle_id",
+      "id, reg, name, phone, email, preferred_contact_method, furthest_step, completed_at, created_at, timeline, status, pending_enrichment, vehicle_id",
     )
     // Cars seeded to test voice are not sellers and must not appear in
     // the queue of people waiting for a call.
@@ -119,6 +150,13 @@ export async function inboxRows(): Promise<{
       reg: lead.reg as string,
       name: (lead.name as string) ?? null,
       phone: (lead.phone as string) ?? null,
+      email: (lead.email as string) ?? null,
+      preferredContactMethod:
+        (lead.preferred_contact_method as ContactMethod) ?? null,
+      // Contact details are the thing that makes a row actionable, and
+      // completed_at is the one column that only step 4 writes.
+      incomplete: !lead.completed_at,
+      furthestStep: (lead.furthest_step as number) ?? 2,
       createdAt: lead.created_at as string,
       timeline: (lead.timeline as string) ?? null,
       status: lead.status as string,
@@ -134,8 +172,11 @@ export async function inboxRows(): Promise<{
   });
 
   // Score descending, then oldest first — a high-scoring lead that has
-  // been waiting should outrank a fresh one of the same score.
+  // been waiting should outrank a fresh one of the same score. An
+  // incomplete row sorts below every complete one whatever it scored:
+  // there is nobody to ring, so it is never the next thing to do.
   rows.sort((a, b) => {
+    if (a.incomplete !== b.incomplete) return a.incomplete ? 1 : -1;
     const byScore = (b.score ?? -1) - (a.score ?? -1);
     if (byScore !== 0) return byScore;
     return a.createdAt.localeCompare(b.createdAt);

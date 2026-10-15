@@ -54,9 +54,12 @@ async function findVehicleId(reg: string): Promise<string | null> {
 }
 
 /**
- * Creates the lead the moment the car is confirmed and a phone number
- * lands (CLAUDE.md section 9). Deliberately the smallest useful row: a
- * registration and a number someone can ring. Everything else patches it.
+ * Creates the lead the moment the car is confirmed (CLAUDE.md §9).
+ *
+ * A registration and nothing else. The number used to land here too,
+ * which meant every row was one somebody could ring; it is at step 4
+ * now, so this row is a record that a car was confirmed and the inbox
+ * treats it as incomplete until contact details arrive.
  */
 export async function startLead(
   data: StartLeadData,
@@ -79,7 +82,7 @@ export async function startLead(
 
   const { data: row, error } = await db()
     .from("leads")
-    .insert({ reg: data.reg, vehicle_id: vehicleId ?? null, phone: data.phone })
+    .insert({ reg: data.reg, vehicle_id: vehicleId ?? null })
     .select("id")
     .single();
 
@@ -127,10 +130,31 @@ export function salePatch(data: SaleData) {
 export function contactPatch(data: ContactData) {
   return {
     name: data.name,
+    phone: data.phone,
     email: data.email,
+    preferred_contact_method: data.preferredContactMethod,
     postcode: data.postcode,
     contact_window: data.contactWindow ?? null,
     marketing_consent: data.marketingConsent,
     consent_at: data.marketingConsent ? new Date().toISOString() : null,
+    completed_at: new Date().toISOString(),
   };
+}
+
+/**
+ * Raise the furthest step this seller reached. Never lowers it.
+ *
+ * Its own statement with an `lt` guard rather than a value in the step
+ * patch, because Back is a button: a seller who returns to step 2 and
+ * continues again would otherwise rewrite 4 as 3 and the funnel would
+ * count them as having given up where they did not.
+ */
+export async function markStep(id: string, step: 2 | 3 | 4): Promise<void> {
+  if (!isStoreConfigured() || id.startsWith("unpersisted-")) return;
+  const { error } = await db()
+    .from("leads")
+    .update({ furthest_step: step })
+    .eq("id", id)
+    .lt("furthest_step", step);
+  if (error) throw new Error(`markStep failed: ${error.message}`);
 }

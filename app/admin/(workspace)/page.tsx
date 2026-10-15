@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { inboxRows, sweepPending } from "@/lib/admin/inbox";
+import { funnelFrom, inboxRows, sweepPending } from "@/lib/admin/inbox";
+import { METHOD_BADGE } from "@/lib/admin/contact";
 import { titleCaseVehicle } from "@/lib/format";
 import { formatReg } from "@/lib/reg";
 
@@ -28,12 +29,30 @@ function waiting(iso: string): string {
   return `${Math.round(hours / 24)}d`;
 }
 
-export default async function InboxPage() {
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ incomplete?: string }>;
+}) {
   // Catch anything the inline trigger missed. Daily cron is the backstop;
   // this is the moment an unscored lead actually costs something.
   await sweepPending();
-  const { rows, slaHours } = await inboxRows();
+  const { rows: all, slaHours } = await inboxRows();
+  const showIncomplete = (await searchParams).incomplete === "1";
 
+  /*
+   * Incomplete rows are hidden by default.
+   *
+   * Since 15 October 2026 a row is written the moment a car is
+   * confirmed, before any contact details exist. Those rows are worth
+   * keeping — they are the only record of where people give up — but
+   * they are not work: there is nobody to ring. Left in the queue they
+   * would be most of it, and the queue would stop meaning "people
+   * waiting for a call".
+   */
+  const rows = showIncomplete ? all : all.filter((row) => !row.incomplete);
+  const funnel = funnelFrom(all);
+  const incompleteCount = all.length - funnel.completed;
   const newLeads = rows.filter((row) => row.status === "new");
 
   return (
@@ -41,9 +60,50 @@ export default async function InboxPage() {
       <div className="flex items-baseline justify-between gap-6">
         <h1 className="font-display text-display-3">Inbox</h1>
         <p className="data-inline text-caption text-structure">
-          {newLeads.length} new · {rows.length} total
+          {newLeads.length} new · {rows.length} shown
         </p>
       </div>
+
+      {/*
+       * The funnel, from the rows themselves. Not a funnel from the
+       * first keystroke: a row only exists once a car is confirmed, so
+       * anyone who typed a registration and left before that is not
+       * counted and cannot be. The label says so rather than letting
+       * the first number read as "visitors".
+       */}
+      <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-3 border-y border-line py-4">
+        {[
+          ["Confirmed a car", funnel.confirmedCar],
+          ["Reached the sale", funnel.reachedSale],
+          ["Reached contact", funnel.reachedContact],
+          ["Completed", funnel.completed],
+        ].map(([label, count]) => (
+          <div key={label as string}>
+            <dt className="text-caption text-structure">{label}</dt>
+            <dd className="data-inline text-lg">{count}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-caption text-structure">
+        Counted from step 1 onward. Someone who typed a registration and
+        left before confirming the car leaves no record and is not here.
+      </p>
+
+      {incompleteCount > 0 && (
+        <p className="mt-4 text-caption">
+          <Link
+            href={showIncomplete ? "/admin" : "/admin?incomplete=1"}
+            className="link-draw text-oxblood"
+          >
+            {showIncomplete
+              ? "Hide incomplete"
+              : `Show ${incompleteCount} incomplete`}
+          </Link>
+          <span className="ml-2 text-structure">
+            — no contact details, so nobody to ring.
+          </span>
+        </p>
+      )}
 
       {slaHours === null && (
         <p className="mt-4 text-caption text-oxblood">
@@ -53,8 +113,9 @@ export default async function InboxPage() {
 
       {rows.length === 0 ? (
         <p className="mt-10 text-sm text-structure">
-          No leads yet. They appear here the moment a seller gives a phone
-          number.
+          {all.length === 0
+            ? "No leads yet. They appear here the moment a seller gives their contact details."
+            : "Nothing to act on. Every lead so far stopped before giving contact details — use the link above to see them."}
         </p>
       ) : (
         <ul className="mt-8 flex flex-col">
@@ -94,8 +155,19 @@ export default async function InboxPage() {
                       </span>
                     )}
                     <span className="mt-0.5 block text-caption text-structure">
-                      {row.name ?? "No name yet"}
-                      {row.phone ? ` · ${row.phone}` : ""}
+                      {row.incomplete ? (
+                        <span className="text-oxblood">Incomplete</span>
+                      ) : (
+                        <>
+                          {row.name ?? "No name yet"}
+                          {row.phone ? ` · ${row.phone}` : ""}
+                          {row.preferredContactMethod && (
+                            <span className="ml-2 rounded border border-line px-1.5 py-0.5">
+                              {METHOD_BADGE[row.preferredContactMethod]}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </span>
                   </span>
 

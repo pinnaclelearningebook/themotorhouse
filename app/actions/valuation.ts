@@ -10,22 +10,24 @@ import {
 import {
   carPatch,
   contactPatch,
+  markStep,
   patchLead,
   salePatch,
   startLead,
 } from "@/lib/submissions";
 import { sendOperatorAlert, sendSellerConfirmation } from "@/lib/email";
-import { recordSellerConfirmation } from "@/lib/seller-confirmation";
+import { recordThankYouState } from "@/lib/thank-you-state";
 import { rememberOwnedLead } from "@/lib/agent/session";
 import { runEnrichment } from "@/lib/decision/enrich";
 
 /**
  * The four-step form persists incrementally.
  *
- * A lead exists from the moment the car is confirmed and a phone number
- * lands (CLAUDE.md section 9), so step 1 creates the row and steps 2, 3
- * and 4 patch it. Abandoning at any point from step 1 onward leaves a
- * lead someone can ring.
+ * A lead exists from the moment the car is confirmed (CLAUDE.md §9), so
+ * step 1 creates the row and steps 2, 3 and 4 patch it. Every contact
+ * detail arrives at step 4, so a row is only something someone can act
+ * on once that step submits — before then it is drop-off data, and the
+ * inbox hides it.
  */
 
 const TRY_AGAIN =
@@ -44,7 +46,16 @@ function invalid(error: z.ZodError): ActionState {
   return { status: "error", fieldErrors: z.flattenError(error).fieldErrors };
 }
 
-/** Step 1 — creates the lead and alerts the operator that one started. */
+/**
+ * Step 1 — creates the lead. No alert.
+ *
+ * There used to be a "lead started" alert here, when the row carried a
+ * phone number and was therefore worth ringing. It is not any more:
+ * an alert naming a registration nobody can be contacted about is an
+ * interruption with no action attached to it, and three of those a day
+ * is how an operator learns to ignore the alerts that matter. The row
+ * is still written, and /admin still counts it.
+ */
 export async function startLeadAction(payload: unknown): Promise<ActionState> {
   const parsed = startLeadSchema.safeParse(payload);
   if (!parsed.success) return invalid(parsed.error);
@@ -67,24 +78,6 @@ export async function startLeadAction(payload: unknown): Promise<ActionState> {
     console.error("could not record lead ownership", error);
   }
 
-  // Fires on first persistence per CLAUDE.md section 9. Thin by design:
-  // a registration and a number is already enough to ring someone, and
-  // this is the alert that catches a seller who never finishes.
-  try {
-    await sendOperatorAlert({
-      id,
-      reg: parsed.data.reg,
-      phone: parsed.data.phone,
-      stage: "started",
-    });
-  } catch (error) {
-    console.error(
-      `OPERATOR ALERT NOT SENT for new lead ${id} (${parsed.data.reg}, ` +
-        `${parsed.data.phone}). Nobody has been told; it is in /admin ` +
-        `only. Cause: ${error}`,
-    );
-  }
-
   return { status: "created", id };
 }
 
@@ -97,6 +90,7 @@ export async function patchCarAction(
   if (!parsed.success) return invalid(parsed.error);
   try {
     await patchLead(id, carPatch(parsed.data));
+    await markStep(id, 3);
   } catch (error) {
     console.error("patchCar failed", error);
     return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
@@ -113,6 +107,7 @@ export async function patchSaleAction(
   if (!parsed.success) return invalid(parsed.error);
   try {
     await patchLead(id, salePatch(parsed.data));
+    await markStep(id, 4);
   } catch (error) {
     console.error("patchSale failed", error);
     return { status: "error", fieldErrors: {}, formError: TRY_AGAIN };
@@ -127,7 +122,7 @@ export async function patchSaleAction(
 export async function completeLeadAction(
   id: string,
   payload: unknown,
-  summary: { reg: string; phone: string; mileage?: number | null },
+  summary: { reg: string; mileage?: number | null },
 ): Promise<ActionState> {
   const parsed = contactSchema.safeParse(payload);
   if (!parsed.success) return invalid(parsed.error);
@@ -142,13 +137,13 @@ export async function completeLeadAction(
   const alert = {
     id,
     reg: summary.reg,
-    phone: summary.phone,
+    phone: parsed.data.phone,
+    preferredContactMethod: parsed.data.preferredContactMethod,
     mileage: summary.mileage ?? null,
     postcode: parsed.data.postcode,
     name: parsed.data.name,
     email: parsed.data.email,
     marketingConsent: parsed.data.marketingConsent,
-    stage: "completed" as const,
   };
 
   /*
@@ -180,13 +175,19 @@ export async function completeLeadAction(
         `Cause: ${seller.reason}`,
     );
   }
-  // What the thank-you page is allowed to say next. `fulfilled` is not
-  // enough on its own: sendSellerConfirmation resolves without sending
-  // when there is no address and when Resend is unconfigured, so only
-  // its `true` means an email exists for the seller to look for.
-  await recordSellerConfirmation(
-    seller.status === "fulfilled" && seller.value === true ? "sent" : "failed",
-  );
+  // What the thank-you page is allowed to say next: which channel the
+  // seller chose, and whether an email actually went. `fulfilled` is
+  // not enough on its own for the second — sendSellerConfirmation
+  // resolves without sending when there is no address and when Resend
+  // is unconfigured, so only its `true` means an email exists for the
+  // seller to look for.
+  await recordThankYouState({
+    method: parsed.data.preferredContactMethod,
+    confirmation:
+      seller.status === "fulfilled" && seller.value === true
+        ? "sent"
+        : "failed",
+  });
 
   // Enrich inline so the scored alert arrives with the submission rather
   // than on the next cron tick. Cron is the catch-up, not the mechanism

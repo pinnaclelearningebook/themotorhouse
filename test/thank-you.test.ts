@@ -79,10 +79,13 @@ describe("telling the seller we emailed them", () => {
       /reply to that email/i,
     );
     // And it is chosen, not stated.
-    expect(page).toMatch(/readSellerConfirmation/);
+    expect(page).toMatch(/readThankYouState/);
     expect(page).toMatch(/confirmation === "sent"/);
     // The fallback must not mention an email at all.
-    const fallback = page.slice(page.indexOf("const NOT_EMAILED"), page.indexOf("export default"));
+    const fallback = page.slice(
+      page.indexOf("const NO_EMAIL_CARDS"),
+      page.indexOf("export default"),
+    );
     expect(fallback.length).toBeGreaterThan(100);
     expect(fallback, "the no-email branch must not mention email").not.toMatch(/\bemail\b/i);
   });
@@ -95,16 +98,34 @@ describe("telling the seller we emailed them", () => {
     expect(email).toMatch(/if \(!submission\.email\) return false;/);
     // So the action requires the value, not just the status.
     expect(action).toMatch(/seller\.status === "fulfilled" && seller\.value === true/);
-    expect(action).toMatch(/recordSellerConfirmation/);
+    expect(action).toMatch(/recordThankYouState/);
   });
 
   it("treats an unknown outcome as no email", () => {
-    const lib = readFileSync("lib/seller-confirmation.ts", "utf8");
+    const lib = readFileSync("lib/thank-you-state.ts", "utf8");
     // Anything that is not an explicit "sent" or "failed" is unknown…
-    expect(lib).toMatch(/value === "sent" \|\| value === "failed" \? value : "unknown"/);
+    expect(lib).toMatch(/confirmation === "sent" \|\| confirmation === "failed"/);
     // …and the page's only positive branch is an explicit "sent".
     const page = readFileSync(GATED, "utf8");
     expect(page).not.toMatch(/confirmation !== "failed"/);
+  });
+
+  it("names the channel the seller chose, and still promises the call", () => {
+    const page = readFileSync(GATED, "utf8");
+    // One opening card per method, so nobody is told the wrong channel.
+    for (const method of ["call", "whatsapp", "sms", "email"]) {
+      expect(page, `no opening card for ${method}`).toMatch(
+        new RegExp(`^\\s*${method}: \\{`, "m"),
+      );
+    }
+    // Choosing email changes the channel, not the promise: the offer
+    // still comes from a person on the phone (CLAUDE.md section 9).
+    const emailCard = page.slice(page.indexOf("  email: {"), page.indexOf("};", page.indexOf("  email: {")));
+    expect(emailCard, "the email branch must still promise the call").toMatch(
+      /a person will also call you on the number you gave/i,
+    );
+    // And an unknown method claims no channel at all.
+    expect(page).toMatch(/UNKNOWN_FIRST_CARD/);
   });
 
   it("catches the wording it was written for", () => {

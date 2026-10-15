@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { SITE, PROMISES } from "@/config/site";
+import type { ContactMethod } from "@/lib/validation";
 /**
  * Only what the two emails actually print. Typing these to a form step
  * coupled the mailer to one version of the form; both the two-step and
@@ -10,20 +11,33 @@ export interface AlertPayload {
   reg: string;
   phone: string;
   /**
-   * "started" fires the moment a car is confirmed and a phone number
-   * lands — a registration and a number, nothing else, because that is
-   * already enough to ring someone and it is the alert that catches a
-   * seller who never finishes the form.
-   *
-   * "completed" fires when the rest arrives.
+   * How the seller asked to be reached. The first line of the alert,
+   * because it decides what the operator does next.
    */
-  stage: "started" | "completed";
+  preferredContactMethod?: ContactMethod | null;
   mileage?: number | null;
   postcode?: string | null;
   name?: string | null;
   email?: string | null;
   marketingConsent?: boolean;
 }
+
+/**
+ * One operator alert, on completion.
+ *
+ * There was a second, on first persistence, from when a phone number
+ * arrived at step 1 and every new row was worth ringing. Contact
+ * details all land at step 4 now, so that alert would name a
+ * registration nobody can be contacted about — an interruption with
+ * no action attached, and three a day is how an operator learns to
+ * ignore the ones that matter. Drop-off is counted in /admin instead.
+ */
+const METHOD_LABEL: Record<ContactMethod, string> = {
+  call: "Phone call",
+  whatsapp: "WhatsApp",
+  sms: "Text message",
+  email: "Email",
+};
 
 /**
  * Transactional email via Resend. The instant seller auto-reply is a P0
@@ -132,34 +146,27 @@ export async function sendOperatorAlert(
     return;
   }
 
-  const started = submission.stage === "started";
-  const lines = started
-    ? [
-        `A seller started an enquiry on ${SITE.name} and gave a number.`,
-        "",
-        `Registration: ${submission.reg}`,
-        `Phone: ${submission.phone}`,
-        "",
-        "They have not finished the form yet. If nothing follows this",
-        "email, the number above is still worth a call.",
-        "",
-        `Record: ${submission.id}`,
-      ]
-    : [
-        `Enquiry completed on ${SITE.name}.`,
-        "",
-        `Registration: ${submission.reg}`,
-        submission.mileage
-          ? `Mileage: ${submission.mileage.toLocaleString("en-GB")}`
-          : null,
-        submission.postcode ? `Postcode: ${submission.postcode}` : null,
-        submission.name ? `Name: ${submission.name}` : null,
-        `Phone: ${submission.phone}`,
-        submission.email ? `Email: ${submission.email}` : null,
-        "",
-        `Record: ${submission.id}`,
-        `The seller has been told to expect contact within ${PROMISES.offerWithinHours} hours.`,
-      ].filter((line): line is string => line !== null);
+  const method = submission.preferredContactMethod
+    ? METHOD_LABEL[submission.preferredContactMethod]
+    : "Not asked";
+
+  const lines = [
+    `Enquiry completed on ${SITE.name}.`,
+    "",
+    `They asked to be contacted by: ${method.toUpperCase()}`,
+    `Phone: ${submission.phone}`,
+    submission.email ? `Email: ${submission.email}` : null,
+    "",
+    `Registration: ${submission.reg}`,
+    submission.mileage
+      ? `Mileage: ${submission.mileage.toLocaleString("en-GB")}`
+      : null,
+    submission.postcode ? `Postcode: ${submission.postcode}` : null,
+    submission.name ? `Name: ${submission.name}` : null,
+    "",
+    `Record: ${submission.id}`,
+    `The seller has been told to expect contact within ${PROMISES.offerWithinHours} hours.`,
+  ].filter((line): line is string => line !== null);
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   const id = await send(
@@ -167,9 +174,7 @@ export async function sendOperatorAlert(
     {
       from: operatorSender(),
       to: operatorEmails(),
-      subject: started
-        ? `Lead started: ${submission.reg}`
-        : `New enquiry: ${submission.reg}`,
+      subject: `New enquiry: ${submission.reg} — ${method}`,
       text: lines.join("\n"),
     },
     "operator alert",
@@ -183,7 +188,8 @@ export async function sendOperatorAlert(
    */
   console.log(
     `operator alert accepted by Resend (${id}) for lead ${submission.id} ` +
-      `[${submission.stage}] → ${operatorEmails().length} recipient(s)`,
+      `[${submission.preferredContactMethod ?? "method not asked"}] → ` +
+      `${operatorEmails().length} recipient(s)`,
   );
 }
 
