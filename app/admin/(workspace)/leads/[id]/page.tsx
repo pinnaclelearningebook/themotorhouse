@@ -313,7 +313,15 @@ export default async function LeadPage({
             <h2 className="font-display text-2xl">Photos</h2>
             {(photos ?? []).length === 0 ? (
               <p className="mt-3 text-sm text-structure">
-                None uploaded. The auto-reply invites them by email.
+                {/*
+                  Not "the auto-reply invites them by email": the seller
+                  confirmation has been rejected by Resend on every
+                  submission since the domain went unverified, so for
+                  now asking is the operator's job and the panel should
+                  not imply it has been done.
+                */}
+                None uploaded. Ask on the call — the outside from each
+                corner and the interior.
               </p>
             ) : (
               <ul className="mt-4 grid grid-cols-3 gap-3">
