@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { runEnrichment } from "@/lib/decision/enrich";
-import { TEST_SOURCE } from "@/lib/admin/voice-test";
+import { excludeTestLeads } from "@/lib/admin/exclusions";
 import type { ContactMethod } from "@/lib/validation";
 
 /**
@@ -97,14 +97,13 @@ export async function inboxRows(): Promise<{
   const slaHours =
     typeof slaRow?.value === "number" ? (slaRow.value as number) : null;
 
-  const { data: leads } = await db()
-    .from("leads")
-    .select(
-      "id, reg, name, phone, email, preferred_contact_method, furthest_step, completed_at, created_at, timeline, status, pending_enrichment, vehicle_id",
-    )
-    // Cars seeded to test voice are not sellers and must not appear in
-    // the queue of people waiting for a call.
-    .or(`source.is.null,source.neq.${TEST_SOURCE}`)
+  const { data: leads } = await excludeTestLeads(
+    db()
+      .from("leads")
+      .select(
+        "id, reg, name, phone, email, preferred_contact_method, furthest_step, completed_at, created_at, timeline, status, pending_enrichment, vehicle_id",
+      ),
+  )
     .order("created_at", { ascending: false })
     .limit(200);
 

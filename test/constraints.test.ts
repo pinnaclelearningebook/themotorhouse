@@ -722,22 +722,35 @@ describe("the seeded voice-test car is not a seller", () => {
   it("is excluded from the inbox, the pipeline and follow-ups", () => {
     // A test car in the queue of people waiting for a call is worse than
     // no test car: someone rings it.
+    //
+    // The filter used to be written out in each of the three files.
+    // It is one helper now, and test/test-leads.test.ts checks what it
+    // does; this checks only that all three still go through it.
     for (const file of [
       "lib/admin/inbox.ts",
       "lib/admin/pipeline.ts",
       "lib/admin/followups.ts",
     ]) {
       const code = readFileSync(join(ROOT_DIR, file), "utf8");
-      expect(code, `${file} must exclude the test source`).toMatch(
-        /source\.neq\.\$\{TEST_SOURCE\}/,
+      expect(code, `${file} must exclude test leads`).toMatch(
+        /excludeTestLeads\(/,
       );
     }
   });
 
-  it("marks what it seeds, rather than relying on the registration", () => {
+  it("marks what it seeds, and also excludes the reserved plate", () => {
+    // This used to say "rather than relying on the registration", on
+    // the reasoning that labelling the row is the sound mechanism.
+    // It is — for rows the seeder creates. Eight TE57VOX rows reached
+    // the Pipeline on 15 October 2026 having gone through the real
+    // public form by hand, so nothing had labelled them and nothing
+    // could. Both, therefore: the seeder still marks its own, and a
+    // reserved plate is excluded whatever route it came in by.
     const seeder = readFileSync(join(ROOT_DIR, "lib/admin/voice-test.ts"), "utf8");
     expect(seeder).toMatch(/source: TEST_SOURCE/);
     expect(seeder).toMatch(/Not a real seller/);
+    const exclusions = readFileSync(join(ROOT_DIR, "lib/admin/exclusions.ts"), "utf8");
+    expect(exclusions).toMatch(/TEST_REGISTRATIONS/);
   });
 
   it("checks the admin again inside the server action", () => {

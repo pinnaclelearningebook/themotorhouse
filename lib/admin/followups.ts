@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { TEST_SOURCE } from "@/lib/admin/voice-test";
+import { excludeTestLeads } from "@/lib/admin/exclusions";
 
 /**
  * Follow-ups, driven by next_contact_date.
@@ -48,13 +48,14 @@ function isoDate(date: Date): string {
 }
 
 export async function followUps(): Promise<FollowUps> {
-  const { data: leads } = await db()
-    .from("leads")
-    .select(
-      "id, reg, name, phone, status, timeline, next_contact_date, vehicle_id, created_at",
-    )
-    .in("status", [...OPEN])
-    .or(`source.is.null,source.neq.${TEST_SOURCE}`)
+  const { data: leads } = await excludeTestLeads(
+    db()
+      .from("leads")
+      .select(
+        "id, reg, name, phone, status, timeline, next_contact_date, vehicle_id, created_at",
+      )
+      .in("status", [...OPEN]),
+  )
     .order("next_contact_date", { ascending: true, nullsFirst: false })
     .limit(400);
 
