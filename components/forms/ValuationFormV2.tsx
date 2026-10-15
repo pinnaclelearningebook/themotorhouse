@@ -137,18 +137,19 @@ export function ValuationFormV2({
   const [contact, setContact] = useState<ContactDetails>(EMPTY_CONTACT);
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>({});
   const [formError, setFormError] = useState<string | undefined>();
-  const [pending, startTransition] = useTransition();
   /*
-   * Step 4's own pending state, separate from the shared transition.
+   * The transition's own `isPending` is deliberately dropped.
    *
-   * `pending` is true while *any* step is saving, and leaveSale starts
-   * its patch and advances in the same breath — so for about two
-   * seconds after arriving at step 4 the submit button sat disabled
-   * reading "Sending your request…" when nothing had been submitted.
-   * A seller reaching straight for it found it dead and lying. The
-   * save in the background does not concern them; their own submit
-   * does.
+   * It is true while *any* step is saving, and leaveSale starts its
+   * patch and advances in the same breath — so for about two seconds
+   * after arriving at step 4 the submit button sat disabled reading
+   * "Sending your request…" with nothing submitted. A seller reaching
+   * straight for it found it dead and lying about why.
+   *
+   * The background save does not concern them. Their own submit does,
+   * so step 4 tracks that and nothing else.
    */
+  const [, startTransition] = useTransition();
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
