@@ -71,6 +71,24 @@ export const metadata: Metadata = {
     locale: "en_GB",
     type: "website",
   },
+  /*
+   * Search engine ownership verification, from the environment.
+   *
+   * Both are optional and both render nothing when unset, so the tag
+   * never appears half-filled. A DNS TXT record is the better route
+   * for Google — it verifies the whole domain including the apex and
+   * any subdomain, and survives this file being rewritten — but the
+   * meta tag is here for whichever one is easier to get added, and
+   * for Bing, which has no domain-level option.
+   *
+   * Set with: vercel env add GOOGLE_SITE_VERIFICATION production
+   */
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
 };
 
 export default function RootLayout({
