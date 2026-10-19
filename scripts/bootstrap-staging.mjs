@@ -54,7 +54,22 @@ const response = await fetch(`${target.url}/rest/v1/settings?on_conflict=key`, {
 });
 
 if (!response.ok) {
-  console.error(`Failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+  const detail = (await response.text()).slice(0, 300);
+  /*
+   * The ordinary way to arrive here is too early: a brand-new project
+   * has no `settings` table to write the marker into. Saying so beats
+   * a PostgREST schema-cache error, which reads like a bug in this
+   * script rather than a step that has not been run.
+   */
+  if (/public\.settings/.test(detail)) {
+    console.error(
+      "This project has no `settings` table yet, so there is nowhere to put\n" +
+        "the marker. Run the migrations first:\n\n" +
+        "  node scripts/migrate.mjs --target staging\n",
+    );
+    process.exit(1);
+  }
+  console.error(`Failed: ${response.status} ${detail}`);
   process.exit(1);
 }
 

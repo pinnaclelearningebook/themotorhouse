@@ -24,7 +24,7 @@
  * Reads SUPABASE_ACCESS_TOKEN and both targets' URLs. Values are
  * never printed.
  */
-import { resolveTarget } from "./lib/target.mjs";
+import { resolveTarget, assertManagementToken } from "./lib/target.mjs";
 
 const API = "https://api.supabase.com/v1";
 
@@ -37,8 +37,10 @@ try {
   console.error(error.message);
   process.exit(1);
 }
-if (!production.accessToken) {
-  console.error("Missing SUPABASE_ACCESS_TOKEN in .env.local.");
+try {
+  await assertManagementToken(production);
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
 

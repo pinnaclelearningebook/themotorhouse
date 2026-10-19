@@ -30,7 +30,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolveTarget } from "./lib/target.mjs";
+import { resolveTarget, assertManagementToken } from "./lib/target.mjs";
 
 const API = "https://api.supabase.com/v1";
 const DIR = join("supabase", "migrations");
@@ -57,8 +57,10 @@ if (target.name === "production" && !has("i-mean-production")) {
   );
   process.exit(1);
 }
-if (!target.accessToken) {
-  console.error("Missing SUPABASE_ACCESS_TOKEN in .env.local.");
+try {
+  await assertManagementToken(target);
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
 

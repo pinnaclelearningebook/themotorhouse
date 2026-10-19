@@ -189,6 +189,64 @@ export function designationRefusalReason({
   );
 }
 
+/**
+ * Check the Management API token before a script leans on it.
+ *
+ * DDL cannot go through PostgREST, so every schema script needs
+ * `SUPABASE_ACCESS_TOKEN` — and a dead one produces a bare
+ * `401 {"message":"Invalid access token"}` from whichever query ran
+ * first, which reads like a problem with that query. It is not: the
+ * token is either valid for the whole account or valid for nothing.
+ *
+ * So the distinction is drawn here, once, in words. 401 means
+ * revoked or expired and needs a new token; 403 means the token is
+ * real but missing a scope, which is a different errand.
+ */
+export async function assertManagementToken(target) {
+  if (!target.accessToken) {
+    throw new Error(
+      "Missing SUPABASE_ACCESS_TOKEN in .env.local.\n" +
+        "Schema changes go through the Management API, which the project\n" +
+        "keys cannot reach. Create one at\n" +
+        "  https://supabase.com/dashboard/account/tokens",
+    );
+  }
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${target.ref}/database/query`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${target.accessToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ query: "select 1 as ok;" }),
+    },
+  );
+  if (response.ok) return;
+
+  const detail = (await response.text()).slice(0, 200);
+  if (response.status === 401) {
+    throw new Error(
+      `SUPABASE_ACCESS_TOKEN is not valid (401 ${detail}).\n` +
+        "A token is valid for the whole account or for nothing, so this is\n" +
+        "not about the target: it has expired or been revoked. Replace it\n" +
+        "with a new personal access token from\n" +
+        "  https://supabase.com/dashboard/account/tokens\n" +
+        "and keep the scopes it already needed for scripts/configure-auth.mjs\n" +
+        "(auth_config_read and auth_config_write), or create it with full access.",
+    );
+  }
+  if (response.status === 403) {
+    throw new Error(
+      `SUPABASE_ACCESS_TOKEN is real but not allowed to run SQL on ` +
+        `${target.name} (403 ${detail}).\n` +
+        "This is a scope, not an expiry — grant it database access, or use a\n" +
+        "token with full access.",
+    );
+  }
+  throw new Error(`Management API refused the check: ${response.status} ${detail}`);
+}
+
 async function rest(target, path) {
   const response = await fetch(`${target.url}/rest/v1/${path}`, {
     headers: {
