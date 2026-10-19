@@ -1,4 +1,12 @@
-import { readFileSync } from "node:fs";
+/**
+ * Reads every page in the live sitemap and prints what a crawler sees:
+ * title and description lengths, the canonical, h1 count, JSON-LD
+ * types, and images with no alt.
+ *
+ * Run against production by hand after a release that touches
+ * metadata — `node scripts/seo-audit.mjs`. Nothing imports it and
+ * nothing in CI runs it; it is a check, not a build step.
+ */
 const BASE = "https://www.selltothemotorhouse.co.uk";
 const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
 const paths = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)]

@@ -26,15 +26,24 @@ export const SITE = {
  * the wrong one declared the original, which is the one configuration
  * mistake that can stop a new domain ranking at all.
  *
- * The Vercel fallback stays for preview deployments built before the
- * variable propagates, and localhost for development.
+ * The fallback is `SITE.domain`, not the deployment hostname. That arm
+ * was how the wrong canonical got out in the first place: the
+ * platform variable it read is the *project's* production hostname,
+ * so it returned themotorhouse.vercel.app on every build, production
+ * included, and a single missing or blank environment variable was
+ * enough to put it back on every page. The domain is not a secret and
+ * does not change per environment, so it is committed — an unset
+ * variable now degrades to the correct answer, and test/seo.test.ts
+ * fails if that arm is ever reinstated.
+ *
+ * Localhost only in development, where an absolute URL has to point at
+ * the machine serving the page.
  */
 export function siteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return explicit.replace(/\/$/, "");
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (vercel) return `https://${vercel}`;
-  return "http://localhost:3000";
+  if (process.env.NODE_ENV === "development") return "http://localhost:3000";
+  return `https://${SITE.domain}`;
 }
 
 export function absoluteUrl(path: string): string {

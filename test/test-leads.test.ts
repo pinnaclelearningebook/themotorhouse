@@ -20,7 +20,7 @@ import { TEST_SOURCE } from "@/lib/admin/voice-test";
  */
 
 /** Every admin module that lists leads for a human to act on. */
-const LISTINGS = ["inbox.ts", "pipeline.ts", "followups.ts"];
+const LISTINGS = ["inbox.ts", "inbox-query.ts", "pipeline.ts", "followups.ts"];
 
 describe("test leads", () => {
   it("are excluded by every admin listing", () => {

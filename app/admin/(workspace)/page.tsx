@@ -1,220 +1,230 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { funnelFrom, inboxRows, sweepPending } from "@/lib/admin/inbox";
-import { METHOD_BADGE } from "@/lib/admin/contact";
-import { titleCaseVehicle } from "@/lib/format";
+import { AlertTriangle, CalendarClock, Clock, Inbox } from "lucide-react";
+import { dashboardData, type NeedsYouRow } from "@/lib/admin/dashboard";
+import { sweepPending } from "@/lib/admin/inbox";
+import { StatCard } from "@/components/admin/ui/StatCard";
+import { EmptyState } from "@/components/admin/ui/EmptyState";
+import { BarChart, FunnelChart } from "@/components/admin/ui/BarChart";
 import { formatReg } from "@/lib/reg";
 
 export const metadata: Metadata = {
-  title: "Inbox",
+  title: "Dashboard",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";
 
-const TIMELINE_LABELS: Record<string, string> = {
-  asap: "As soon as possible",
-  this_month: "This month",
-  few_months: "Next few months",
-  researching: "Just researching",
+const METHOD_LABEL: Record<string, string> = {
+  call: "Phone call",
+  whatsapp: "WhatsApp",
+  sms: "Text message",
+  email: "Email",
+  "not asked": "Not asked",
 };
 
-function hoursSince(iso: string): number {
-  return (Date.now() - new Date(iso).getTime()) / 3_600_000;
+/** Monday the 6th, not 2026-10-06. */
+function weekLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
-function waiting(iso: string): string {
-  const hours = hoursSince(iso);
-  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}m`;
-  if (hours < 48) return `${Math.round(hours)}h`;
-  return `${Math.round(hours / 24)}d`;
-}
-
-export default async function InboxPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ incomplete?: string }>;
-}) {
-  // Catch anything the inline trigger missed. Daily cron is the backstop;
-  // this is the moment an unscored lead actually costs something.
+export default async function DashboardPage() {
   await sweepPending();
-  const { rows: all, slaHours } = await inboxRows();
-  const showIncomplete = (await searchParams).incomplete === "1";
-
-  /*
-   * Incomplete rows are hidden by default.
-   *
-   * Since 15 October 2026 a row is written the moment a car is
-   * confirmed, before any contact details exist. Those rows are worth
-   * keeping — they are the only record of where people give up — but
-   * they are not work: there is nobody to ring. Left in the queue they
-   * would be most of it, and the queue would stop meaning "people
-   * waiting for a call".
-   */
-  const rows = showIncomplete ? all : all.filter((row) => !row.incomplete);
-  const funnel = funnelFrom(all);
-  const incompleteCount = all.length - funnel.completed;
-  const newLeads = rows.filter((row) => row.status === "new");
+  const data = await dashboardData();
+  const needs =
+    data.needsYou.overSla.length +
+    data.needsYou.dueToday.length +
+    data.needsYou.offersExpiring.length;
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between gap-6">
-        <h1 className="font-display text-display-3">Inbox</h1>
-        <p className="data-inline text-caption text-structure">
-          {newLeads.length} new · {rows.length} shown
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-7xl">
+      <h1 className="font-display text-display-3">Dashboard</h1>
 
       {/*
-       * The funnel, from the rows themselves. Not a funnel from the
-       * first keystroke: a row only exists once a car is confirmed, so
-       * anyone who typed a registration and left before that is not
-       * counted and cannot be. The label says so rather than letting
-       * the first number read as "visitors".
-       */}
-      <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-3 border-y border-line py-4">
-        {[
-          ["Confirmed a car", funnel.confirmedCar],
-          ["Reached the sale", funnel.reachedSale],
-          ["Reached contact", funnel.reachedContact],
-          ["Completed", funnel.completed],
-        ].map(([label, count]) => (
-          <div key={label as string}>
-            <dt className="text-caption text-structure">{label}</dt>
-            <dd className="data-inline text-lg">{count}</dd>
+        * Counts, not projections. There is no forecast here and no
+        * margin until a car has actually sold — the decision engine's
+        * estimates live on the lead, beside the inputs they came from,
+        * where a person can see what they rest on (CLAUDE.md §11).
+        */}
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+        <StatCard label="New today" value={data.newToday} href="/admin/inbox" />
+        <StatCard label="New this week" value={data.newThisWeek} href="/admin/inbox" />
+        <StatCard
+          label="Awaiting contact"
+          value={data.awaitingFirstContact}
+          hint="Nobody has rung them yet"
+          href="/admin/inbox"
+        />
+        <StatCard
+          label="Over SLA"
+          value={data.overSla}
+          tone="urgent"
+          hint={
+            data.slaHours === null
+              ? "No SLA set — Settings"
+              : `Older than ${data.slaHours}h`
+          }
+          href="/admin/inbox?sla=over"
+        />
+        <StatCard label="Offers out" value={data.offersOut} href="/admin/pipeline" />
+        <StatCard label="Accepted" value={data.accepted} href="/admin/pipeline" />
+        <StatCard
+          label="Collected this month"
+          value={data.collectedThisMonth}
+          tone="quiet"
+          href="/admin/pipeline"
+        />
+      </div>
+
+      {/* ─── needs you now ─────────────────────────────────────── */}
+      <section aria-labelledby="needs-heading" className="mt-10">
+        <h2 id="needs-heading" className="font-display text-2xl">
+          Needs you now
+        </h2>
+        {needs === 0 ? (
+          <div className="mt-4">
+            <EmptyState icon={Clock} title="Nothing is late">
+              Leads past the SLA, follow-ups due today and offers expiring
+              within 48 hours appear here. Right now none of the three.
+            </EmptyState>
           </div>
-        ))}
-      </dl>
-      <p className="mt-2 text-caption text-structure">
-        Counted from step 1 onward. Someone who typed a registration and
-        left before confirming the car leaves no record and is not here.
-      </p>
+        ) : (
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            <NeedsList
+              title="Over SLA"
+              icon={AlertTriangle}
+              rows={data.needsYou.overSla}
+              empty="Nothing past the SLA."
+            />
+            <NeedsList
+              title="Follow-ups due"
+              icon={CalendarClock}
+              rows={data.needsYou.dueToday}
+              empty="Nothing due today."
+            />
+            <NeedsList
+              title="Offers expiring"
+              icon={Clock}
+              rows={data.needsYou.offersExpiring}
+              empty="No offer expires in the next 48 hours."
+            />
+          </div>
+        )}
+      </section>
 
-      {incompleteCount > 0 && (
-        <p className="mt-4 text-caption">
-          <Link
-            href={showIncomplete ? "/admin" : "/admin?incomplete=1"}
-            className="link-draw text-oxblood"
-          >
-            {showIncomplete
-              ? "Hide incomplete"
-              : `Show ${incompleteCount} incomplete`}
-          </Link>
-          <span className="ml-2 text-structure">
-            — no contact details, so nobody to ring.
-          </span>
-        </p>
-      )}
+      {/* ─── series ────────────────────────────────────────────── */}
+      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <Panel title="Completed leads per week">
+          <BarChart
+            emptyIcon={Inbox}
+            emptyTitle="No completed leads yet"
+            emptyBody="Each bar is a week, counting sellers who finished the form. The last eight weeks show here once there are some."
+            data={data.leadsPerWeek.map((row) => ({
+              label: weekLabel(row.week),
+              value: row.count,
+            }))}
+          />
+        </Panel>
 
-      {slaHours === null && (
-        <p className="mt-4 text-caption text-oxblood">
-          No SLA is set, so nothing is marked overdue. Set one in Settings.
-        </p>
-      )}
+        <Panel title="Form funnel">
+          <FunnelChart
+            note="Counted from step 1 onward. Someone who typed a registration and left before confirming the car leaves no record and is not here."
+            steps={[
+              { label: "Confirmed a car", value: data.funnel.confirmedCar },
+              { label: "Reached the sale", value: data.funnel.reachedSale },
+              { label: "Reached contact", value: data.funnel.reachedContact },
+              { label: "Completed", value: data.funnel.completed },
+            ]}
+          />
+        </Panel>
 
+        <Panel title="Preferred contact method">
+          <BarChart
+            emptyTitle="Nobody has chosen yet"
+            emptyBody="Sellers pick a method on the last step of the form. Leads from before that step existed show as “not asked”."
+            data={data.byMethod.map((row) => ({
+              label: METHOD_LABEL[row.method] ?? row.method,
+              value: row.count,
+            }))}
+          />
+        </Panel>
+
+        <Panel title="Where leads come from">
+          <BarChart
+            emptyTitle="No leads to attribute"
+            emptyBody="Leads with no campaign tag count as Direct. Tagged sources appear here once there is traffic carrying one."
+            data={data.bySource.map((row) => ({
+              label: row.source,
+              value: row.count,
+            }))}
+          />
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function Panel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded border border-line bg-paper p-5">
+      <h2 className="font-display text-xl">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function NeedsList({
+  title,
+  icon: Icon,
+  rows,
+  empty,
+}: {
+  title: string;
+  icon: typeof Clock;
+  rows: NeedsYouRow[];
+  empty: string;
+}) {
+  return (
+    <section className="rounded border border-line bg-paper p-4">
+      <h3 className="flex items-center gap-2 text-caption tracking-wide text-structure uppercase">
+        <Icon aria-hidden="true" size={14} />
+        {title}
+        {rows.length > 0 && (
+          <span className="data-inline text-oxblood">{rows.length}</span>
+        )}
+      </h3>
       {rows.length === 0 ? (
-        <p className="mt-10 text-sm text-structure">
-          {all.length === 0
-            ? "No leads yet. They appear here the moment a seller gives their contact details."
-            : "Nothing to act on. Every lead so far stopped before giving contact details — use the link above to see them."}
-        </p>
+        <p className="mt-3 text-sm text-structure">{empty}</p>
       ) : (
-        <ul className="mt-8 flex flex-col">
-          {rows.map((row) => {
-            const breached =
-              slaHours !== null &&
-              row.status === "new" &&
-              hoursSince(row.createdAt) > slaHours;
-            const car = [
-              row.make ? titleCaseVehicle(row.make) : null,
-              row.model ? titleCaseVehicle(row.model) : null,
-              row.year,
-            ]
-              .filter(Boolean)
-              .join(" ");
-
-            return (
-              <li key={row.id} className="border-t border-line last:border-b">
-                <Link
-                  href={`/admin/leads/${row.id}`}
-                  className="flex flex-wrap items-baseline gap-x-6 gap-y-2 py-4 transition-colors duration-200 hover:bg-paper-warm"
-                >
-                  <span className="data-inline w-16 text-lg">
-                    {row.score ?? "—"}
+        <ul className="mt-3 flex flex-col">
+          {rows.slice(0, 6).map((row) => (
+            <li key={`${row.id}-${row.detail}`} className="border-t border-line first:border-t-0">
+              <Link
+                href={`/admin/leads/${row.id}` as never}
+                className="flex min-h-11 items-center justify-between gap-3 py-2 transition-colors duration-150 hover:text-oxblood"
+              >
+                <span className="min-w-0">
+                  <span className="data-inline text-sm">{formatReg(row.reg)}</span>
+                  <span className="ml-2 truncate text-caption text-structure">
+                    {row.name ?? "No name yet"}
                   </span>
-
-                  <span className="min-w-56 flex-1">
-                    <span className="data-inline text-sm">
-                      {formatReg(row.reg)}
-                    </span>
-                    {car && (
-                      <span className="ml-3 text-sm text-structure">{car}</span>
-                    )}
-                    {!car && (
-                      <span className="ml-3 text-sm text-structure">
-                        No vehicle data
-                      </span>
-                    )}
-                    <span className="mt-0.5 block text-caption text-structure">
-                      {row.incomplete ? (
-                        <span className="text-oxblood">Incomplete</span>
-                      ) : (
-                        <>
-                          {row.name ?? "No name yet"}
-                          {row.phone ? ` · ${row.phone}` : ""}
-                          {row.preferredContactMethod && (
-                            <span className="ml-2 rounded border border-line px-1.5 py-0.5">
-                              {METHOD_BADGE[row.preferredContactMethod]}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </span>
-                  </span>
-
-                  <span className="w-40 text-caption text-structure">
-                    {row.timeline
-                      ? TIMELINE_LABELS[row.timeline]
-                      : "Timeline not given"}
-                  </span>
-
-                  <span className="w-28 text-caption">
-                    {row.recommendedChannel ? (
-                      <span className="rounded border border-line px-2 py-0.5">
-                        {row.recommendedChannel}
-                      </span>
-                    ) : (
-                      <span className="text-structure">Not assessed</span>
-                    )}
-                  </span>
-
-                  <span className="w-24 text-right">
-                    <span
-                      className={`data-inline text-caption ${
-                        breached ? "font-medium text-oxblood" : "text-structure"
-                      }`}
-                    >
-                      {waiting(row.createdAt)}
-                    </span>
-                    {breached && (
-                      <span className="block text-caption text-oxblood">
-                        over SLA
-                      </span>
-                    )}
-                  </span>
-
-                  <span className="w-20 text-right text-caption text-structure">
-                    {row.pending
-                      ? "scoring…"
-                      : row.flagCount > 0
-                        ? `${row.flagCount} flag${row.flagCount === 1 ? "" : "s"}`
-                        : ""}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
+                </span>
+                <span className="data-inline shrink-0 text-caption text-oxblood">
+                  {row.detail}
+                </span>
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

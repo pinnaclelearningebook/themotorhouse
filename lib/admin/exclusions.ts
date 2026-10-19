@@ -34,14 +34,22 @@ export const TEST_REGISTRATIONS = ["TE57VOX"] as const;
  * every real seller, which is a far worse failure than the one this
  * guards against.
  *
- * Generic over the builder type so it composes with any lead query
- * without each call site restating the filters and drifting.
+ * Generic over the builder so it composes with any lead query without
+ * each call site restating the filters and drifting apart. The cast is
+ * deliberate: Supabase's builder types are recursive enough that
+ * naming the filter methods in the constraint makes the compiler give
+ * up on a count query ("type instantiation is excessively deep"). The
+ * shape is checked where it matters — a builder without `or` and `not`
+ * fails at the call site, and the tests in test/test-leads.test.ts
+ * check that the filters are the right ones.
  */
-export function excludeTestLeads<T extends {
-  or: (filter: string) => T;
-  not: (column: string, operator: string, value: string) => T;
-}>(query: T): T {
-  return query
+interface Filterable {
+  or: (filter: string) => Filterable;
+  not: (column: string, operator: string, value: string) => Filterable;
+}
+
+export function excludeTestLeads<T>(query: T): T {
+  return (query as Filterable)
     .or(`source.is.null,source.neq.${TEST_SOURCE}`)
-    .not("reg", "in", `(${TEST_REGISTRATIONS.join(",")})`);
+    .not("reg", "in", `(${TEST_REGISTRATIONS.join(",")})`) as T;
 }

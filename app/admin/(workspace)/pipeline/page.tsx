@@ -171,7 +171,7 @@ export default async function PipelinePage() {
       {live === 0 ? (
         <p className="mt-10 text-sm text-structure">
           Nothing in the pipeline. Leads arrive in the{" "}
-          <Link href="/admin" className="link-draw text-oxblood">
+          <Link href="/admin/inbox" className="link-draw text-oxblood">
             inbox
           </Link>{" "}
           and appear here once they are moved on from new.

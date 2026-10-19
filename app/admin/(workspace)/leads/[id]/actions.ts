@@ -131,3 +131,39 @@ export async function setOfferOutcome(formData: FormData) {
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/pipeline");
 }
+
+const noteSchema = z.object({
+  leadId: z.string().uuid(),
+  body: z.string().trim().min(1).max(2000),
+});
+
+/**
+ * A note an operator types after a call.
+ *
+ * It goes into `audit_log` rather than a table of its own, because a
+ * note is an event: it happened at a time, somebody wrote it, and the
+ * only place anyone looks for "what happened to this car" is the
+ * timeline. A separate notes list would mean reading two columns and
+ * mentally interleaving them by timestamp.
+ *
+ * Nothing here is editable or deletable for the same reason the offer
+ * amount is not: a record that can be quietly rewritten answers no
+ * question a month later. A correction is a second note.
+ */
+export async function addLeadNote(formData: FormData) {
+  const email = await actor();
+  const parsed = noteSchema.safeParse({
+    leadId: formData.get("leadId"),
+    body: formData.get("body"),
+  });
+  if (!parsed.success) return;
+
+  await db().from("audit_log").insert({
+    actor: email,
+    lead_id: parsed.data.leadId,
+    action: "lead.note",
+    after: { body: parsed.data.body },
+  });
+
+  revalidatePath(`/admin/leads/${parsed.data.leadId}`);
+}
