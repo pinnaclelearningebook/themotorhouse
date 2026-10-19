@@ -60,12 +60,28 @@ async function query(target, sql) {
   return text ? JSON.parse(text) : [];
 }
 
+/**
+ * The runner's own ledger, excluded from the comparison.
+ *
+ * `scripts/migrate.mjs` creates `schema_migrations` in whichever
+ * project it runs against, so a correctly migrated staging has it and
+ * a production migrated before the runner existed does not. Counting
+ * that as a difference makes the tool fail on exactly the setup it is
+ * meant to approve — and a check that cries wolf on a good result is
+ * a check people stop reading.
+ *
+ * It is excluded rather than silently ignored: whether each project
+ * has a ledger is reported on its own line below, so the information
+ * is still on screen, just not pretending to be a schema drift.
+ */
+const LEDGER = "schema_migrations";
+
 const SQL = {
   columns: `
     select table_name, column_name, data_type, is_nullable, column_default,
            coalesce(character_maximum_length, -1) as len
     from information_schema.columns
-    where table_schema = 'public'
+    where table_schema = 'public' and table_name <> '${LEDGER}'
     order by table_name, column_name;`,
   enums: `
     select t.typname, e.enumlabel, e.enumsortorder
@@ -76,16 +92,16 @@ const SQL = {
     order by t.typname, e.enumsortorder;`,
   indexes: `
     select tablename, indexname, indexdef
-    from pg_indexes where schemaname = 'public'
+    from pg_indexes where schemaname = 'public' and tablename <> '${LEDGER}'
     order by tablename, indexname;`,
   rls: `
     select c.relname, c.relrowsecurity
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relkind = 'r'
+    where n.nspname = 'public' and c.relkind = 'r' and c.relname <> '${LEDGER}'
     order by c.relname;`,
   policies: `
     select tablename, policyname, cmd
-    from pg_policies where schemaname = 'public'
+    from pg_policies where schemaname = 'public' and tablename <> '${LEDGER}'
     order by tablename, policyname;`,
 };
 
@@ -130,6 +146,25 @@ for (const [name, sql] of Object.entries(SQL)) {
   for (const line of missing) console.log(`  production only  ${line}`);
   for (const line of extra) console.log(`  staging only     ${line}`);
 }
+
+/** Stated rather than hidden: the one table deliberately left out. */
+const ledger = async (target) =>
+  (
+    await query(
+      target,
+      `select count(*)::int as n from information_schema.tables
+       where table_schema = 'public' and table_name = '${LEDGER}';`,
+    )
+  )[0].n > 0;
+
+const [prodLedger, stageLedger] = await Promise.all([
+  ledger(production),
+  ledger(staging),
+]);
+console.log(
+  `${LEDGER.padEnd(9)} excluded — production ${prodLedger ? "has" : "has no"} ledger, ` +
+    `staging ${stageLedger ? "has" : "has no"} ledger`,
+);
 
 if (differences > 0) {
   console.error(`\n${differences} differences. Staging does not match production.`);
