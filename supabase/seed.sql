@@ -38,5 +38,17 @@ insert into settings (key, value, updated_by) values
   -- Cost ceilings. An endpoint reachable by anyone who loads /valuation is
   -- a standing bill, so the limits ship with it rather than after it.
   ('agent_max_turns',       '30'::jsonb,   'seed'),
-  ('agent_max_output_tokens', '400'::jsonb, 'seed')
+  ('agent_max_output_tokens', '400'::jsonb, 'seed'),
+
+  -- Which models the export channel will even consider. Recorded here
+  -- on 19 October 2026 because it existed only in the production
+  -- settings table, typed into /admin/settings and present in no file
+  -- — so a new environment came up without it and the decision engine
+  -- there would have matched nothing. The value is exactly
+  -- production's, copied rather than decided: whether the Evoque and
+  -- the Velar belong in it is a commercial question, not a seeding
+  -- one.
+  ('target_models',
+   '["Range Rover","Defender","Discovery Sport","Lexus","Mercedes GLE"]'::jsonb,
+   'seed')
 on conflict (key) do nothing;

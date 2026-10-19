@@ -116,6 +116,15 @@ describe("migrations", () => {
     // The agent_* rows are switches and ceilings rather than money, so
     // seeding them invents nothing. agent_enabled is false: Maya stays
     // off everywhere until someone turns her on knowingly.
+    //
+    // target_models is here from 19 October 2026, and it is the one
+    // row that was added to this list rather than decided for it. It
+    // existed only in the production settings table, typed into
+    // /admin/settings and written down nowhere — so the new staging
+    // project came up without it and its decision engine would have
+    // matched no car at all. The value below is production's, copied
+    // exactly. It is not a guessed cost: it is a list that was
+    // already in use and merely unrecorded.
     expect(rows).toEqual([
       { key: "agent_enabled", value: "false" },
       { key: "agent_max_output_tokens", value: "400" },
@@ -124,6 +133,10 @@ describe("migrations", () => {
       { key: "margin_floor_domestic", value: "500" },
       { key: "margin_floor_export", value: "3500" },
       { key: "sla_hours", value: "2" },
+      {
+        key: "target_models",
+        value: '["Range Rover", "Defender", "Discovery Sport", "Lexus", "Mercedes GLE"]',
+      },
     ]);
 
     // The rule that matters most here, stated as its own assertion rather

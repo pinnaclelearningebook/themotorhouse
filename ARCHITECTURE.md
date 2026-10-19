@@ -305,6 +305,41 @@ VALUATION_PROVIDER · VALUATION_API_KEY          (optional)
 
 Missing optional keys → adapter returns `null` and `/admin` shows the control disabled with the reason. Missing required keys → loud server log and dev banner, never a silent success.
 
+### 8a. Two databases, and the guard between them
+
+Preview, Development and Production shared one Supabase project until 19 October 2026. On the 15th that put six fabricated leads into the production database: the rows had to be visible on a preview to be screenshotted, and the filter that hides our own test rows would have hidden them there too, so they went in unlabelled. The labelling convention was followed exactly and the rows still landed in production, which is as clear as evidence gets that a convention is not a control.
+
+Production keeps the original project. Preview and Development point at **themotorhouse-staging**, through their own copies of `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` — Vercel holds each of those per environment, so changing Preview's cannot reach Production's. Scripts name the project they want: `STAGING_SUPABASE_URL` and `STAGING_SUPABASE_SERVICE_ROLE_KEY` in `.env.local` beside the production pair, never instead of it.
+
+```
+node scripts/migrate.mjs --target staging      every migration, in order, ledgered
+node scripts/bootstrap-staging.mjs             marks the project as staging, once
+node scripts/seed-staging.mjs                  one fake lead per pipeline stage
+node scripts/compare-schema.mjs                staging against production, exits non-zero on a diff
+node scripts/prove-guard.mjs                   points the seeder at production and checks it refuses
+```
+
+`scripts/migrate.mjs` keeps a `schema_migrations` ledger **in the target**, because a runner that decides what to skip by sniffing for a column it expects can only recognise migrations whose shape it can parse. A project that already has the schema and no ledger — production, or any project migrated before the runner existed — is told to run `--mark-applied` rather than discovering the problem by failing on the first `create table`.
+
+**The guard is `scripts/lib/target.mjs`, and it refuses unless the target proves it is not production.** A blocklist would be the obvious shape and the wrong one: it fails open the day somebody adds a third project, and it trusts an environment variable exactly as forgettable as the convention it replaces. Four rules, and the proof lives in the database being written to rather than beside it:
+
+1. the target is not the one named `production`;
+2. its URL differs from production's, when production's is known;
+3. its own `settings` table carries `environment = 'staging'`;
+4. it holds no lead whose `source` is outside `admin-test` and `staging-seed`.
+
+Rule 4 is the backstop and the one that would have caught the mistake: rules 1 to 3 can all be satisfied at once by a single mistyped flag, but a database holding a row somebody is waiting for a phone call about cannot be mistaken for a scratch database. A production lead's `source` is null, so the null arm is the one that must never be relaxed.
+
+Rules 2 and 3 are independent on purpose — rule 3 does not need to know production's address, so it still fires in a CI runner or a stripped shell where rule 2 cannot. `scripts/prove-guard.mjs` runs the real seeder against the real production project twice, once with production's URL visible and once without, and checks the row counts afterwards. `test/staging-guard.test.ts` tests each arm as a pure function and asserts that every seeding script actually *calls* the guard rather than merely importing it — the first version matched the name, which a script that imports it and never awaits it also satisfies.
+
+Seeded rows carry `source = 'staging-seed'`, Ofcom drama numbers (`07700 900xxx`, reserved and unconnectable) and `@example.com` addresses, so they are identifiable three independent ways. They are not labelled `admin-test`, because on staging they are the content and the existing exclusion filter would hide them — the separation is the control now, not the label.
+
+`seed-staging.mjs` also applies `supabase/seed.sql`, so the operating constants come from the file production was seeded from rather than a second copy inside the script. Two lists of margin floors is two lists that disagree the first time one of them changes.
+
+**Auth is per project, so both have to be configured.** `configure-auth.mjs` and `sync-admins.mjs` take `--target`. Production keeps exactly two callbacks; staging also gets `https://themotorhouse-*-…vercel.app/admin/auth/callback`. The 11 October decision against a preview wildcard was about production, where the session a branch deployment could claim reaches real sellers — on staging it reaches ten rows with reserved phone numbers on them, and without it no preview can ever complete a sign-in, which would leave the staging dashboard unopenable and the split pointless.
+
+Staging's magic-link email has the same free-tier limitation as production's: the template cannot carry `{{ .Token }}`, so the link works and the code box does not.
+
 ## 9. Decisions log
 
 | Date | Decision | Why |
@@ -376,3 +411,6 @@ Missing optional keys → adapter returns `null` and `/admin` shows the control 
 | 2026-10-19 | `lib/admin/inbox.ts` keeps the sweep and nothing else | It still exported `inboxRows`, an `InboxRow` shape and a funnel after the table moved to `inbox-query.ts`. Nothing called any of them but a test, and the dashboard had quietly grown its own copy of the funnel — two counting rules for one number, which is how they drift. The funnel is now one pure function in `dashboard.ts` where the dashboard already used it, and the test points at that. CLAUDE.md section 2: no unused exports. |
 | 2026-10-19 | `audit.tmp.mjs` moved to `scripts/seo-audit.mjs` rather than deleted | A working script that reads every page in the live sitemap and prints what a crawler sees, committed by accident during SEO phase 1 and left in the repository root, where it failed lint and looked like debris. It is worth keeping and worth running after a release that touches metadata, so it has a name, a home and a comment saying what it is for. Nothing imports it and nothing in CI runs it. |
 | 2026-10-19 | The two leftover demo vehicle rows are gone | `RV23TMH` and `LX17ABC` survived the approved deletion of the demo leads, because the leads were deleted and the vehicles they pointed at were not. Invisible in the UI, but fabricated car records sitting in a production table. Removed with their two MOT rows, and the whole database swept for orphans afterwards: nine `admin-test` leads, one vehicle, no dangling references anywhere. |
+| 2026-10-19 | Preview and Development move to a second Supabase project, and a guard enforces it | One project served all three environments, which is how six fabricated leads reached production on the 15th: the rows had to be visible on a preview, and the filter that hides our own test rows would have hidden them there too. Separate projects fix the sharing. They do not fix a script pointed at the wrong URL, so `scripts/lib/target.mjs` refuses to write unless the target proves it is not production — four rules, two of them independent of knowing production's address, and the proof held in the database being written to rather than in an environment variable beside it. `scripts/prove-guard.mjs` demonstrates the refusal against the real production project and checks the row counts afterwards. |
+| 2026-10-19 | `target_models` was only ever in the production settings table | It existed nowhere in the repository — typed into /admin/settings and never written down — so the new staging project came up without it and its decision engine would have matched no car at all. Now in `supabase/seed.sql` with production's exact value, copied rather than decided: whether the Evoque and the Velar belong on that list is a commercial question. The seed test pins the contents, so it failed on the addition and had to be updated deliberately, which is the check working. |
+| 2026-10-19 | Staging's redirect allow-list carries the preview wildcard; production's still does not | The 11 October decision refused a wildcard because any branch deployment could then receive an admin session reaching real sellers. Preview now authenticates against staging, so the worst a claimed session reaches is ten fabricated leads — and without the wildcard a preview's generated hostname can never complete a sign-in, which would make the staging dashboard unopenable and the whole split pointless. Production's two exact callbacks are unchanged. |

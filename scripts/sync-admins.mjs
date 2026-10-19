@@ -7,6 +7,12 @@
  * longer listed, so the table always matches the variable.
  *
  *   node scripts/sync-admins.mjs
+ *   node scripts/sync-admins.mjs --target staging
+ *
+ * Both projects get the same allow-list. They have separate auth, so
+ * an admin exists in one and not the other until this has been run
+ * against each, and a staging dashboard nobody can sign in to is not
+ * a staging dashboard.
  */
 import { readFileSync } from "node:fs";
 
@@ -32,10 +38,26 @@ if (list.length === 0) {
   process.exit(1);
 }
 
-const url = env.SUPABASE_URL.replace(/\/$/, "");
+const targetIndex = process.argv.indexOf("--target");
+const targetName = targetIndex === -1 ? "production" : process.argv[targetIndex + 1];
+const VARS = {
+  production: ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+  staging: ["STAGING_SUPABASE_URL", "STAGING_SUPABASE_SERVICE_ROLE_KEY"],
+};
+if (!VARS[targetName]) {
+  console.error(`Unknown target "${targetName}". Known: production, staging.`);
+  process.exit(1);
+}
+const [urlVar, keyVar] = VARS[targetName];
+if (!env[urlVar] || !env[keyVar]) {
+  console.error(`Missing ${urlVar} or ${keyVar} in .env.local`);
+  process.exit(1);
+}
+
+const url = env[urlVar].replace(/\/$/, "");
 const headers = {
-  apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-  Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+  apikey: env[keyVar],
+  Authorization: `Bearer ${env[keyVar]}`,
   "Content-Type": "application/json",
 };
 
