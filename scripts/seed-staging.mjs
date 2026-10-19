@@ -23,14 +23,50 @@
  * See scripts/lib/target.mjs for what that means and why it is not
  * a check on an environment variable.
  */
-import { resolveTarget, assertWritable } from "./lib/target.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  resolveTarget,
+  assertWritable,
+  assertManagementToken,
+} from "./lib/target.mjs";
 
 let target;
 try {
   target = resolveTarget("staging");
   await assertWritable(target);
+  await assertManagementToken(target);
 } catch (error) {
   console.error(error.message);
+  process.exit(1);
+}
+
+/**
+ * The operating constants, from the same file production was seeded
+ * from.
+ *
+ * Not copied into this script: two lists of margin floors and agent
+ * limits is two lists that disagree the first time one of them
+ * changes, and the whole reason staging exists is to behave like
+ * production. `on conflict do nothing` in the file makes it safe to
+ * run every time.
+ */
+const seedSql = readFileSync(join("supabase", "seed.sql"), "utf8");
+const seedResponse = await fetch(
+  `https://api.supabase.com/v1/projects/${target.ref}/database/query`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${target.accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ query: seedSql }),
+  },
+);
+if (!seedResponse.ok) {
+  console.error(
+    `supabase/seed.sql failed: ${seedResponse.status} ${(await seedResponse.text()).slice(0, 300)}`,
+  );
   process.exit(1);
 }
 

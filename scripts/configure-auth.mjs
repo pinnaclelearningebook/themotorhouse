@@ -14,11 +14,21 @@
  * after any dashboard change to put it back.
  *
  * Run:  node scripts/configure-auth.mjs https://themotorhouse.vercel.app
+ *       node scripts/configure-auth.mjs --target staging https://…
  *
- * Reads SUPABASE_URL (for the project ref) and SUPABASE_ACCESS_TOKEN
- * from .env.local. The token needs both `auth_config_read` and
- * `auth_config_write`: the write makes the change, the read proves it
- * landed, and a token with only one of them fails halfway.
+ * Reads the target's URL (for the project ref) and
+ * SUPABASE_ACCESS_TOKEN from .env.local. The token needs both
+ * `auth_config_read` and `auth_config_write`: the write makes the
+ * change, the read proves it landed, and a token with only one of
+ * them fails halfway.
+ *
+ * The two projects get different redirect allow-lists, on purpose.
+ * Production gets exactly two callbacks, because a wildcard there is
+ * a redirect any branch deployment can claim and the session it would
+ * receive reaches real sellers. Staging gets the preview wildcard as
+ * well, because that is what makes a preview deployment signable-into
+ * — which is the entire point of having a staging database — and the
+ * worst a stolen staging session reaches is ten fabricated leads.
  *
  * Custom SMTP is deliberately opt-in:
  *
@@ -52,12 +62,30 @@ function env() {
 }
 
 const vars = env();
-const base = process.argv[2]?.replace(/\/$/, "");
+const targetIndex = process.argv.indexOf("--target");
+const targetName = targetIndex === -1 ? "production" : process.argv[targetIndex + 1];
+const positional = process.argv
+  .slice(2)
+  .filter((arg, index, all) => {
+    if (arg.startsWith("--")) return false;
+    const previous = all[index - 1];
+    return previous !== "--target" && previous !== "--smtp";
+  });
+const base = positional[0]?.replace(/\/$/, "");
 const smtpIndex = process.argv.indexOf("--smtp");
 const smtpSender = smtpIndex === -1 ? null : process.argv[smtpIndex + 1];
 
-if (!vars.SUPABASE_URL || !vars.SUPABASE_ACCESS_TOKEN) {
-  console.error("Missing SUPABASE_URL or SUPABASE_ACCESS_TOKEN in .env.local");
+const URL_VAR = { production: "SUPABASE_URL", staging: "STAGING_SUPABASE_URL" };
+if (!URL_VAR[targetName]) {
+  console.error(`Unknown target "${targetName}". Known: production, staging.`);
+  process.exit(1);
+}
+const projectUrl = vars[URL_VAR[targetName]];
+
+if (!projectUrl || !vars.SUPABASE_ACCESS_TOKEN) {
+  console.error(
+    `Missing ${URL_VAR[targetName]} or SUPABASE_ACCESS_TOKEN in .env.local`,
+  );
   process.exit(1);
 }
 if (!base || !base.startsWith("https://")) {
@@ -69,7 +97,7 @@ if (smtpIndex !== -1 && (!smtpSender || !smtpSender.includes("@"))) {
   process.exit(1);
 }
 
-const ref = new URL(vars.SUPABASE_URL).hostname.split(".")[0];
+const ref = new URL(projectUrl).hostname.split(".")[0];
 const headers = {
   Authorization: `Bearer ${vars.SUPABASE_ACCESS_TOKEN}`,
   "content-type": "application/json",
@@ -103,9 +131,25 @@ const MAGIC_LINK_TEMPLATE = `<h2>Your sign-in link</h2>
 
 <p>If you did not ask to sign in, ignore this email.</p>`;
 
-// Exactly the two callbacks, production and local dev. Nothing broader:
-// a wildcard here is a redirect any branch deployment can claim.
-const REDIRECTS = [`${base}/admin/auth/callback`, "http://localhost:3000/admin/auth/callback"];
+/*
+ * Production: exactly the two callbacks, production and local dev.
+ * Nothing broader — a wildcard there is a redirect any branch
+ * deployment can claim, and the session it hands out reaches sellers.
+ *
+ * Staging: the same two, plus every preview deployment of this
+ * project. A preview's hostname is generated per build, so without a
+ * wildcard no preview can ever complete a sign-in, and a staging
+ * database nobody can open the dashboard against is a staging
+ * database that does not do its job. What a session there reaches is
+ * ten rows with Ofcom drama numbers on them.
+ */
+const PREVIEW_WILDCARD =
+  "https://themotorhouse-*-pinnaclelearningebook-7934s-projects.vercel.app/admin/auth/callback";
+const REDIRECTS = [
+  `${base}/admin/auth/callback`,
+  "http://localhost:3000/admin/auth/callback",
+  ...(targetName === "staging" ? [PREVIEW_WILDCARD] : []),
+];
 
 // Two requests, not one. Supabase refuses the whole PATCH if any field
 // in it is a template field and the project is not allowed template
