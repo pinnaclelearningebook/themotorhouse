@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { currentAdmin } from "@/lib/admin/auth";
+import { writeOffer } from "@/lib/admin/offers";
 
 /**
  * Recording an offer a person has decided on.
@@ -51,32 +52,13 @@ export async function recordOffer(formData: FormData) {
 
   const { leadId, amount, validUntil, channel, notes } = parsed.data;
 
-  await db().from("offers").insert({
-    lead_id: leadId,
-    made_by: email,
-    amount,
-    valid_until: validUntil || null,
-    channel,
-    status: "sent",
-    notes: notes || null,
-  });
-
-  // The channel actually chosen, as distinct from the one recommended.
-  await db()
-    .from("leads")
-    .update({
-      status: "offered",
-      channel_decided: channel,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", leadId);
-
-  await db().from("audit_log").insert({
-    actor: email,
-    lead_id: leadId,
-    action: "offer.recorded",
-    after: { amount, channel, valid_until: validUntil || null },
-  });
+  /*
+   * The write itself is shared with the board's drop-into-Offered
+   * (lib/admin/offers.ts). Two copies would be two copies that
+   * eventually disagree about whether the transition was legal, and
+   * the board is the one where a wrong answer is one gesture away.
+   */
+  await writeOffer({ leadId, amount, channel, validUntil, notes, actor: email });
 
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/pipeline");

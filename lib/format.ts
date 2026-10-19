@@ -31,3 +31,15 @@ export function titleCaseVehicle(value: string): string {
     .map((word) => word.split("-").map(capitalise).join("-"))
     .join(" ");
 }
+
+
+/**
+ * Whole pounds, the way the dashboard writes them.
+ *
+ * A minus sign (U+2212), not a hyphen: a negative margin is read at
+ * a glance in a column of figures and a hyphen is too easy to lose.
+ */
+export function money(amount: number): string {
+  const sign = amount < 0 ? "\u2212" : "";
+  return `${sign}\u00a3${Math.abs(amount).toLocaleString("en-GB")}`;
+}

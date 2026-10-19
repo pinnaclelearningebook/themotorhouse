@@ -134,9 +134,27 @@ describe("no offer path", () => {
     // knows what a car cost, and banning the read would push that query
     // into a page component for no safety gain. Creating or changing an
     // offer outside /admin is the thing that must never happen.
+    //
+    // lib/admin/offers.ts is named explicitly, not by a folder
+    // pattern. The insert moved there on 19 October 2026 because an
+    // offer can now be entered from two places — the lead page's form
+    // and dropping a card into Offered on the board — and two copies
+    // of the write would be two copies that eventually disagree about
+    // whether the transition was legal. One named file is a smaller
+    // hole than `^lib/admin/`, which would exempt every future file
+    // in that directory from the only rule that keeps offer writes
+    // out of seller-facing code.
     const write = /\.\s*(insert|update|upsert|delete)\s*\(/;
     const offenders = FILES.filter(({ file, code }) => {
-      if (allowed(file, [/^app\/admin\//, /^app\/api\/admin\//])) return false;
+      if (
+        allowed(file, [
+          /^app\/admin\//,
+          /^app\/api\/admin\//,
+          /^lib\/admin\/offers\.ts$/,
+        ])
+      ) {
+        return false;
+      }
       for (const match of code.matchAll(/from\(["']offers["']\)/g)) {
         const after = code.slice(
           match.index + match[0].length,
@@ -147,6 +165,19 @@ describe("no offer path", () => {
       return false;
     }).map(({ file }) => file);
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps the one exempted offer writer server-only and guarded", () => {
+    // The exemption above is only safe while this stays true: the
+    // file cannot be pulled into a client bundle, and it refuses an
+    // offer on a car that was never contacted rather than trusting
+    // whichever dialog called it.
+    const source = readFileSync(join(ROOT_DIR, "lib/admin/offers.ts"), "utf8");
+    expect(source).toMatch(/^import "server-only";/m);
+    expect(source).toMatch(/canMove\(/);
+    expect(source, "the shared writer must not be named as a maker").not.toMatch(
+      /\b(make|create|generate|calculate)Offer\b/i,
+    );
   });
 
   it("returns a max bid, never an offer amount, from the decision engine", () => {

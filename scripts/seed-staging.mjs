@@ -144,6 +144,14 @@ const LEADS = [
     vehicle: { make: "LAND ROVER", model: "DISCOVERY SPORT", year: 2019, colour: "RED", fuel: "DIESEL", cc: 1999 },
     age: 35, mileage: 68_200, timeline: "few_months", history: "partial",
     offer: { amount: 16_950, channel: "domestic", status: "accepted" },
+    // A sold car with no sale price leaves the realised-margin line
+    // saying nothing has sold, which is the one figure on this page
+    // and so the one thing the sample data has to exercise.
+    sale: { price: 19_750, daysAgo: 4 },
+    costs: [
+      { kind: "recon", amount: 820, note: "two tyres and a service" },
+      { kind: "transport", amount: 180, note: null },
+    ],
   },
   {
     reg: "SG09LOS", status: "lost", name: "Jules Sample", method: "sms",
@@ -165,7 +173,7 @@ const inRegs = `(${REGS.join(",")})`;
 const existing = await send("GET", `leads?reg=in.${inRegs}&select=id`);
 if (existing.length > 0) {
   const ids = `(${existing.map((row) => row.id).join(",")})`;
-  for (const table of ["audit_log", "offers", "enrichments", "conversations", "photos"]) {
+  for (const table of ["audit_log", "offers", "enrichments", "conversations", "photos", "car_costs"]) {
     await send("DELETE", `${table}?lead_id=in.${ids}`);
   }
   await send("DELETE", `leads?id=in.${ids}`);
@@ -221,6 +229,25 @@ for (const [index, lead] of LEADS.entries()) {
       next_contact_date: lead.status === "contacted" ? date(1) : null,
     },
   ]);
+
+  if (lead.sale) {
+    await send("PATCH", `leads?id=eq.${row.id}`, {
+      sold_price: lead.sale.price,
+      sold_on: date(-lead.sale.daysAgo),
+    });
+  }
+
+  for (const cost of lead.costs ?? []) {
+    await send("POST", "car_costs", [
+      {
+        lead_id: row.id,
+        kind: cost.kind,
+        amount: cost.amount,
+        note: cost.note,
+        logged_by: "staging-seed",
+      },
+    ]);
+  }
 
   if (lead.offer) {
     await send("POST", "offers", [

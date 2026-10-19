@@ -239,11 +239,20 @@ async function main() {
     templateHeld = JSON.parse(detail)?.message ?? detail.slice(0, 300);
   }
 
-  // Read it back rather than trusting the write.
-  const readBack = await fetch(`${API}/projects/${ref}/config/auth`, { headers });
-  if (!readBack.ok) await refused(readBack, "read the auth config back");
-  const after = await readBack.json();
-
+  /*
+   * Read it back rather than trusting the write — but not instantly.
+   *
+   * On 19 October 2026 a run against staging reported BAD for both
+   * URL fields and an identical run seconds later reported ok: the
+   * config had landed and the read had raced it. A verification that
+   * sometimes says a correct write failed is worse than no
+   * verification, because the next person to see BAD will assume it
+   * is the usual flake and stop reading the line.
+   *
+   * So the read is retried a few times against what was asked for,
+   * and only a value that is still wrong after that is reported
+   * wrong.
+   */
   const expected = {
     site_url: base,
     uri_allow_list: REDIRECTS.join(","),
@@ -264,6 +273,18 @@ async function main() {
         }
       : {}),
   };
+
+  let after;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const readBack = await fetch(`${API}/projects/${ref}/config/auth`, { headers });
+    if (!readBack.ok) await refused(readBack, "read the auth config back");
+    after = await readBack.json();
+    const settled = Object.entries(expected).every(
+      ([key, value]) => after[key] === value,
+    );
+    if (settled || attempt === 5) break;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 600));
+  }
 
   let ok = true;
   for (const [key, want] of Object.entries(expected)) {

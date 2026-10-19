@@ -55,6 +55,9 @@ export interface PipelineCard {
   status: string;
   channelDecided: string | null;
   channelRecommended: string | null;
+  /** When the card last entered this stage, ISO. */
+  stageSince: string;
+  nextContactDate: string | null;
   pnl: CarPnl;
 }
 
@@ -75,6 +78,8 @@ interface LeadRow {
   vehicle_id: string | null;
   channel_decided: string | null;
   channel_recommended: string | null;
+  created_at: string;
+  next_contact_date: string | null;
 }
 
 export async function pipelineBoard(): Promise<PipelineBoard> {
@@ -84,7 +89,7 @@ export async function pipelineBoard(): Promise<PipelineBoard> {
     db()
       .from("leads")
       .select(
-        "id, reg, name, status, sold_price, vehicle_id, channel_decided, channel_recommended",
+        "id, reg, name, status, sold_price, vehicle_id, channel_decided, channel_recommended, created_at, next_contact_date",
       )
       .in("status", boardStatuses),
   )
@@ -113,6 +118,34 @@ export async function pipelineBoard(): Promise<PipelineBoard> {
     if (!acceptedByLead.has(offer.lead_id)) {
       acceptedByLead.set(offer.lead_id, offer.amount);
     }
+  }
+
+  /*
+   * When each card last entered its column.
+   *
+   * From the audit log, not `updated_at`. `updated_at` moves when
+   * anyone edits anything — a note, a follow-up date, a bulk tidy —
+   * so a card showing "2 days in stage" off that column would reset
+   * every time somebody looked at the lead, which is the opposite of
+   * what the number is for. A card with no status entry has never
+   * moved, so it has been where it is since it arrived.
+   */
+  const { data: moves } = ids.length
+    ? await db()
+        .from("audit_log")
+        .select("lead_id, at, action")
+        .in("lead_id", ids)
+        .in("action", ["lead.status", "lead.status.bulk"])
+        .order("at", { ascending: false })
+        .limit(2000)
+    : { data: [] };
+
+  const stageSince = new Map<string, string>();
+  for (const move of (moves ?? []) as unknown as {
+    lead_id: string;
+    at: string;
+  }[]) {
+    if (!stageSince.has(move.lead_id)) stageSince.set(move.lead_id, move.at);
   }
 
   const { data: costs } = ids.length
@@ -155,6 +188,8 @@ export async function pipelineBoard(): Promise<PipelineBoard> {
       status: row.status,
       channelDecided: row.channel_decided,
       channelRecommended: row.channel_recommended,
+      stageSince: stageSince.get(row.id) ?? row.created_at,
+      nextContactDate: row.next_contact_date,
       pnl: carPnl({
         acceptedOffer: acceptedByLead.get(row.id) ?? null,
         soldPrice: row.sold_price,

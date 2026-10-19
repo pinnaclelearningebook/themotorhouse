@@ -73,7 +73,12 @@ export function carPnl({
 }
 
 /** Whole pounds, mono-ready. Negative margins read as −£1,200. */
-export function money(amount: number): string {
-  const sign = amount < 0 ? "−" : "";
-  return `${sign}£${Math.abs(amount).toLocaleString("en-GB")}`;
-}
+/*
+ * Re-exported, not defined here. `money` is a formatter and the
+ * board is a client component: importing it from a module marked
+ * `server-only` pulled this whole file — projections, costs and all
+ * — into the browser bundle and the build refused, correctly. The
+ * guard on this file is worth keeping, so the formatter moved out
+ * from under it.
+ */
+export { money } from "@/lib/format";
