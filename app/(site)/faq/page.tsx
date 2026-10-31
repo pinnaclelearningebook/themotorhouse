@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { FaqJsonLd } from "@/components/seo/FaqJsonLd";
 import { Accordion } from "@/components/ui/Accordion";
-import { AwaitingInfo } from "@/components/ui/AwaitingInfo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { FAQ, FAQ_GROUPS } from "@/config/faq";
+import { PUBLISHED_FAQ, FAQ_GROUPS } from "@/config/faq";
 import { PHOTOGRAPHY } from "@/config/photography";
 
 export const metadata: Metadata = {
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 export default function FaqPage() {
   return (
     <main>
-      <FaqJsonLd entries={FAQ} />
+      <FaqJsonLd entries={PUBLISHED_FAQ} />
 
       <PageHero
         eyebrow="Questions"
@@ -30,7 +29,7 @@ export default function FaqPage() {
       />
 
       {FAQ_GROUPS.map((group, index) => {
-        const entries = FAQ.filter((entry) => entry.group === group);
+        const entries = PUBLISHED_FAQ.filter((entry) => entry.group === group);
         if (entries.length === 0) return null;
         const id = `faq-${index}`;
         return (
@@ -49,9 +48,7 @@ export default function FaqPage() {
               <Accordion
                 items={entries.map((entry) => ({
                   question: entry.question,
-                  answer: entry.answer ?? (
-                    <AwaitingInfo label={entry.pendingLabel ?? "Answer"} />
-                  ),
+                  answer: entry.answer,
                 }))}
               />
             </div>
