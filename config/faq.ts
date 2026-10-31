@@ -138,3 +138,24 @@ export const FAQ: FaqEntry[] = [
       "Nothing is binding until you accept the offer and we collect the car. Decline the offer, ignore it, or come back within the seven days — there is no fee and no obligation at any point before handover.",
   },
 ];
+
+/**
+ * The entries the public site shows and puts in FAQPage schema.
+ *
+ * On 31 October 2026 the pre-launch audit found three questions on the
+ * live /faq with no answer under them: "Do you buy non-runners?",
+ * "Do you buy Category N or Category S write-offs?" and "Do you take a
+ * car in part-exchange?". Each has `answer: null` because the policy
+ * is still Alex's to decide, and the page rendered an `<AwaitingInfo>`
+ * in the answer slot — which is a dashed chip in development and
+ * nothing at all in production. So a seller saw a question followed by
+ * the next question, and an answer engine quoting the page would get
+ * the same.
+ *
+ * The three stay in `FAQ`, switched off. Giving one an `answer` string
+ * is the only change needed to publish it; the schema and the visible
+ * list read from this same array, so they cannot disagree.
+ */
+export const PUBLISHED_FAQ: (FaqEntry & { answer: string })[] = FAQ.filter(
+  (entry): entry is FaqEntry & { answer: string } => entry.answer !== null,
+);

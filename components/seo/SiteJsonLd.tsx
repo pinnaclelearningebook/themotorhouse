@@ -31,7 +31,10 @@ export function SiteJsonLd() {
     name: SITE.name,
     url: absoluteUrl("/"),
     logo: absoluteUrl("/icon"),
-    image: absoluteUrl("/opengraph-image"),
+    // A static file, not the OG route: Next serves that route at a
+    // hashed path (/opengraph-image-xxxx), so the plain URL is a 404
+    // and was one on the live site until 31 October 2026.
+    image: absoluteUrl("/photography/hero-home.jpg"),
     description:
       "A UK car buying service. Any car, any age, anywhere in mainland UK. Firm offers, free collection, payment before the transporter leaves.",
     areaServed: { "@type": "Country", name: "United Kingdom" },

@@ -1,7 +1,7 @@
 import { Section } from "@/components/ui/Section";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Accordion } from "@/components/ui/Accordion";
-import { FAQ } from "@/config/faq";
+import { PUBLISHED_FAQ } from "@/config/faq";
 import { TextLink } from "@/components/ui/TextLink";
 
 /**
@@ -11,12 +11,8 @@ import { TextLink } from "@/components/ui/TextLink";
  * answers are not published twice to a search engine.
  */
 export function FaqTeaser() {
-  // Entries awaiting a business decision carry a null answer and render
-  // nowhere. A teaser is the last place to show a question we cannot
-  // answer yet.
-  const questions = FAQ.filter(
-    (entry): entry is typeof entry & { answer: string } => Boolean(entry.answer),
-  ).slice(0, 4);
+  // Published entries only — the same array /faq and its schema read.
+  const questions = PUBLISHED_FAQ.slice(0, 4);
   if (questions.length === 0) return null;
 
   return (
